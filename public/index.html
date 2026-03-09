@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TraceWorks™ | Legal OSINT Intelligence</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="topbar">
+        <h1>Trace<span>Works™</span></h1>
+        <a class="gold-btn" href="#order">Submit a Request</a>
+      </header>
+
+      <section class="hero">
+        <p class="kicker">SKIP TRACING FOR LEGAL PROFESSIONALS</p>
+        <h2>Find Anyone.<br /><em>Fast.</em> Accurate. Confidential.</h2>
+        <p>Deep online intelligence and public-records OSINT workflows built for attorneys, process servers, investigators, and recovery teams.</p>
+      </section>
+
+      <section class="trust-row">
+        <article><h4>Evidence-First</h4><p>Every dossier includes citations, confidence, red flags, and 48-hour action items.</p></article>
+        <article><h4>Court-Aware</h4><p>Reports are structured for legal workflows, service attempts, and case-file follow-up.</p></article>
+        <article><h4>Operational Speed</h4><p>Automated collection + analyst-ready format to shorten case cycle time.</p></article>
+      </section>
+
+      <section class="policy-strip">
+        <p><strong>Service Policy:</strong> No refunds after work starts. If quality is off, we provide a redo pass on the same case scope.</p>
+      </section>
+
+      <section class="cards" id="packageCards"></section>
+
+      <section class="process">
+        <h3>Why This Is Superior</h3>
+        <ol>
+          <li><strong>Multi-provider OSINT:</strong> Expanded query plans and source ranking, not single search output.</li>
+          <li><strong>Evidence Matrix:</strong> Signal strength + provider + exact follow-up actions in one table.</li>
+          <li><strong>Red Flag Detection:</strong> Gaps and low-confidence findings are explicitly called out.</li>
+          <li><strong>Action System:</strong> Next 48-hour plan included for immediate legal team execution.</li>
+        </ol>
+      </section>
+
+      <section class="form-wrap" id="order">
+        <h3>Secure Intake + Checkout</h3>
+        <form id="checkoutForm">
+          <label>Selected Service<input id="packageId" name="packageId" readonly required /></label>
+          <label>Requestor Name<input name="customerName" required /></label>
+          <label>Requestor Email<input type="email" name="customerEmail" required /></label>
+          <label>Subject Name / Entity<input name="companyName" required /></label>
+          <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
+          <label>Case Objective<textarea name="goals" rows="4" placeholder="What exact outcome do you need? (service, locate, title chain, heir identification, etc.)"></textarea></label>
+          <label class="consent"><input type="checkbox" name="legalConsent" required /> I confirm this request is for lawful investigative/legal use.</label>
+          <label class="consent"><input type="checkbox" name="tosConsent" required /> I agree to <a href="/terms.html" target="_blank" rel="noopener">Terms</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.</label>
+          <button type="submit">Pay & Order</button>
+          <p id="status"></p>
+        </form>
+        <div class="links">
+          <a href="/preview/report" target="_blank" rel="noopener">Preview Live Report</a>
+          <a href="/report-tiers.html" target="_blank" rel="noopener">View All 4 Tier Previews</a>
+          <a href="/launch-readiness.html" target="_blank" rel="noopener">Launch Readiness Checklist</a>
+        </div>
+      </section>
+
+
+
+      <section class="form-wrap" id="enterprise" style="margin-top:16px;">
+        <h3>Enterprise / Agency Volume Intake</h3>
+        <p>Need daily volume? Submit this and we will propose a lawful, scalable retainer workflow.</p>
+        <form id="salesForm">
+          <label>Name<input name="name" required /></label>
+          <label>Business Email<input type="email" name="email" required /></label>
+          <label>Company<input name="company" required /></label>
+          <label>Estimated Monthly Cases<input name="monthlyCases" placeholder="e.g. 100" required /></label>
+          <label>Budget Range<input name="budget" placeholder="e.g. $5k-$25k/mo" /></label>
+          <label style="display:none;">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
+          <label>Notes<textarea name="message" rows="3" placeholder="What outcomes do you need per month?"></textarea></label>
+          <button type="submit">Request Enterprise Call</button>
+          <p id="salesStatus"></p>
+        </form>
+      </section>
+
+      <footer class="footer">
+        <p>© TraceWorks™. Legal OSINT support services for lawful professional use only.</p>
+        <p><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/refund-policy.html">No Refunds / Redos</a> · <a href="/launch-readiness.html">Launch Checklist</a></p>
+      </footer>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,57 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/create-checkout"
+  to = "/.netlify/functions/create-checkout"
+  status = 200
+
+[[redirects]]
+  from = "/api/stripe-webhook"
+  to = "/.netlify/functions/stripe-webhook"
+  status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+
+[[redirects]]
+  from = "/preview/report"
+  to = "/.netlify/functions/report-preview"
+  status = 200
+
+[[redirects]]
+  from = "/api/get-order"
+  to = "/.netlify/functions/get-order"
+  status = 200
+
+[[redirects]]
+  from = "/api/track-event"
+  to = "/.netlify/functions/track-event"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin-metrics"
+  to = "/.netlify/functions/admin-metrics"
+  status = 200
+
+[[redirects]]
+  from = "/api/process-queue"
+  to = "/.netlify/functions/process-queue"
+  status = 200
+
+
+[functions."process-queue-scheduled"]
+  schedule = "*/2 * * * *"
+
+
+[[redirects]]
+  from = "/api/contact-sales"
+  to = "/.netlify/functions/contact-sales"
+  status = 200

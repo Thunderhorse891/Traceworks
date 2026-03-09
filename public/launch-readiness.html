@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TraceWorks™ Launch Readiness</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="form-wrap" style="margin-top:24px;">
+        <h1>Launch Readiness Checklist</h1>
+        <p>Use this page to confirm what is still needed before go-live.</p>
+
+        <div class="check-grid">
+          <article class="check-card">
+            <h3>What we need from you</h3>
+            <ul>
+              <li>Stripe live API keys + webhook secret.</li>
+              <li>SMTP production credentials and approved sender domain.</li>
+              <li>Owner/support email inbox for report copies and escalations.</li>
+              <li>Final legal policy language sign-off (Terms/Privacy/No-refund redo policy).</li>
+              <li>Admin API key + status token secret (long random values).</li>
+            </ul>
+          </article>
+
+          <article class="check-card">
+            <h3>Operational checks</h3>
+            <ul>
+              <li>Scheduled worker is enabled and running.</li>
+              <li>Dead-letter monitoring route is documented.</li>
+              <li>Redo workflow owner is assigned.</li>
+              <li>At least one successful test-mode checkout completed end-to-end.</li>
+              <li>Inbox deliverability verified for customer + owner copies.</li>
+            </ul>
+          </article>
+        </div>
+
+        <section class="check-card">
+          <h3>Live environment status</h3>
+          <p id="healthStatus">Checking `/api/health`…</p>
+          <ul id="missingList"></ul>
+        </section>
+
+        <p><a href="/">Back to home</a></p>
+      </section>
+    </main>
+
+    <script>
+      const statusEl = document.getElementById('healthStatus');
+      const missingEl = document.getElementById('missingList');
+
+      async function loadHealth() {
+        try {
+          const res = await fetch('/api/health');
+          const data = await res.json();
+          if (!res.ok) {
+            statusEl.textContent = data.error || 'Health endpoint unavailable.';
+            return;
+          }
+
+          const missing = Array.isArray(data.envMissing) ? data.envMissing : [];
+          if (missing.length === 0) {
+            statusEl.textContent = '✅ Environment appears ready (no missing required env vars).';
+            return;
+          }
+
+          statusEl.textContent = `⚠️ Missing ${missing.length} required env vars:`;
+          missingEl.innerHTML = '';
+          for (const name of missing) {
+            const li = document.createElement('li');
+            li.textContent = name;
+            missingEl.appendChild(li);
+          }
+        } catch {
+          statusEl.textContent = 'Unable to reach /api/health from this preview mode.';
+        }
+      }
+
+      loadHealth();
+    </script>
+  </body>
+</html>
