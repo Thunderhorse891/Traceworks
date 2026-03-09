@@ -2,9 +2,20 @@ import { jsonWithRequestId } from './_lib/http.js';
 import { processOneFulfillmentJob } from './_lib/process-one-job.js';
 import { getBusinessEmail } from './_lib/business.js';
 
+function authorized(event) {
+  const secret = process.env.QUEUE_CRON_SECRET;
+  if (!secret) return true;
+  const header = event.headers['x-queue-cron-secret'] || '';
+  return header === secret;
+}
+
 export default async (event) => {
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
     return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
+  }
+
+  if (!authorized(event)) {
+    return jsonWithRequestId(event, 401, { error: 'Unauthorized' });
   }
 
   const ownerEmail = getBusinessEmail();

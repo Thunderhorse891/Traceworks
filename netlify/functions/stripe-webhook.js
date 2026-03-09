@@ -3,8 +3,15 @@ import { enqueueJob, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertO
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 
+const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
+
 export default async (event) => {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
+
+  const body = event.body || '';
+  if (Buffer.byteLength(body, 'utf8') > MAX_WEBHOOK_BODY_BYTES) {
+    return jsonWithRequestId(event, 413, { error: 'Webhook payload too large.' });
+  }
 
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
   const limit = hitRateLimit({ key: `webhook:${ip}`, windowMs: 60_000, max: 120 });
@@ -20,46 +27,49 @@ export default async (event) => {
   const stripe = new Stripe(stripeKey);
   let stripeEvent;
   try {
-    stripeEvent = stripe.webhooks.constructEvent(event.body, sig, webhookSecret);
+    stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookSecret, 300);
   } catch (err) {
     return jsonWithRequestId(event, 400, { error: `Webhook Error: ${err.message}` });
   }
 
   if (await isProcessedWebhookEvent(stripeEvent.id)) return jsonWithRequestId(event, 200, { ok: true, duplicate: true });
 
-  if (stripeEvent.type === 'checkout.session.completed') {
-    const session = stripeEvent.data.object;
-    const metadata = session.metadata || {};
-    const caseRef = metadata.caseRef || `TW-${session.id}`;
+  if (stripeEvent.type !== 'checkout.session.completed') {
+    await markProcessedWebhookEvent(stripeEvent.id);
+    return jsonWithRequestId(event, 200, { ok: true, ignored: true });
+  }
 
-    await upsertOrder(caseRef, {
-      status: 'queued',
-      stripeSessionId: session.id,
+  const session = stripeEvent.data.object;
+  const metadata = session.metadata || {};
+  const caseRef = metadata.caseRef || `TW-${session.id}`;
+
+  await upsertOrder(caseRef, {
+    status: 'queued',
+    stripeSessionId: session.id,
+    packageId: metadata.packageId,
+    packageName: metadata.packageName,
+    customerName: metadata.customerName,
+    customerEmail: metadata.customerEmail || session.customer_details?.email,
+    subjectName: metadata.companyName,
+    website: metadata.website,
+    goals: metadata.goals,
+    queuedAt: new Date().toISOString()
+  });
+
+  await enqueueJob({
+    type: 'fulfillment',
+    payload: {
+      caseRef,
       packageId: metadata.packageId,
-      packageName: metadata.packageName,
       customerName: metadata.customerName,
       customerEmail: metadata.customerEmail || session.customer_details?.email,
-      subjectName: metadata.companyName,
+      companyName: metadata.companyName,
       website: metadata.website,
-      goals: metadata.goals,
-      queuedAt: new Date().toISOString()
-    });
+      goals: metadata.goals
+    }
+  });
 
-    await enqueueJob({
-      type: 'fulfillment',
-      payload: {
-        caseRef,
-        packageId: metadata.packageId,
-        customerName: metadata.customerName,
-        customerEmail: metadata.customerEmail || session.customer_details?.email,
-        companyName: metadata.companyName,
-        website: metadata.website,
-        goals: metadata.goals
-      }
-    });
-
-    await markProcessedWebhookEvent(stripeEvent.id);
-  }
+  await markProcessedWebhookEvent(stripeEvent.id);
 
   return jsonWithRequestId(event, 200, { ok: true });
 };

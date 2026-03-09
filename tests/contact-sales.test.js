@@ -6,6 +6,7 @@ test('homepage includes enterprise sales form', async () => {
   const html = await readFile('public/index.html', 'utf8');
   assert.ok(html.includes('id="salesForm"'));
   assert.ok(html.includes('Request Enterprise Call'));
+  assert.ok(html.includes('name="website"'));
 });
 
 test('netlify routes contact-sales API endpoint', async () => {

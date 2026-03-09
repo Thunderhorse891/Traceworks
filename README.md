@@ -65,6 +65,7 @@ Paste the returned webhook secret into `.env` as `STRIPE_WEBHOOK_SECRET`.
 ## Required env vars
 
 See `.env.example`. Optional: `QUEUE_MAX_PER_RUN` (default 5) controls scheduled worker batch size.
+Set `QUEUE_CRON_SECRET` to protect scheduled worker invocations.
 Set `STATUS_TOKEN_SECRET` to enable signed status links on success pages (recommended).
 Owner notifications default to `traceworks.tx@outlook.com` (override with `OWNER_EMAIL` if needed).
 
@@ -156,3 +157,12 @@ This is preview-first. Do not publish production until you approve final design/
 
 - Added enterprise/agency lead intake form on homepage for higher-ticket monthly volume deals.
 - Added `/api/contact-sales` endpoint that validates lead payloads and emails business-owner lead alerts for rapid sales follow-up.
+
+
+## Phase 7 security hardening upgrades
+
+- Added stricter security headers for JSON/HTML responses (`content-security-policy`, `permissions-policy`).
+- Hardened Stripe webhook processing with payload-size limits, signature tolerance, and explicit ignore behavior for non-checkout events.
+- Locked status-token signing to dedicated `STATUS_TOKEN_SECRET` only (no fallback to other secrets).
+- Hardened enterprise lead endpoint with payload-size guard, stronger email validation, and honeypot field handling.
+- Added optional cron secret guard for scheduled queue worker (`QUEUE_CRON_SECRET`).

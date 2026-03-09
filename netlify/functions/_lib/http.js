@@ -3,7 +3,9 @@ const BASE_HEADERS = {
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'no-referrer',
-  'cache-control': 'no-store'
+  'cache-control': 'no-store',
+  'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
+  'permissions-policy': 'camera=(), microphone=(), geolocation=()'
 };
 
 export function getRequestId(event) {
@@ -29,5 +31,7 @@ export const SECURITY_HTML_HEADERS = {
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'no-referrer',
-  'cache-control': 'no-store'
+  'cache-control': 'no-store',
+  'content-security-policy': "default-src 'self'; frame-ancestors 'none'",
+  'permissions-policy': 'camera=(), microphone=(), geolocation=()'
 };

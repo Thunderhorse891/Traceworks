@@ -11,7 +11,7 @@ function fromBase64url(value) {
 }
 
 function secret() {
-  return process.env.STATUS_TOKEN_SECRET || process.env.ADMIN_API_KEY || process.env.STRIPE_SECRET_KEY || '';
+  return process.env.STATUS_TOKEN_SECRET || '';
 }
 
 function sign(payload) {
@@ -36,7 +36,7 @@ export function verifyStatusToken(token) {
   if (!payload || !sig) return { ok: false, error: 'invalid_token_format' };
 
   const expected = sign(payload);
-  if (sig.length != expected.length) return { ok: false, error: 'invalid_signature' };
+  if (sig.length !== expected.length) return { ok: false, error: 'invalid_signature' };
   const validSig = timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
   if (!validSig) return { ok: false, error: 'invalid_signature' };
 

@@ -3,12 +3,18 @@ import { hitRateLimit } from './_lib/rate-limit.js';
 import { sendLeadNotificationEmail } from './_lib/email.js';
 import { getBusinessEmail } from './_lib/business.js';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function safe(value, max = 200) {
   return String(value || '').trim().slice(0, max);
 }
 
 export default async (event) => {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
+
+  if (Buffer.byteLength(event.body || '', 'utf8') > 100_000) {
+    return jsonWithRequestId(event, 413, { error: 'Payload too large.' });
+  }
 
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
   const limit = hitRateLimit({ key: `sales:${ip}`, windowMs: 60_000, max: 30 });
@@ -19,6 +25,10 @@ export default async (event) => {
     body = JSON.parse(event.body || '{}');
   } catch {
     return jsonWithRequestId(event, 400, { error: 'Invalid JSON payload.' });
+  }
+
+  if (safe(body.website, 60)) {
+    return jsonWithRequestId(event, 200, { ok: true });
   }
 
   const payload = {
@@ -33,7 +43,7 @@ export default async (event) => {
   if (!payload.name || !payload.email || !payload.company || !payload.monthlyCases) {
     return jsonWithRequestId(event, 400, { error: 'name, email, company, and monthlyCases are required.' });
   }
-  if (!payload.email.includes('@')) return jsonWithRequestId(event, 400, { error: 'Valid email is required.' });
+  if (!EMAIL_RE.test(payload.email)) return jsonWithRequestId(event, 400, { error: 'Valid email is required.' });
 
   const ownerEmail = getBusinessEmail();
   await sendLeadNotificationEmail({ ownerEmail, lead: payload });

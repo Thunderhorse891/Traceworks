@@ -4,6 +4,7 @@ import { normalizeCheckoutPayload, validateCheckoutPayload } from '../netlify/fu
 import { hitRateLimit } from '../netlify/functions/_lib/rate-limit.js';
 import { jsonWithRequestId } from '../netlify/functions/_lib/http.js';
 import { getBusinessEmail } from '../netlify/functions/_lib/business.js';
+import { createStatusToken } from '../netlify/functions/_lib/status-token.js';
 
 test('validation normalizes website and validates URL', () => {
   const payload = normalizeCheckoutPayload({
@@ -48,4 +49,18 @@ test('business email defaults to traceworks mailbox', () => {
   process.env.OWNER_EMAIL = 'custom@example.com';
   assert.equal(getBusinessEmail(), 'custom@example.com');
   if (prior) process.env.OWNER_EMAIL = prior; else delete process.env.OWNER_EMAIL;
+});
+
+
+test('status token is disabled when STATUS_TOKEN_SECRET is missing', () => {
+  const priorStatus = process.env.STATUS_TOKEN_SECRET;
+  const priorAdmin = process.env.ADMIN_API_KEY;
+  const priorStripe = process.env.STRIPE_SECRET_KEY;
+  delete process.env.STATUS_TOKEN_SECRET;
+  process.env.ADMIN_API_KEY = 'x';
+  process.env.STRIPE_SECRET_KEY = 'y';
+  assert.equal(createStatusToken({ caseRef: 'TW-X', email: 'a@b.com' }), null);
+  if (priorStatus) process.env.STATUS_TOKEN_SECRET = priorStatus; else delete process.env.STATUS_TOKEN_SECRET;
+  if (priorAdmin) process.env.ADMIN_API_KEY = priorAdmin; else delete process.env.ADMIN_API_KEY;
+  if (priorStripe) process.env.STRIPE_SECRET_KEY = priorStripe; else delete process.env.STRIPE_SECRET_KEY;
 });
