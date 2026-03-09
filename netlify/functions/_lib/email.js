@@ -58,3 +58,16 @@ export async function sendLeadNotificationEmail({ ownerEmail, lead }) {
     text: lines.join("\n")
   });
 }
+
+
+export async function sendOpsAlertEmail({ ownerEmail, subject, lines = [] }) {
+  const resolvedOwner = ownerEmail || getBusinessEmail();
+  const from = process.env.EMAIL_FROM || resolvedOwner;
+  const transport = getTransport();
+  await transport.sendMail({
+    from,
+    to: resolvedOwner,
+    subject: `[Ops Alert] ${subject}`,
+    text: lines.join("\n")
+  });
+}

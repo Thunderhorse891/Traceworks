@@ -42,9 +42,12 @@ test('store persists order/events/deadletters and queue jobs with backoff', asyn
   await store.completeJob(queued.id);
 
   await store.recordDeadLetter({ caseRef: 'TW-X', error: 'boom' });
+  await store.recordAuditEvent({ event: 'test_audit', ok: true });
   const metrics = await store.getMetrics();
   assert.equal(metrics.deadLetters >= 1, true);
   assert.equal(metrics.jobsByStatus.completed >= 1, true);
+  assert.equal(metrics.auditLogEvents >= 1, true);
+  assert.equal(metrics.queueOldestMs >= 0, true);
 
   await rm(dir, { recursive: true, force: true });
 });

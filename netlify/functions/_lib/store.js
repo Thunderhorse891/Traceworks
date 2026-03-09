@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
 const STORE_PATH = process.env.TRACEWORKS_STORE_PATH || '.data/traceworks-store.json';
-const EMPTY = { orders: {}, processedWebhookEvents: [], analytics: [], deadLetters: [], jobs: [] };
+const EMPTY = { orders: {}, processedWebhookEvents: [], analytics: [], deadLetters: [], jobs: [], auditLogs: [] };
 
 async function loadStore() {
   try {
@@ -75,6 +75,13 @@ export async function recordDeadLetter(entry) {
   const store = await loadStore();
   store.deadLetters.push({ ...entry, at: new Date().toISOString() });
   if (store.deadLetters.length > 1000) store.deadLetters = store.deadLetters.slice(-1000);
+  await saveStore(store);
+}
+
+export async function recordAuditEvent(entry) {
+  const store = await loadStore();
+  store.auditLogs.push({ ...entry, at: new Date().toISOString() });
+  if (store.auditLogs.length > 5000) store.auditLogs = store.auditLogs.slice(-5000);
   await saveStore(store);
 }
 
@@ -166,14 +173,21 @@ export async function getMetrics() {
     return acc;
   }, {});
 
+  const actionableJobs = store.jobs.filter((j) => j.status === 'queued' || j.status === 'retry');
+  const oldestQueueMs = actionableJobs.length
+    ? Date.now() - Math.min(...actionableJobs.map((j) => Date.parse(j.createdAt || j.updatedAt || new Date().toISOString())))
+    : 0;
+
   return {
     ordersTotal: orders.length,
     byStatus,
     processedWebhookEvents: store.processedWebhookEvents.length,
     analyticsEvents: store.analytics.length,
     deadLetters: store.deadLetters.length,
+    auditLogEvents: store.auditLogs.length,
     avgFulfillmentAttempts: orders.length ? Number((attempts / orders.length).toFixed(2)) : 0,
-    queueDepth: store.jobs.filter((j) => j.status === 'queued' || j.status === 'retry').length,
+    queueDepth: actionableJobs.length,
+    queueOldestMs: Math.max(0, oldestQueueMs),
     jobsByStatus
   };
 }

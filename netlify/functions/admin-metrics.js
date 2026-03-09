@@ -15,5 +15,7 @@ export default async (event) => {
   if (auth !== `Bearer ${key}`) return jsonWithRequestId(event, 401, { error: 'Unauthorized' });
 
   const metrics = await getMetrics();
-  return jsonWithRequestId(event, 200, { ok: true, metrics });
+  const threshold = Math.max(60_000, Number(process.env.QUEUE_LAG_ALERT_MS || 15 * 60_000));
+  const degraded = metrics.queueOldestMs >= threshold || Number(metrics.jobsByStatus?.failed || 0) > 0;
+  return jsonWithRequestId(event, 200, { ok: true, degraded, metrics, queueLagAlertMs: threshold });
 };

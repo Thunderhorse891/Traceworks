@@ -66,6 +66,7 @@ Paste the returned webhook secret into `.env` as `STRIPE_WEBHOOK_SECRET`.
 
 See `.env.example`. Optional: `QUEUE_MAX_PER_RUN` (default 5) controls scheduled worker batch size.
 Set `QUEUE_CRON_SECRET` to protect scheduled worker invocations.
+Set `QUEUE_LAG_ALERT_MS` to define queue-lag alert thresholds for ops notifications.
 Set `STATUS_TOKEN_SECRET` to enable signed status links on success pages (recommended).
 Owner notifications default to `traceworks.tx@outlook.com` (override with `OWNER_EMAIL` if needed).
 
@@ -166,3 +167,10 @@ This is preview-first. Do not publish production until you approve final design/
 - Locked status-token signing to dedicated `STATUS_TOKEN_SECRET` only (no fallback to other secrets).
 - Hardened enterprise lead endpoint with payload-size guard, stronger email validation, and honeypot field handling.
 - Added optional cron secret guard for scheduled queue worker (`QUEUE_CRON_SECRET`).
+
+
+## Phase 8 ops alerting upgrades
+
+- Scheduled queue worker now records audit events for each run and computes queue lag status.
+- Added owner ops alert emails for queue lag threshold breaches and scheduled-run failures.
+- Admin metrics now include a `degraded` signal based on queue lag and failed jobs.
