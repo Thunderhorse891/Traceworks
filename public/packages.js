@@ -19,7 +19,7 @@ export const clientPackages = [
     name: 'Comprehensive Locate + Assets',
     price: '$150',
     payLink: 'https://buy.stripe.com/14A9ATgLP6kqbtgaS9enS02',
-    bullets: ['Everything in Standard', 'Asset & property search', 'Employment verification attempt', 'Documented source citations'],
+    bullets: ['Everything in Skip Trace & Locate', 'Asset & property search', 'Employment verification attempt', 'Documented source citations'],
     reportPreviewPath: '/reports/report-comprehensive.html',
     summary:
       'Expanded package for legal teams that need locate plus asset and business context to improve enforcement and recovery strategy.',

@@ -76,7 +76,7 @@
 
           statusEl.textContent = data.error || 'Unable to load status right now.';
         } catch {
-          statusEl.textContent = 'Status service unavailable. If using static preview, run Netlify dev for API routes.';
+          statusEl.textContent = 'Status service unavailable. If you are testing locally, make sure your API routes are running and reachable.';
         }
       }
 
