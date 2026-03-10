@@ -9,25 +9,60 @@
   <body>
     <main class="container">
       <header class="topbar">
-        <h1>Trace<span>Works™</span></h1>
-        <a class="gold-btn" href="#order">Submit a Request</a>
+        <div>
+          <p class="topbar-kicker">CONFIDENTIAL LEGAL INTELLIGENCE</p>
+          <h1>Trace<span>Works™</span></h1>
+        </div>
+        <nav class="top-links" aria-label="Primary">
+          <a href="#packages">Packages</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#order">Secure Intake</a>
+          <a class="gold-btn" href="#order">Start Request</a>
+        </nav>
       </header>
 
       <section class="hero">
-        <p class="brand-chip">Premium OSINT Intelligence Platform</p>
-        <p class="kicker">SKIP TRACING FOR LEGAL PROFESSIONALS</p>
-        <h2>Find Anyone.<br /><em>Fast.</em> Accurate. Confidential.</h2>
-        <p>Deep online intelligence and public-record OSINT workflows built for attorneys, process servers, investigators, and recovery teams.</p>
+        <div class="hero-grid">
+          <article>
+            <p class="brand-chip">Premium OSINT Intelligence Platform</p>
+            <p class="kicker">BUILT FOR ATTORNEYS, PROCESS SERVERS, AND INVESTIGATORS</p>
+            <h2>Find Anyone.<br /><em>Fast.</em> Accurate. Confidential.</h2>
+            <p>TraceWorks delivers court-aware investigative dossiers with source citations, confidence scoring, and clear next actions so your team can move immediately.</p>
+            <div class="hero-cta">
+              <a class="gold-btn" href="#packages">View Packages</a>
+              <a class="ghost-btn" href="#order">Secure Intake</a>
+            </div>
+            <p class="hero-proof">Encrypted intake • Lawful-use only • Owner copy + client copy delivery</p>
+          </article>
+          <aside class="hero-panel" aria-label="Service value summary">
+            <h3>What You Receive</h3>
+            <ul>
+              <li>Professional dossier formatted for legal workflows</li>
+              <li>Evidence matrix with confidence and source domains</li>
+              <li>Red flags, coverage gaps, and escalation guidance</li>
+              <li>48-hour action plan for immediate follow-through</li>
+            </ul>
+            <p><strong>Typical turnaround:</strong> same day to 24h, depending on package scope.</p>
+          </aside>
+        </div>
       </section>
 
-      <section class="trust-row">
-        <article><h4>Evidence-First</h4><p>Every dossier includes citations, confidence, red flags, and 48-hour action items.</p></article>
-        <article><h4>Court-Aware</h4><p>Reports are structured for legal workflows, service attempts, and case-file follow-up.</p></article>
-        <article><h4>Operational Speed</h4><p>Automated collection + analyst-ready format to shorten case cycle time.</p></article>
+      <section class="trust-row" aria-label="Trust signals">
+        <article><h4>Evidence-First</h4><p>Every dossier includes citations, confidence, risk notes, and actionable follow-up steps.</p></article>
+        <article><h4>Court-Aware</h4><p>Reports are structured for legal operations, service attempts, and case-file handoff.</p></article>
+        <article><h4>Operational Speed</h4><p>Automated intelligence collection with analyst-ready formatting to shorten cycle time.</p></article>
       </section>
 
       <section class="policy-strip">
-        <p><strong>Service Policy:</strong> No refunds after work begins. If quality is below standard, we provide one redo pass for the same case scope.</p>
+        <p><strong>Service Policy:</strong> No refunds after work begins. If quality is below standard, we provide one redo pass for the same scope.</p>
+      </section>
+
+      <section class="section-head" id="packages">
+        <div>
+          <p class="kicker">PACKAGE SELECTION</p>
+          <h3>Choose the Right Intelligence Depth</h3>
+          <p>Compare scope quickly, then open package details for report previews and full deliverable clarity.</p>
+        </div>
       </section>
 
       <section class="cards" id="packageCards"></section>
@@ -48,38 +83,56 @@
         </article>
       </dialog>
 
-      <section class="process">
-        <h3>Why This Is Superior</h3>
+      <section class="process" id="workflow">
+        <h3>How TraceWorks Runs Your Case</h3>
         <ol>
-          <li><strong>Multi-provider OSINT:</strong> Expanded query plans and source ranking, not single search output.</li>
-          <li><strong>Evidence Matrix:</strong> Signal strength + provider + exact follow-up actions in one table.</li>
-          <li><strong>Red Flag Detection:</strong> Gaps and low-confidence findings are explicitly called out.</li>
-          <li><strong>Action System:</strong> Next 48-hour plan included for immediate legal team execution.</li>
+          <li><strong>Secure intake:</strong> case objective and known data captured through controlled form workflow.</li>
+          <li><strong>Multi-source intelligence:</strong> expanded query plan with ranked source analysis and evidence matrix generation.</li>
+          <li><strong>Quality controls:</strong> red flags, confidence levels, and fallback pathways are explicitly documented.</li>
+          <li><strong>Delivery + follow-up:</strong> completed report is emailed to the customer and owner copy inbox for accountability.</li>
         </ol>
       </section>
 
-      <section class="form-wrap" id="order">
-        <h3>Secure Intake + Checkout</h3>
+      <section class="form-wrap intake-shell" id="order">
+        <div class="section-head intake-head">
+          <div>
+            <p class="kicker">SECURE INTAKE + CHECKOUT</p>
+            <h3>Start a Professional Request</h3>
+            <p>Complete this form to launch checkout and begin processing immediately after payment confirmation.</p>
+          </div>
+        </div>
+
         <form id="checkoutForm">
-          <label>Selected Package<input id="packageId" name="packageId" readonly required /></label>
-          <label>Requester Name<input name="customerName" required /></label>
-          <label>Requester Email<input type="email" name="customerEmail" required /></label>
-          <label>Subject Name / Entity<input name="companyName" required /></label>
-          <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
-          <label>Case Objective<textarea name="goals" rows="4" placeholder="What exact outcome do you need? (service, locate, title chain, heir identification, etc.)"></textarea></label>
-          <label class="consent"><input type="checkbox" name="legalConsent" required /> I confirm this request is for lawful investigative or legal use.</label>
-          <label class="consent"><input type="checkbox" name="tosConsent" required /> I agree to <a href="/terms.html" target="_blank" rel="noopener">Terms</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.</label>
+          <fieldset>
+            <legend>Case & Package</legend>
+            <label>Selected Package<input id="packageId" name="packageId" readonly required /></label>
+            <label>Subject Name / Entity<input name="companyName" required /></label>
+            <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
+            <label>Case Objective<textarea name="goals" rows="4" placeholder="What exact outcome do you need? (service, locate, title chain, heir identification, etc.)"></textarea></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Requester Details</legend>
+            <label>Requester Name<input name="customerName" required /></label>
+            <label>Requester Email<input type="email" name="customerEmail" required /></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Compliance</legend>
+            <label class="consent"><input type="checkbox" name="legalConsent" required /> I confirm this request is for lawful investigative or legal use.</label>
+            <label class="consent"><input type="checkbox" name="tosConsent" required /> I agree to <a href="/terms.html" target="_blank" rel="noopener">Terms</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.</label>
+          </fieldset>
+
           <button type="submit">Pay & Order</button>
           <p id="status"></p>
         </form>
+
         <div class="links">
           <a href="/preview/report" target="_blank" rel="noopener">Preview Live Report</a>
           <a href="/report-tiers.html" target="_blank" rel="noopener">View All 4 Tier Previews</a>
           <a href="/launch-readiness.html" target="_blank" rel="noopener">Launch Readiness Checklist</a>
         </div>
       </section>
-
-
 
       <section class="form-wrap" id="enterprise" style="margin-top:16px;">
         <h3>Enterprise / Agency Volume Intake</h3>

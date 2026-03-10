@@ -33,8 +33,11 @@ for (const pkg of clientPackages) {
   el.className = 'card';
   el.innerHTML = `
     <p class="label">${pkg.id.toUpperCase()}</p>
+    ${pkg.featured ? '<p class="feature-badge">Most Selected</p>' : ''}
     <h4>${pkg.name}</h4>
     <p class="price">${pkg.price}</p>
+    <p class="pkg-meta"><strong>Best for:</strong> ${pkg.bestFor || 'Legal locate intelligence workflows'}</p>
+    <p class="pkg-turnaround">${pkg.turnaround || 'Typical delivery: same day to 24h'}</p>
     <ul>${pkg.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
     <button type="button" class="details-btn">View Package Details</button>
     <button type="button" class="select-btn">Select Package</button>
