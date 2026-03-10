@@ -3,16 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ Payment Complete</title>
+    <title>TraceWorks™ — Payment Complete</title>
+    <meta name="theme-color" content="#07090f" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="container form-wrap" style="margin-top:24px; max-width:760px;">
-      <h1>Payment complete</h1>
-      <p>Your case has been queued for fulfillment. This page polls for status updates automatically.</p>
-      <p id="status">Loading order status…</p>
-      <ul id="details"></ul>
-      <p><a href="/">Back to home</a></p>
+    <header class="site-header">
+      <div class="topbar">
+        <h1>Trace<span>Works™</span></h1>
+      </div>
+    </header>
+    <main class="container" style="max-width:760px; padding-top:56px; padding-bottom:56px;">
+      <div class="form-wrap">
+        <p style="color:var(--gold-mid); font-size:11px; letter-spacing:.18em; text-transform:uppercase; margin-bottom:12px;">Payment Confirmed</p>
+        <h2 style="font-family:var(--font-serif); font-size:clamp(24px,3.5vw,38px); color:var(--text-primary); margin-bottom:12px;">Your case is in the queue.</h2>
+        <p style="color:var(--text-secondary); font-size:15px; margin-bottom:24px;">Research begins automatically. Report will be emailed to you when complete — typically 10–45 minutes.</p>
+        <p id="status" style="margin-bottom:16px;">Loading order status…</p>
+        <ul id="details" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:8px; margin-bottom:24px;"></ul>
+        <a href="/" class="btn-outline" style="display:inline-block;">Back to Home</a>
+      </div>
     </main>
 
     <script>

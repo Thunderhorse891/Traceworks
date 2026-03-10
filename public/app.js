@@ -1,5 +1,12 @@
 import { clientPackages } from './packages.js';
 
+// Register service worker for PWA offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 const cards = document.getElementById('packageCards');
 const packageInput = document.getElementById('packageId');
 const statusEl = document.getElementById('status');

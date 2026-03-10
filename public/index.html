@@ -3,90 +3,263 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ | Legal OSINT Intelligence</title>
+    <title>TraceWorks™ | Investigative Property Reports</title>
+    <meta name="description" content="Automated public-record OSINT reports for real estate attorneys, probate investors, title researchers, and asset recovery firms. Texas-based property and entity research." />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#07090f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TraceWorks" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="TraceWorks™ — Investigative Property Reports" />
+    <meta property="og:description" content="Evidence-grade public-record reports for legal professionals. Property, ownership, probate, and entity research." />
+    <meta property="og:type" content="website" />
+
     <link rel="stylesheet" href="/styles.css" />
   </head>
+
   <body>
-    <main class="container">
-      <header class="topbar">
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <header class="site-header">
+      <div class="topbar">
         <h1>Trace<span>Works™</span></h1>
-        <a class="gold-btn" href="#order">Submit a Request</a>
-      </header>
+        <nav class="topbar-nav">
+          <a href="#packages">Reports</a>
+          <a href="#how-it-works">How It Works</a>
+          <a href="#enterprise">Enterprise</a>
+          <a href="#order" class="btn-primary">Submit a Request</a>
+        </nav>
+      </div>
+    </header>
 
-      <section class="hero">
-        <p class="kicker">PUBLIC-RECORD INVESTIGATIVE REPORTS FOR LEGAL PROFESSIONALS</p>
-        <h2>Property. Ownership. Probate.<br /><em>Evidence-grade.</em> Automated. Confidential.</h2>
-        <p>Automated public-record OSINT workflows producing investigation-grade property reports — built for real estate attorneys, probate investors, title researchers, and asset recovery firms.</p>
-      </section>
+    <!-- ── Hero ───────────────────────────────────────────────── -->
+    <section class="hero">
+      <p class="hero-kicker">Public-Record Investigative Reports · Texas</p>
+      <h2>Property. Ownership.<br />Probate. <em>Automated.</em></h2>
+      <p class="hero-sub">
+        Evidence-grade public-record reports built for real estate attorneys, probate investors, title researchers, and asset recovery firms. Every source documented. Every finding confidence-labeled.
+      </p>
+      <div class="hero-ctas">
+        <a href="#order" class="btn-primary">Submit a Request</a>
+        <a href="#packages" class="btn-outline">View Report Tiers</a>
+      </div>
+      <p class="hero-trust">Government sources · No fabricated data · Source trace on every report</p>
+    </section>
 
-      <section class="trust-row">
-        <article><h4>Evidence-First</h4><p>Every dossier includes citations, confidence, red flags, and 48-hour action items.</p></article>
-        <article><h4>Court-Aware</h4><p>Reports are structured for legal workflows, service attempts, and case-file follow-up.</p></article>
-        <article><h4>Operational Speed</h4><p>Automated collection + analyst-ready format to shorten case cycle time.</p></article>
-      </section>
-
-      <section class="policy-strip">
-        <p><strong>Service Policy:</strong> No refunds after work starts. If quality is off, we provide a redo pass on the same case scope.</p>
-      </section>
-
-      <section class="cards" id="packageCards"></section>
-
-      <section class="process">
-        <h3>Why This Is Superior</h3>
-        <ol>
-          <li><strong>Multi-provider OSINT:</strong> Expanded query plans and source ranking, not single search output.</li>
-          <li><strong>Evidence Matrix:</strong> Signal strength + provider + exact follow-up actions in one table.</li>
-          <li><strong>Red Flag Detection:</strong> Gaps and low-confidence findings are explicitly called out.</li>
-          <li><strong>Action System:</strong> Next 48-hour plan included for immediate legal team execution.</li>
-        </ol>
-      </section>
-
-      <section class="form-wrap" id="order">
-        <h3>Secure Intake + Checkout</h3>
-        <form id="checkoutForm">
-          <label>Selected Service<input id="packageId" name="packageId" readonly required /></label>
-          <label>Requestor Name<input name="customerName" required /></label>
-          <label>Requestor Email<input type="email" name="customerEmail" required /></label>
-          <label>Subject Name / Entity<input name="subjectName" required placeholder="Person name or entity name being researched" /></label>
-          <label>County <span style="color:#c9a84c">*</span><input name="county" required placeholder="e.g. Harris, Travis, Dallas, Bexar" /></label>
-          <label>State<input name="state" value="TX" placeholder="TX" maxlength="2" /></label>
-          <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
-          <label>Case Objective<textarea name="goals" rows="4" placeholder="What exact outcome do you need? (property search, deed research, heir identification, entity trace, etc.)"></textarea></label>
-          <label class="consent"><input type="checkbox" name="legalConsent" required /> I confirm this request is for lawful investigative/legal use.</label>
-          <label class="consent"><input type="checkbox" name="tosConsent" required /> I agree to <a href="/terms.html" target="_blank" rel="noopener">Terms</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.</label>
-          <button type="submit">Pay & Order</button>
-          <p id="status"></p>
-        </form>
-        <div class="links">
-          <a href="/preview/report" target="_blank" rel="noopener">Preview Live Report</a>
-          <a href="/report-tiers.html" target="_blank" rel="noopener">View All 4 Tier Previews</a>
-          <a href="/launch-readiness.html" target="_blank" rel="noopener">Launch Readiness Checklist</a>
+    <!-- ── Trust Strip ─────────────────────────────────────────── -->
+    <div class="trust-strip">
+      <div class="trust-strip-inner">
+        <div class="trust-item">
+          <span class="trust-icon">🏛️</span>
+          <div class="trust-item-text">
+            <strong>Government-Source First</strong>
+            <span>County CAD, TX SOS, court index</span>
+          </div>
         </div>
-      </section>
+        <div class="trust-item">
+          <span class="trust-icon">🔍</span>
+          <div class="trust-item-text">
+            <strong>Confidence-Labeled Findings</strong>
+            <span>Every result rated: Confirmed → Not Found</span>
+          </div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">📄</span>
+          <div class="trust-item-text">
+            <strong>Source Trace on Every Report</strong>
+            <span>Exact source, query, timestamp</span>
+          </div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">⚡</span>
+          <div class="trust-item-text">
+            <strong>Automated Delivery</strong>
+            <span>Report emailed on purchase</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <!-- ── Packages ────────────────────────────────────────────── -->
+    <div id="packages" class="section-header">
+      <p class="section-kicker">Report Tiers</p>
+      <h3>Choose Your Research Scope</h3>
+      <p>All reports include a source trace panel with every query logged, timestamped, and confidence-rated.</p>
+    </div>
 
+    <div class="packages-grid" id="packageCards">
+      <!-- Rendered by app.js -->
+    </div>
 
-      <section class="form-wrap" id="enterprise" style="margin-top:16px;">
-        <h3>Enterprise / Agency Volume Intake</h3>
-        <p>Need daily volume? Submit this and we will propose a lawful, scalable retainer workflow.</p>
-        <form id="salesForm">
-          <label>Name<input name="name" required /></label>
-          <label>Business Email<input type="email" name="email" required /></label>
-          <label>Company<input name="company" required /></label>
-          <label>Estimated Monthly Cases<input name="monthlyCases" placeholder="e.g. 100" required /></label>
-          <label>Budget Range<input name="budget" placeholder="e.g. $5k-$25k/mo" /></label>
-          <label style="display:none;">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
-          <label>Notes<textarea name="message" rows="3" placeholder="What outcomes do you need per month?"></textarea></label>
-          <button type="submit">Request Enterprise Call</button>
-          <p id="salesStatus"></p>
-        </form>
-      </section>
+    <!-- ── Policy Strip ────────────────────────────────────────── -->
+    <div class="policy-strip">
+      <div class="policy-strip-inner">
+        <strong>Service Policy:</strong> No refunds after research begins. If findings are incomplete due to source unavailability, we run a redo pass on the same scope at no additional charge.
+      </div>
+    </div>
 
-      <footer class="footer">
-        <p>© TraceWorks™. Legal OSINT support services for lawful professional use only.</p>
-        <p><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/refund-policy.html">No Refunds / Redos</a> · <a href="/launch-readiness.html">Launch Checklist</a></p>
-      </footer>
-    </main>
+    <!-- ── How It Works ────────────────────────────────────────── -->
+    <section id="how-it-works" class="how-it-works">
+      <div class="how-it-works-inner">
+        <p class="section-kicker">How It Works</p>
+        <h3 style="font-family:var(--font-serif); font-size:clamp(28px,4vw,42px); color:var(--text-primary); margin-bottom:8px;">From request to inbox</h3>
+        <p style="color:var(--text-secondary); font-size:15px;">Four steps. No phone calls. No back-and-forth.</p>
+        <div class="steps-grid">
+          <div class="step">
+            <span class="step-num">Step 01</span>
+            <h4>Submit Secure Intake</h4>
+            <p>Enter the subject name, county, and research scope. Pay securely through Stripe.</p>
+          </div>
+          <div class="step">
+            <span class="step-num">Step 02</span>
+            <h4>Automated Research</h4>
+            <p>The engine queries county appraisal, TX SOS, deed index, probate records, and people sources — all public record.</p>
+          </div>
+          <div class="step">
+            <span class="step-num">Step 03</span>
+            <h4>Report Generated</h4>
+            <p>Every finding is confidence-labeled. Unavailable sources are flagged with direct manual-review links.</p>
+          </div>
+          <div class="step">
+            <span class="step-num">Step 04</span>
+            <h4>Delivered to Your Inbox</h4>
+            <p>HTML report emailed directly. Source trace panel included — every query, source, and timestamp.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Intake Form ─────────────────────────────────────────── -->
+    <section id="order">
+      <div class="intake-section">
+
+        <div class="intake-info">
+          <h3>Secure Intake & Checkout</h3>
+          <p>
+            Select your report tier above, then complete this form. Payment processes through Stripe — we never see your card. Report delivered by email, typically within 10–45 minutes.
+          </p>
+          <ul>
+            <li>Lawful investigative and legal use only</li>
+            <li>Public-record sources — no private database access</li>
+            <li>FCRA advisory: not for credit, employment, or tenant screening</li>
+            <li>Texas coverage: Harris, Travis, Dallas, Bexar, Tarrant + more</li>
+          </ul>
+          <div class="links" style="margin-top:24px;">
+            <a href="/report-tiers.html" target="_blank" rel="noopener">View Sample Reports</a>
+            <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a>
+            <a href="/launch-readiness.html" target="_blank" rel="noopener">Launch Checklist</a>
+          </div>
+        </div>
+
+        <div class="form-wrap">
+          <h3>New Research Request</h3>
+          <form id="checkoutForm">
+
+            <p class="form-group-label">Service Selection</p>
+            <label>Selected Package
+              <input id="packageId" name="packageId" readonly required placeholder="Select a package above ↑" />
+            </label>
+
+            <p class="form-group-label">Requestor Info</p>
+            <label>Your Full Name
+              <input name="customerName" required placeholder="Attorney or investigator name" />
+            </label>
+            <label>Your Email
+              <input type="email" name="customerEmail" required placeholder="Where to send the report" />
+            </label>
+
+            <p class="form-group-label">Subject & Location</p>
+            <label>Subject Name or Entity
+              <input name="subjectName" required placeholder="Individual name or LLC/Trust/Corp name" />
+            </label>
+            <div class="form-row">
+              <label>County <span style="color:var(--gold-mid)">*</span>
+                <input name="county" required placeholder="e.g. Harris, Travis, Dallas" />
+              </label>
+              <label>State
+                <input name="state" value="TX" maxlength="2" placeholder="TX" />
+              </label>
+            </div>
+            <label>Known Website / Profile <span style="color:var(--text-dim)">(optional)</span>
+              <input name="website" placeholder="https://..." />
+            </label>
+
+            <p class="form-group-label">Case Objective</p>
+            <label>What outcome do you need?
+              <textarea name="goals" rows="3" placeholder="e.g. Identify deed history and current lienholders for probate proceeding in Harris County."></textarea>
+            </label>
+
+            <p class="form-group-label">Legal Compliance</p>
+            <label class="consent">
+              <input type="checkbox" name="legalConsent" required />
+              I confirm this request is for lawful investigative or legal professional use only.
+            </label>
+            <label class="consent">
+              <input type="checkbox" name="tosConsent" required />
+              I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.
+            </label>
+
+            <button type="submit" style="margin-top:8px;">Proceed to Secure Checkout</button>
+            <p id="status"></p>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Enterprise ──────────────────────────────────────────── -->
+    <section id="enterprise" class="enterprise-section">
+      <div class="enterprise-inner">
+        <p class="section-kicker">Enterprise & Agency</p>
+        <h3>Need Volume or Retainer Pricing?</h3>
+        <p>Law firms, title companies, and recovery agencies running recurring caseloads can contact us for retainer workflows, API integration, and custom reporting scopes.</p>
+        <div class="enterprise-form">
+          <form id="salesForm">
+            <div class="form-row">
+              <label>Name <input name="name" required placeholder="Your name" /></label>
+              <label>Business Email <input type="email" name="email" required placeholder="firm@email.com" /></label>
+            </div>
+            <div class="form-row">
+              <label>Company / Firm <input name="company" required placeholder="Law firm or agency" /></label>
+              <label>Est. Monthly Cases <input name="monthlyCases" required placeholder="e.g. 50" /></label>
+            </div>
+            <label>Budget Range <input name="budget" placeholder="e.g. $2k–$10k/mo" /></label>
+            <!-- Honeypot — hidden from real users -->
+            <label style="display:none;">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
+            <label>Notes
+              <textarea name="message" rows="3" placeholder="Describe your case types, geography, and turnaround needs."></textarea>
+            </label>
+            <button type="submit">Request Enterprise Call</button>
+            <p id="salesStatus"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Footer ─────────────────────────────────────────────── -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <h2>Trace<span>Works™</span></h2>
+          <p>Automated public-record investigative reports for legal professionals. Texas-based property, ownership, probate, and entity research.</p>
+        </div>
+        <nav class="footer-links">
+          <a href="/terms.html">Terms of Service</a>
+          <a href="/privacy.html">Privacy Policy</a>
+          <a href="/refund-policy.html">No-Refund Policy</a>
+          <a href="/report-tiers.html">Sample Reports</a>
+          <a href="/launch-readiness.html">Launch Checklist</a>
+        </nav>
+      </div>
+      <p class="footer-copy">
+        © TraceWorks™. Lawful investigative research services for licensed professionals only. Not a consumer reporting agency under FCRA. Reports are for informational purposes and do not constitute legal opinions or title guarantees.
+      </p>
+    </footer>
 
     <script src="/app.js" type="module"></script>
   </body>
