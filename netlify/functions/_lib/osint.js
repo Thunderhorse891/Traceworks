@@ -1,3 +1,5 @@
+import { gatherPublicRecordIntel } from './public-records.js';
+
 const FALLBACK_NOTE = "Automated providers returned limited data in this run; report populated with conservative legal-research guidance and explicit source placeholders.";
 
 const PACKAGE_KEYWORDS = {
@@ -249,6 +251,11 @@ export async function gatherOsint(query, opts = {}) {
   const health = providerHealth(settled);
   const healthyProviders = new Set(health.filter((h) => h.ok && h.hitCount > 0).map((h) => h.provider));
 
+  let publicRecords = null;
+  if (opts.publicRecordOrder) {
+    publicRecords = await gatherPublicRecordIntel(opts.publicRecordOrder, { fetchImpl, env });
+  }
+
   return {
     query: queries[0],
     queryPlan: queries,
@@ -262,6 +269,8 @@ export async function gatherOsint(query, opts = {}) {
       distinctDomains: new Set(sources.map((s) => s.domain || domainOf(s.url))).size,
       providersWithHits: healthyProviders.size
     },
-    sources
+    sources,
+    evidence: publicRecords?.evidence || [],
+    publicRecords
   };
 }
