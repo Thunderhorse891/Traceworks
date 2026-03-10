@@ -41,7 +41,7 @@ export const clientPackages = [
     bestFor: 'Title disputes, due diligence, and curative planning',
     turnaround: 'Typical delivery: 24h',
     payLink: 'https://buy.stripe.com/9B628rgLP7ou2WK6BTenS03',
-    bullets: ['Full chain of title report', 'Lien & encumbrance search', 'Quitclaim deed analysis', 'County filing summary'],
+    bullets: ['Deed/index intelligence summary', 'Lien & encumbrance indicators', 'Quitclaim/deed filing signal review', 'County filing summary (not title opinion)'],
     reportPreviewPath: '/reports/report-title.html',
     summary:
       'Title-focused intelligence for property disputes, acquisition due diligence, and curative legal planning.',
@@ -58,7 +58,7 @@ export const clientPackages = [
     bestFor: 'Probate support and heir contact sequencing',
     turnaround: 'Typical delivery: same day to 24h',
     payLink: 'https://buy.stripe.com/aFadR953724a9l8aS9enS04',
-    bullets: ['Probate and estate support', 'Missing heir location', 'Contactability risk notes', 'Court-use ready summary'],
+    bullets: ['Probate and estate index support', 'Heir-candidate research (not adjudication)', 'Contactability risk notes', 'Court-workflow summary'],
     reportPreviewPath: '/reports/report-heir.html',
     summary:
       'Probate support package to identify likely heirs/beneficiaries and prioritize lawful verification workflow for court preparation.',

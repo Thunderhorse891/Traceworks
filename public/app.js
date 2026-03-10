@@ -1,6 +1,7 @@
 import { clientPackages } from './packages.js';
 
 const cards = document.getElementById('packageCards');
+const heirCards = document.getElementById('heirPackageCards');
 const packageInput = document.getElementById('packageId');
 const statusEl = document.getElementById('status');
 const packageModal = document.getElementById('packageModal');
@@ -65,7 +66,8 @@ for (const pkg of clientPackages) {
     await track('payment_link_clicked', pkg.id);
   });
 
-  cards.appendChild(el);
+if (pkg.id === 'heir' && heirCards) heirCards.appendChild(el);
+  else cards.appendChild(el);
 }
 
 function openPackageModal(pkg) {

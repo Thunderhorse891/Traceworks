@@ -34,7 +34,8 @@ export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) 
     const report = buildDynamicReportFromWorkflow(workflow, order);
     const artifacts = await saveArtifacts(report);
     await checkArtifact(artifacts.htmlPath);
-    await recordAuditEvent({ event: 'report_rendered_and_saved', orderId, artifact: artifacts.htmlPath });
+    await checkArtifact(artifacts.pdfPath);
+    await recordAuditEvent({ event: 'report_rendered_and_saved', orderId, artifact: artifacts.htmlPath, pdfArtifact: artifacts.pdfPath });
 
     try {
       await sendEmails({

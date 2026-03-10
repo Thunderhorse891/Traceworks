@@ -100,7 +100,7 @@ test('gatherPublicRecordIntel fails loudly in strict mode when config is missing
   await assert.rejects(
     gatherPublicRecordIntel(
       { packageKey: 'title_property', input: { ownerName: 'Missing Config' } },
-      { env: { PAID_FULFILLMENT_STRICT: 'true', PUBLIC_RECORD_SOURCE_CONFIG: '' } }
+      { env: { PAID_FULFILLMENT_STRICT: 'true', PUBLIC_RECORD_SOURCE_CONFIG: '{"countyProperty":[],"countyRecorder":[],"probateIndex":[],"entitySearch":[]}' } }
     ),
     /Missing required public record source configuration/
   );

@@ -522,3 +522,14 @@ textarea:focus {
   .card { min-height: 0; }
   .section-head { margin-top: 16px; }
 }
+
+/* v2 structure updates */
+.homepage-v2 .structure-hero { max-width: 920px; margin: 18px auto; text-align: left; }
+.homepage-v2 .structure-hero .hero-sub { max-width: 760px; color: #b9c7e6; }
+.homepage-v2 .trust-row { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.homepage-v2 .heir-focus { background:#10192e; border:1px solid #334268; border-radius:12px; padding:14px; margin:14px 0 18px; }
+.homepage-v2 .faq-block { background:#0f1729; border:1px solid #334268; border-radius:12px; padding:14px; margin:20px 0; }
+.homepage-v2 .faq-block details { border-top:1px solid #273353; padding:10px 0; }
+.homepage-v2 .faq-block details:first-of-type { border-top:0; }
+.homepage-v2 .footer { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; padding:20px 0 26px; border-top:1px solid #273353; margin-top:20px; }
+.homepage-v2 .footer nav { display:flex; gap:12px; flex-wrap:wrap; }

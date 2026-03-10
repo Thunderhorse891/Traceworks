@@ -71,6 +71,7 @@ test('processPaidOrder runs paid workflow, creates artifact, and records deliver
   assert.ok(updated.artifact_url_or_path);
   assert.equal(emailAttempted, true);
   await access(updated.artifact_url_or_path);
+  await access(join(dir, 'artifacts', orderId, 'report.pdf'));
 
   const evidencePath = join(dir, 'artifacts', orderId, 'workflow-results.json');
   const evidence = JSON.parse(await readFile(evidencePath, 'utf8'));
