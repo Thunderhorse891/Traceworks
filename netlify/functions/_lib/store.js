@@ -121,6 +121,29 @@ export async function claimNextJob(type) {
   return claimed;
 }
 
+export async function claimJobByCaseRef(type, caseRef) {
+  if (!caseRef) return null;
+
+  const store = await loadStore();
+  const nowMs = Date.now();
+  const idx = store.jobs.findIndex((j) => {
+    if (j.type !== type) return false;
+    if (j.payload?.caseRef !== caseRef) return false;
+    if (!(j.status === 'queued' || j.status === 'retry')) return false;
+    const dueMs = j.nextAttemptAt ? Date.parse(j.nextAttemptAt) : 0;
+    return Number.isNaN(dueMs) || dueMs <= nowMs;
+  });
+
+  if (idx === -1) return null;
+
+  const now = new Date().toISOString();
+  const job = store.jobs[idx];
+  const claimed = { ...job, status: 'processing', attempts: Number(job.attempts || 0) + 1, updatedAt: now, startedAt: now };
+  store.jobs[idx] = claimed;
+  await saveStore(store);
+  return claimed;
+}
+
 export async function completeJob(jobId) {
   const store = await loadStore();
   const idx = store.jobs.findIndex((j) => j.id === jobId);

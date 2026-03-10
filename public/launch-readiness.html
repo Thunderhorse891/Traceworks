@@ -34,6 +34,16 @@
               <li>Inbox deliverability verified for customer + owner copies.</li>
             </ul>
           </article>
+
+          <article class="check-card">
+            <h3>GitHub push readiness</h3>
+            <p>If <code>git push</code> fails with “No configured push destination”, add and verify your repo remote first:</p>
+            <ul>
+              <li><code>git remote add origin https://github.com/&lt;owner&gt;/&lt;repo&gt;.git</code></li>
+              <li><code>git push -u origin work</code> (replace <code>work</code> with your active branch if different)</li>
+              <li><code>git remote -v</code> should show <code>origin</code> fetch/push URLs.</li>
+            </ul>
+          </article>
         </div>
 
         <section class="check-card">

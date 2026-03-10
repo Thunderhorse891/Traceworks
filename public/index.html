@@ -31,6 +31,22 @@
 
       <section class="cards" id="packageCards"></section>
 
+      <dialog id="packageModal" class="package-modal">
+        <article class="package-modal-content">
+          <button type="button" class="package-modal-close" id="packageModalClose" aria-label="Close package details">×</button>
+          <p class="label" id="modalPackageLabel"></p>
+          <h3 id="modalPackageTitle"></h3>
+          <p class="price" id="modalPackagePrice"></p>
+          <p id="modalPackageSummary"></p>
+          <h4>What your report includes</h4>
+          <ul id="modalPackageIncludes"></ul>
+          <div class="package-modal-actions">
+            <a id="modalReportPreview" target="_blank" rel="noopener">Preview report sample</a>
+            <button type="button" id="modalSelectPackage">Select This Package</button>
+          </div>
+        </article>
+      </dialog>
+
       <section class="process">
         <h3>Why This Is Superior</h3>
         <ol>

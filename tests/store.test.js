@@ -51,3 +51,21 @@ test('store persists order/events/deadletters and queue jobs with backoff', asyn
 
   await rm(dir, { recursive: true, force: true });
 });
+
+test('store can claim a due job by caseRef without claiming unrelated jobs', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'tw-store-'));
+  process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
+
+  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+
+  const jobA = await store.enqueueJob({ type: 'fulfillment', payload: { caseRef: 'TW-A' } });
+  const jobB = await store.enqueueJob({ type: 'fulfillment', payload: { caseRef: 'TW-B' } });
+
+  const claimedB = await store.claimJobByCaseRef('fulfillment', 'TW-B');
+  assert.equal(claimedB.id, jobB.id);
+
+  const next = await store.claimNextJob('fulfillment');
+  assert.equal(next.id, jobA.id);
+
+  await rm(dir, { recursive: true, force: true });
+});

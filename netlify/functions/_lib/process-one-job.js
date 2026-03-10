@@ -1,8 +1,8 @@
-import { claimNextJob, completeJob, failJob, incrementFulfillmentAttempt, recordDeadLetter, upsertOrder } from './store.js';
+import { claimJobByCaseRef, claimNextJob, completeJob, failJob, incrementFulfillmentAttempt, recordDeadLetter, upsertOrder } from './store.js';
 import { processFulfillmentJob } from './fulfillment.js';
 
-export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5 }) {
-  const job = await claimNextJob('fulfillment');
+export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, caseRef: requestedCaseRef = null }) {
+  const job = requestedCaseRef ? await claimJobByCaseRef('fulfillment', requestedCaseRef) : await claimNextJob('fulfillment');
   if (!job) return { ok: true, message: 'no_jobs' };
 
   const caseRef = job.payload?.caseRef || 'unknown';
