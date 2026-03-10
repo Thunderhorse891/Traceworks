@@ -44,6 +44,7 @@ export default async (event) => {
     completed_at: order.completed_at || null,
     failure_reason: order.failure_reason || null,
     email_delivery_status: order.email_delivery_status || null,
+    workflow_results: order.workflow_results || null,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     queuedAt: order.queuedAt || null,
