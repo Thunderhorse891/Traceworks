@@ -30,19 +30,27 @@ test('processPaidOrder runs paid workflow, creates artifact, and records deliver
 
   let emailAttempted = false;
   const tierRunner = async () => ({
-    query: 'Jordan Mercer',
-    queryPlan: ['Jordan Mercer locate'],
-    providerHealth: [{ provider: 'robin', ok: true, hitCount: 1, error: null }],
-    providerNote: 'test provider note',
-    coverage: { totalSources: 1, distinctDomains: 1, providersWithHits: 1 },
+    orderId,
+    tier: 'standard',
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    inputs: { subjectName: 'Jordan Mercer' },
+    overallStatus: 'complete',
     sources: [
       {
+        sourceId: 'county_record',
+        sourceLabel: 'County Record Source',
         title: 'County record hit',
+        sourceUrl: 'https://county.example/record',
+        queryUsed: '{"q":"jordan"}',
+        queriedAt: new Date().toISOString(),
+        status: 'found',
         url: 'https://county.example/record',
         sourceType: 'county-records',
-        confidence: 'high',
+        confidence: 'likely',
         provider: 'robin',
-        domain: 'county.example'
+        domain: 'county.example',
+        data: { ownerName: 'Jordan Mercer' }
       }
     ]
   });
@@ -64,7 +72,7 @@ test('processPaidOrder runs paid workflow, creates artifact, and records deliver
   assert.equal(emailAttempted, true);
   await access(updated.artifact_url_or_path);
 
-  const evidencePath = join(dir, 'artifacts', orderId, 'evidence.json');
+  const evidencePath = join(dir, 'artifacts', orderId, 'workflow-results.json');
   const evidence = JSON.parse(await readFile(evidencePath, 'utf8'));
   assert.equal(Array.isArray(evidence.sources), true);
   assert.equal(evidence.sources[0].provider, 'robin');

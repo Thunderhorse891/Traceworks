@@ -1,21 +1,12 @@
-import { buildReport } from './report.js';
 import { sendReportEmails } from './email.js';
 import { saveReportArtifacts, assertArtifactExists, publicArtifactHint } from './artifacts.js';
 import { getOrder, upsertOrder, recordAuditEvent } from './store.js';
 import { ORDER_STATUS } from './order-status.js';
-import { REPORT_TIER } from './tier-mapping.js';
-import { runComprehensiveReport, runHeirLocationReport, runStandardReport, runTitlePropertyReport } from './tier-handlers.js';
+import { tierRunnerFor } from './tier-handlers.js';
+import { buildDynamicReportFromWorkflow, dynamicReportToHtml, dynamicReportToText } from './dynamic-report-builder.js';
 
 function now() {
   return new Date().toISOString();
-}
-
-function handlerForTier(tier) {
-  if (tier === REPORT_TIER.STANDARD_REPORT) return runStandardReport;
-  if (tier === REPORT_TIER.TITLE_PROPERTY_REPORT) return runTitlePropertyReport;
-  if (tier === REPORT_TIER.HEIR_LOCATION_REPORT) return runHeirLocationReport;
-  if (tier === REPORT_TIER.COMPREHENSIVE_REPORT) return runComprehensiveReport;
-  throw new Error(`No workflow handler configured for purchased tier: ${tier}`);
 }
 
 export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) {
@@ -25,44 +16,36 @@ export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) 
 
   const order = await getOrder(orderId);
   if (!order) throw new Error(`Order not found: ${orderId}`);
-  if (order.status !== ORDER_STATUS.QUEUED && order.status !== ORDER_STATUS.PAID && order.status !== ORDER_STATUS.RUNNING) {
+  if (![ORDER_STATUS.QUEUED, ORDER_STATUS.PAID, ORDER_STATUS.RUNNING].includes(order.status)) {
     throw new Error(`Order ${orderId} is not in a processable state (${order.status}).`);
   }
 
-  await recordAuditEvent({ event: 'fulfillment_started', orderId, purchasedTier: order.purchased_tier, statusBefore: order.status });
-  await upsertOrder(orderId, { status: ORDER_STATUS.RUNNING, started_at: order.started_at || now(), startedAt: order.startedAt || now() });
+  const startedAt = now();
+  await recordAuditEvent({ event: 'payment_verified_order_execution', orderId, purchasedTier: order.purchased_tier });
+  await upsertOrder(orderId, { status: ORDER_STATUS.RUNNING, started_at: order.started_at || startedAt, workflow_selected: order.purchased_tier });
 
   try {
-    const runner = deps.tierRunner || handlerForTier(order.purchased_tier);
-    await recordAuditEvent({ event: 'tier_handler_selected', orderId, purchasedTier: order.purchased_tier, handler: runner.name });
+    const runner = deps.tierRunner || tierRunnerFor(order.purchased_tier);
+    await recordAuditEvent({ event: 'tier_selected', orderId, tier: order.purchased_tier, handler: runner.name });
 
-    const intel = await runner(order);
-    await recordAuditEvent({ event: 'source_query_completed', orderId, purchasedTier: order.purchased_tier, providersWithHits: intel?.coverage?.providersWithHits || 0 });
+    const workflow = await runner(order, { startedAt, fetchImpl: deps.fetchImpl });
+    await recordAuditEvent({ event: 'source_query_completed', orderId, sourcesAttempted: workflow.sources.length });
 
-    const report = buildReport({
-      caseRef: order.order_id || order.caseRef || orderId,
-      packageId: order.packageId,
-      customerName: order.customerName,
-      customerEmail: order.customerEmail,
-      companyName: order.subjectName,
-      website: order.website,
-      goals: order.goals,
-      intel
-    });
-
+    const report = buildDynamicReportFromWorkflow(workflow, order);
     const artifacts = await saveArtifacts(report);
     await checkArtifact(artifacts.htmlPath);
-    await recordAuditEvent({ event: 'report_artifact_saved', orderId, artifact: artifacts.htmlPath });
+    await recordAuditEvent({ event: 'report_rendered_and_saved', orderId, artifact: artifacts.htmlPath });
 
     try {
       await sendEmails({
         ownerEmail,
-        customerEmail: report.customerEmail,
-        subject: `[${report.caseRef}] Your ${report.package} report is ready`,
-        textBody: `Your report is ready. Artifact: ${artifacts.htmlPath}\n\n${report.disclaimer}`,
-        htmlBody: `<p>Your report is ready.</p><p><strong>Artifact:</strong> ${artifacts.htmlPath}</p>`
+        customerEmail: order.customerEmail,
+        subject: `[${orderId}] Your ${order.purchased_tier} report is ready`,
+        textBody: dynamicReportToText(report),
+        htmlBody: dynamicReportToHtml(report)
       });
-      await recordAuditEvent({ event: 'report_email_sent', orderId, customerEmail: report.customerEmail });
+      await upsertOrder(orderId, { email_delivery_status: 'sent' });
+      await recordAuditEvent({ event: 'email_sent', orderId, customerEmail: order.customerEmail });
     } catch (emailError) {
       const message = String(emailError?.message || emailError || 'email delivery failed');
       await upsertOrder(orderId, {
@@ -70,36 +53,33 @@ export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) 
         artifact_url_or_path: publicArtifactHint(artifacts.htmlPath),
         completed_at: now(),
         email_delivery_status: 'failed',
-        failure_reason: message,
-        failureReason: message
+        failure_reason: message
       });
-      await recordAuditEvent({ event: 'report_email_failed', orderId, error: message });
+      await recordAuditEvent({ event: 'email_failed', orderId, error: message });
       throw new Error(message);
     }
 
+    const completedStatus = workflow.overallStatus === 'partial' ? ORDER_STATUS.COMPLETED : ORDER_STATUS.COMPLETED;
     await upsertOrder(orderId, {
-      status: ORDER_STATUS.COMPLETED,
+      status: completedStatus,
       artifact_url_or_path: publicArtifactHint(artifacts.htmlPath),
       completed_at: now(),
-      email_delivery_status: 'sent',
-      failure_reason: null,
-      failureReason: null,
-      workflow_selected: order.purchased_tier,
-      sources_queried: intel?.providerHealth || []
+      failure_reason: workflow.overallStatus === 'failed' ? (workflow.failureReasons || []).join('; ') : null,
+      sources_queried: workflow.sources,
+      workflow_results: workflow
     });
 
-    await recordAuditEvent({ event: 'fulfillment_completed', orderId, artifact: artifacts.htmlPath, purchasedTier: order.purchased_tier });
-    return { report, artifacts };
+    await recordAuditEvent({ event: 'order_completed', orderId, status: completedStatus, artifact: artifacts.htmlPath });
+    return { report, artifacts, workflow };
   } catch (error) {
     const message = String(error?.message || error || 'unknown fulfillment error');
     await upsertOrder(orderId, {
       status: ORDER_STATUS.FAILED,
       completed_at: now(),
-      email_delivery_status: order.email_delivery_status || 'pending',
       failure_reason: message,
-      failureReason: message
+      email_delivery_status: order.email_delivery_status || 'pending'
     });
-    await recordAuditEvent({ event: 'fulfillment_failed', orderId, error: message });
+    await recordAuditEvent({ event: 'order_failed', orderId, error: message });
     throw error;
   }
 }
