@@ -48,6 +48,13 @@ export async function getOrder(caseRef) {
   return store.orders[caseRef] || null;
 }
 
+export async function listOrders(limit = 200) {
+  const store = await loadStore();
+  return Object.values(store.orders)
+    .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
+    .slice(0, Math.max(1, Math.min(1000, Number(limit) || 200)));
+}
+
 export async function isProcessedWebhookEvent(eventId) {
   const store = await loadStore();
   return store.processedWebhookEvents.includes(eventId);
