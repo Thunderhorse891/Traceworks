@@ -9,7 +9,7 @@
     "start": "npx netlify-cli dev"
   },
   "dependencies": {
-    "nodemailer": "^6.9.15",
+    "nodemailer": "^8.0.2",
     "stripe": "^16.12.0"
   }
 }

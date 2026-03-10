@@ -1,0 +1,35 @@
+.netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs :: legal advice
+.netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs :: no refund
+.netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs :: legal advice
+.netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs :: no refund
+.netlify/functions-serve/report-preview/netlify/functions/report-preview.mjs :: legal advice
+.netlify/functions-serve/report-preview/netlify/functions/report-preview.mjs :: no refund
+README.md :: guarantee
+README.md :: no refund
+netlify/functions/_lib/report.js :: legal advice
+netlify/functions/_lib/report.js :: no refund
+public/index.html :: no refund
+public/refund-policy.html :: no refund
+public/report-sample.html :: legal advice
+public/reports/report-comprehensive.html :: legal advice
+public/reports/report-heir.html :: legal advice
+public/reports/report-locate.html :: legal advice
+public/reports/report-title.html :: legal advice
+public/terms.html :: guarantee
+public/terms.html :: legal advice
+public/terms.html :: no refund
+scripts/traceworks_bootstrap.sh :: attorney approved
+scripts/traceworks_bootstrap.sh :: certain ownership
+scripts/traceworks_bootstrap.sh :: clear title
+scripts/traceworks_bootstrap.sh :: court ready
+scripts/traceworks_bootstrap.sh :: definitive ownership
+scripts/traceworks_bootstrap.sh :: full lien certainty
+scripts/traceworks_bootstrap.sh :: guarantee
+scripts/traceworks_bootstrap.sh :: guaranteed
+scripts/traceworks_bootstrap.sh :: instant intelligence
+scripts/traceworks_bootstrap.sh :: legal advice
+scripts/traceworks_bootstrap.sh :: no refund
+scripts/traceworks_bootstrap.sh :: verified heir
+tests/report.test.js :: no refund
+tw_engine.py :: clear title
+tw_engine.py :: legal advice

@@ -1,0 +1,410 @@
+ADMIN_API_KEY
+  .netlify/functions-serve/admin-metrics/netlify/functions/admin-metrics.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/admin-metrics.js
+  netlify/functions/process-queue.js
+  tests/hardening.test.js
+
+COMMIT_REF
+  .netlify/functions-serve/health/netlify/functions/health.mjs
+  netlify/functions/health.js
+
+DEBUG
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+EMAIL_FROM
+  .netlify/functions-serve/contact-sales/netlify/functions/contact-sales.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/_lib/email.js
+
+GRPC_DEFAULT_SSL_ROOTS_FILE_PATH
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+GRPC_EXPERIMENTAL_ENABLE_OUTLIER_DETECTION
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+GRPC_NODE_TRACE
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+GRPC_NODE_USE_ALTERNATIVE_RESOLVER
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+GRPC_NODE_VERBOSITY
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+GRPC_SSL_CIPHER_SUITES
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+GRPC_TRACE
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+GRPC_VERBOSITY
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+HOME
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+HOMEDRIVE
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+HOMEPATH
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+LNAME
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+LOGNAME
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+NODE_DEBUG
+  .netlify/functions-serve/admin-metrics/___netlify-bootstrap.mjs
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-bootstrap.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-bootstrap.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-bootstrap.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-bootstrap.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-bootstrap.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-bootstrap.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-bootstrap.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-bootstrap.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-bootstrap.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OTEL_EXPORTER_OTLP_ENDPOINT
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OTEL_EXPORTER_OTLP_HEADERS
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OTEL_EXPORTER_OTLP_INSECURE
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OTEL_EXPORTER_OTLP_LOGS_PROTOCOL
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OTEL_EXPORTER_OTLP_PROTOCOL
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OTEL_LOGS_EXPORTER
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OTEL_NODE_RESOURCE_DETECTORS
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+OWNER_EMAIL
+  .netlify/functions-serve/contact-sales/netlify/functions/contact-sales.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/_lib/business.js
+  tests/hardening.test.js
+
+QUEUE_CRON_SECRET
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  netlify/functions/process-queue-scheduled.js
+
+QUEUE_LAG_ALERT_MS
+  .netlify/functions-serve/admin-metrics/netlify/functions/admin-metrics.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  netlify/functions/admin-metrics.js
+  netlify/functions/process-queue-scheduled.js
+
+QUEUE_MAX_PER_RUN
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  netlify/functions/process-queue-scheduled.js
+
+SMTP_HOST
+  .netlify/functions-serve/contact-sales/netlify/functions/contact-sales.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/_lib/email.js
+
+SMTP_PASS
+  .netlify/functions-serve/contact-sales/netlify/functions/contact-sales.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/_lib/email.js
+
+SMTP_PORT
+  .netlify/functions-serve/contact-sales/netlify/functions/contact-sales.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/_lib/email.js
+
+SMTP_USER
+  .netlify/functions-serve/contact-sales/netlify/functions/contact-sales.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/_lib/email.js
+
+STATUS_TOKEN_SECRET
+  .netlify/functions-serve/create-checkout/netlify/functions/create-checkout.mjs
+  .netlify/functions-serve/get-order/netlify/functions/get-order.mjs
+  netlify/functions/_lib/status-token.js
+  tests/hardening.test.js
+  tests/status-token.test.js
+
+STRIPE_SECRET_KEY
+  .netlify/functions-serve/create-checkout/netlify/functions/create-checkout.mjs
+  .netlify/functions-serve/stripe-webhook/netlify/functions/stripe-webhook.mjs
+  netlify/functions/create-checkout.js
+  netlify/functions/stripe-webhook.js
+  tests/hardening.test.js
+
+STRIPE_WEBHOOK_SECRET
+  .netlify/functions-serve/stripe-webhook/netlify/functions/stripe-webhook.mjs
+  netlify/functions/stripe-webhook.js
+
+TRACEWORKS_PUBLIC_RECORDS_CONFIG_JSON
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  netlify/functions/_lib/public-records.js
+
+TRACEWORKS_STORE_PATH
+  .netlify/functions-serve/admin-metrics/netlify/functions/admin-metrics.mjs
+  .netlify/functions-serve/create-checkout/netlify/functions/create-checkout.mjs
+  .netlify/functions-serve/get-order/netlify/functions/get-order.mjs
+  .netlify/functions-serve/health/netlify/functions/health.mjs
+  .netlify/functions-serve/process-queue-scheduled/netlify/functions/process-queue-scheduled.mjs
+  .netlify/functions-serve/process-queue/netlify/functions/process-queue.mjs
+  .netlify/functions-serve/stripe-webhook/netlify/functions/stripe-webhook.mjs
+  .netlify/functions-serve/track-event/netlify/functions/track-event.mjs
+  netlify/functions/_lib/store.js
+  tests/store.test.js
+
+URL
+  .netlify/functions-serve/create-checkout/netlify/functions/create-checkout.mjs
+  netlify/functions/create-checkout.js
+
+USER
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+USERNAME
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
+
+USERPROFILE
+  .netlify/functions-serve/admin-metrics/___netlify-telemetry.mjs
+  .netlify/functions-serve/contact-sales/___netlify-telemetry.mjs
+  .netlify/functions-serve/create-checkout/___netlify-telemetry.mjs
+  .netlify/functions-serve/get-order/___netlify-telemetry.mjs
+  .netlify/functions-serve/health/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue-scheduled/___netlify-telemetry.mjs
+  .netlify/functions-serve/process-queue/___netlify-telemetry.mjs
+  .netlify/functions-serve/report-preview/___netlify-telemetry.mjs
+  .netlify/functions-serve/stripe-webhook/___netlify-telemetry.mjs
+  .netlify/functions-serve/track-event/___netlify-telemetry.mjs
