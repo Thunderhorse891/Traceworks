@@ -17,26 +17,66 @@ async function track(type, detail = '') {
 for (const pkg of clientPackages) {
   const el = document.createElement('article');
   el.className = 'card';
-  el.innerHTML = `
-    <p class="label">${pkg.id.toUpperCase()}</p>
-    <h4>${pkg.name}</h4>
-    <p class="price">${pkg.price}</p>
-    <ul>${pkg.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
-    <button type="button">Select Package</button>
-    <a class="pay-link" href="${pkg.payLink}" target="_blank" rel="noopener">Open Stripe Payment Link →</a>
-  `;
 
-  el.querySelector('button').addEventListener('click', async () => {
+  // Build card content safely without innerHTML XSS risk
+  const label = document.createElement('p');
+  label.className = 'label';
+  label.textContent = pkg.id.toUpperCase().replace(/_/g, ' ');
+
+  const title = document.createElement('h4');
+  title.textContent = pkg.name;
+
+  const price = document.createElement('p');
+  price.className = 'price';
+  price.textContent = pkg.price;
+
+  const desc = document.createElement('p');
+  desc.className = 'card-desc';
+  desc.textContent = pkg.description || '';
+
+  const ul = document.createElement('ul');
+  for (const b of pkg.bullets) {
+    const li = document.createElement('li');
+    li.textContent = b;
+    ul.appendChild(li);
+  }
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = pkg.payLink ? 'Select Package' : 'Contact for Quote';
+
+  el.appendChild(label);
+  el.appendChild(title);
+  el.appendChild(price);
+  el.appendChild(desc);
+  el.appendChild(ul);
+  el.appendChild(btn);
+
+  if (pkg.payLink) {
+    const payLinkEl = document.createElement('a');
+    payLinkEl.className = 'pay-link';
+    payLinkEl.href = pkg.payLink;
+    payLinkEl.target = '_blank';
+    payLinkEl.rel = 'noopener';
+    payLinkEl.textContent = 'Open Stripe Payment Link →';
+    el.appendChild(payLinkEl);
+
+    payLinkEl.addEventListener('click', async () => {
+      packageInput.value = pkg.id;
+      await track('payment_link_clicked', pkg.id);
+    });
+  }
+
+  btn.addEventListener('click', async () => {
+    if (!pkg.payLink) {
+      document.getElementById('enterprise')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     document.querySelectorAll('.card').forEach((c) => c.classList.remove('selected'));
     el.classList.add('selected');
     packageInput.value = pkg.id;
-    statusEl.textContent = `${pkg.name} selected. Use Stripe Payment Link or continue with secure intake checkout.`;
+    statusEl.textContent = `${pkg.name} selected. Fill out the form below to proceed to secure checkout.`;
     await track('package_selected', pkg.id);
-  });
-
-  el.querySelector('.pay-link').addEventListener('click', async () => {
-    packageInput.value = pkg.id;
-    await track('payment_link_clicked', pkg.id);
   });
 
   cards.appendChild(el);
@@ -68,12 +108,21 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
   payload.tosConsent = checked(form, 'tosConsent');
 
   await track('checkout_started');
-  const response = await fetch('/api/create-checkout', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await response.json();
+
+  let response, data;
+  try {
+    response = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    data = await response.json();
+  } catch {
+    statusEl.textContent = 'Network error. Please check your connection and try again.';
+    await track('checkout_error', 'network_failure');
+    return;
+  }
+
   if (!response.ok) {
     statusEl.textContent = data.error || 'Unable to start checkout.';
     await track('checkout_error', statusEl.textContent);
@@ -93,13 +142,20 @@ if (salesForm && salesStatus) {
     salesStatus.textContent = 'Submitting enterprise inquiry...';
     const payload = Object.fromEntries(new FormData(salesForm).entries());
 
-    const res = await fetch('/api/contact-sales', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    let res, data;
+    try {
+      res = await fetch('/api/contact-sales', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      data = await res.json();
+    } catch {
+      salesStatus.textContent = 'Network error. Please try again.';
+      await track('sales_lead_error', 'network_failure');
+      return;
+    }
 
-    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       salesStatus.textContent = data.error || 'Unable to submit inquiry right now.';
       await track('sales_lead_error', salesStatus.textContent);

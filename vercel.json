@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'no build step'",
+  "outputDirectory": "public",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ],
+  "crons": [
+    {
+      "path": "/api/process-queue-scheduled",
+      "schedule": "*/2 * * * *"
+    }
+  ]
+}

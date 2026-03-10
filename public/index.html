@@ -14,9 +14,9 @@
       </header>
 
       <section class="hero">
-        <p class="kicker">SKIP TRACING FOR LEGAL PROFESSIONALS</p>
-        <h2>Find Anyone.<br /><em>Fast.</em> Accurate. Confidential.</h2>
-        <p>Deep online intelligence and public-records OSINT workflows built for attorneys, process servers, investigators, and recovery teams.</p>
+        <p class="kicker">PUBLIC-RECORD INVESTIGATIVE REPORTS FOR LEGAL PROFESSIONALS</p>
+        <h2>Property. Ownership. Probate.<br /><em>Evidence-grade.</em> Automated. Confidential.</h2>
+        <p>Automated public-record OSINT workflows producing investigation-grade property reports — built for real estate attorneys, probate investors, title researchers, and asset recovery firms.</p>
       </section>
 
       <section class="trust-row">
@@ -47,9 +47,11 @@
           <label>Selected Service<input id="packageId" name="packageId" readonly required /></label>
           <label>Requestor Name<input name="customerName" required /></label>
           <label>Requestor Email<input type="email" name="customerEmail" required /></label>
-          <label>Subject Name / Entity<input name="companyName" required /></label>
+          <label>Subject Name / Entity<input name="subjectName" required placeholder="Person name or entity name being researched" /></label>
+          <label>County <span style="color:#c9a84c">*</span><input name="county" required placeholder="e.g. Harris, Travis, Dallas, Bexar" /></label>
+          <label>State<input name="state" value="TX" placeholder="TX" maxlength="2" /></label>
           <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
-          <label>Case Objective<textarea name="goals" rows="4" placeholder="What exact outcome do you need? (service, locate, title chain, heir identification, etc.)"></textarea></label>
+          <label>Case Objective<textarea name="goals" rows="4" placeholder="What exact outcome do you need? (property search, deed research, heir identification, entity trace, etc.)"></textarea></label>
           <label class="consent"><input type="checkbox" name="legalConsent" required /> I confirm this request is for lawful investigative/legal use.</label>
           <label class="consent"><input type="checkbox" name="tosConsent" required /> I agree to <a href="/terms.html" target="_blank" rel="noopener">Terms</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.</label>
           <button type="submit">Pay & Order</button>

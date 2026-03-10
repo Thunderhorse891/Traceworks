@@ -8,8 +8,8 @@
   </head>
   <body>
     <main class="container form-wrap" style="margin-top:24px; max-width:760px;">
-      <h1>Payment complete ✅</h1>
-      <p>Your case has been queued for fulfillment. We’ll keep this status page updated automatically.</p>
+      <h1>Payment complete</h1>
+      <p>Your case has been queued for fulfillment. This page polls for status updates automatically.</p>
       <p id="status">Loading order status…</p>
       <ul id="details"></ul>
       <p><a href="/">Back to home</a></p>
@@ -23,6 +23,10 @@
       const statusEl = document.getElementById('status');
       const detailsEl = document.getElementById('details');
 
+      // Terminal states — stop polling once we reach these
+      const TERMINAL_STATES = new Set(['completed', 'failed']);
+      let pollInterval = null;
+
       function row(label, value) {
         const li = document.createElement('li');
         li.textContent = `${label}: ${value || 'n/a'}`;
@@ -33,6 +37,7 @@
         detailsEl.innerHTML = '';
         detailsEl.appendChild(row('Case', data.caseRef));
         detailsEl.appendChild(row('Package', data.packageName || data.packageId));
+        detailsEl.appendChild(row('Status', data.status));
         detailsEl.appendChild(row('Fulfillment attempts', data.fulfillmentAttempts));
         if (data.queuedAt) detailsEl.appendChild(row('Queued at', new Date(data.queuedAt).toLocaleString()));
         if (data.lastAttemptAt) detailsEl.appendChild(row('Last attempt', new Date(data.lastAttemptAt).toLocaleString()));
@@ -43,6 +48,7 @@
       async function load() {
         if (!caseRef || (!statusToken && !email)) {
           statusEl.textContent = 'Missing case reference or status token. Please contact support with your payment receipt.';
+          clearInterval(pollInterval);
           return;
         }
 
@@ -56,10 +62,12 @@
           if (res.ok) {
             if (data.status === 'completed') {
               statusEl.textContent = `Case ${data.caseRef} is complete. Report delivery should be in your inbox.`;
+              clearInterval(pollInterval);
             } else if (data.status === 'failed') {
-              statusEl.textContent = `Case ${data.caseRef} hit a terminal issue. Our team will review manually.`;
+              statusEl.textContent = `Case ${data.caseRef} encountered an issue. Our team will review and contact you.`;
+              clearInterval(pollInterval);
             } else if (data.status === 'retrying') {
-              statusEl.textContent = `Case ${data.caseRef} hit a transient issue and is scheduled for automatic retry.`;
+              statusEl.textContent = `Case ${data.caseRef} is scheduled for automatic retry.`;
             } else if (data.status === 'processing') {
               statusEl.textContent = `Case ${data.caseRef} is actively processing now.`;
             } else {
@@ -76,12 +84,12 @@
 
           statusEl.textContent = data.error || 'Unable to load status right now.';
         } catch {
-          statusEl.textContent = 'Status service unavailable. If using static preview, run Netlify dev for API routes.';
+          statusEl.textContent = 'Status service temporarily unavailable. Your order is still being processed.';
         }
       }
 
       load();
-      setInterval(load, 20000);
+      pollInterval = setInterval(load, 20000);
     </script>
   </body>
 </html>
