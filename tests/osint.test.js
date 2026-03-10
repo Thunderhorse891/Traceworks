@@ -38,5 +38,28 @@ test('gatherOsint builds expanded query plan and dedupes sources', async () => {
   assert.ok(result.queryPlan.length >= 2);
   assert.ok(result.coverage.totalSources >= 2);
   assert.ok(result.coverage.distinctDomains >= 1);
-  assert.ok(result.sources.length <= 16);
+  assert.ok(result.sources.length <= 18);
+});
+
+test('gatherOsint uses robin provider when configured', async () => {
+  function robinFetch(url) {
+    if (url.includes('/search?q=')) {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          results: [{ title: 'Robin court index result', url: 'https://robin.example/case/1', sourceType: 'court-records', confidence: 'high' }]
+        })
+      });
+    }
+    return mockFetch(url);
+  }
+
+  const result = await gatherOsint('jordan mercer texas', {
+    packageId: 'locate',
+    fetchImpl: robinFetch,
+    env: { ROBIN_API_URL: 'https://robin.example' }
+  });
+
+  assert.ok(result.sources.some((s) => s.provider === 'robin'));
+  assert.ok(result.providerHealth.some((p) => p.provider === 'robin'));
 });

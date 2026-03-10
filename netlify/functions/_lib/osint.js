@@ -45,11 +45,11 @@ function confidenceScore(label) {
   return 1;
 }
 
-async function fetchJson(url, fetchImpl, timeoutMs = 8000) {
+async function fetchJson(url, fetchImpl, timeoutMs = 9000, init = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetchImpl(url, { signal: controller.signal });
+    const res = await fetchImpl(url, { ...init, signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } finally {
@@ -61,7 +61,7 @@ function normalizeRecord(record, provider, fallbackType = "open-web") {
   const url = record.url || record.FirstURL || "";
   if (!url) return null;
   return {
-    title: (record.title || record.Text || "Public web record").trim(),
+    title: (record.title || record.Text || record.name || "Public web record").trim(),
     url,
     sourceType: record.sourceType || fallbackType,
     confidence: record.confidence || "medium",
@@ -102,18 +102,68 @@ async function fromRedditSearch(query, fetchImpl) {
   const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&limit=5&sort=relevance`;
   const data = await fetchJson(url, fetchImpl);
   const posts = Array.isArray(data?.data?.children) ? data.data.children : [];
-  return posts.slice(0, 5).map((post) => {
-    const d = post?.data || {};
-    return normalizeRecord(
-      {
-        title: d.title || "Community signal",
-        url: `https://www.reddit.com${d.permalink || ""}`,
-        sourceType: "community-intel",
-        confidence: "low"
-      },
-      "reddit"
-    );
-  }).filter(Boolean);
+  return posts
+    .slice(0, 5)
+    .map((post) => {
+      const d = post?.data || {};
+      return normalizeRecord(
+        {
+          title: d.title || "Community signal",
+          url: `https://www.reddit.com${d.permalink || ""}`,
+          sourceType: "community-intel",
+          confidence: "low"
+        },
+        "reddit"
+      );
+    })
+    .filter(Boolean);
+}
+
+async function fromOpenCorporates(query, fetchImpl) {
+  const url = `https://api.opencorporates.com/v0.4/companies/search?q=${encodeURIComponent(query)}&per_page=5`;
+  const data = await fetchJson(url, fetchImpl);
+  const rows = Array.isArray(data?.results?.companies) ? data.results.companies : [];
+  return rows
+    .map((item) => item?.company)
+    .filter(Boolean)
+    .map((company) =>
+      normalizeRecord(
+        {
+          title: company.name || "OpenCorporates company record",
+          url: company.opencorporates_url || "",
+          sourceType: "business-registry",
+          confidence: "medium"
+        },
+        "opencorporates"
+      )
+    )
+    .filter(Boolean);
+}
+
+async function fromRobin(query, fetchImpl, env) {
+  const base = String(env?.ROBIN_API_URL || "").trim();
+  if (!base) throw new Error("ROBIN_API_URL is not configured");
+
+  const apiKey = String(env?.ROBIN_API_KEY || "").trim();
+  const url = `${base.replace(/\/$/, "")}/search?q=${encodeURIComponent(query)}`;
+  const headers = apiKey ? { authorization: `Bearer ${apiKey}` } : {};
+  const data = await fetchJson(url, fetchImpl, 10_000, { headers });
+  const rows = Array.isArray(data?.results) ? data.results : [];
+
+  return rows
+    .map((row) =>
+      normalizeRecord(
+        {
+          title: row.title || row.name || "Robin intelligence result",
+          url: row.url,
+          sourceType: row.sourceType || "legal-intel",
+          confidence: row.confidence || "high"
+        },
+        "robin"
+      )
+    )
+    .filter(Boolean)
+    .slice(0, 10);
 }
 
 function buildQueries(query, packageId) {
@@ -144,7 +194,7 @@ function dedupeAndRank(records) {
       if (scoreDiff !== 0) return scoreDiff;
       return a.domain.localeCompare(b.domain);
     })
-    .slice(0, 16);
+    .slice(0, 18);
 }
 
 function providerHealth(results) {
@@ -156,16 +206,27 @@ function providerHealth(results) {
   }));
 }
 
-export async function gatherOsint(query, opts = {}) {
-  const fetchImpl = opts.fetchImpl || fetch;
-  const packageId = opts.packageId || "locate";
-  const queries = buildQueries(query, packageId);
-
+function buildProviders(env) {
   const providers = [
     { name: "duckduckgo", fn: fromDuckDuckGo },
     { name: "wikipedia", fn: fromWikipediaSearch },
-    { name: "reddit", fn: fromRedditSearch }
+    { name: "reddit", fn: fromRedditSearch },
+    { name: "opencorporates", fn: fromOpenCorporates }
   ];
+
+  if (String(env?.ROBIN_API_URL || "").trim()) {
+    providers.push({ name: "robin", fn: (query, fetchImpl) => fromRobin(query, fetchImpl, env) });
+  }
+
+  return providers;
+}
+
+export async function gatherOsint(query, opts = {}) {
+  const fetchImpl = opts.fetchImpl || fetch;
+  const env = opts.env || process.env;
+  const packageId = opts.packageId || "locate";
+  const queries = buildQueries(query, packageId);
+  const providers = buildProviders(env);
 
   const settled = [];
   for (const q of queries) {
