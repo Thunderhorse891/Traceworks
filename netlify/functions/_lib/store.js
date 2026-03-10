@@ -48,6 +48,13 @@ export async function getOrder(caseRef) {
   return store.orders[caseRef] || null;
 }
 
+export async function listOrders(limit = 200) {
+  const store = await loadStore();
+  return Object.values(store.orders)
+    .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
+    .slice(0, Math.max(1, Math.min(1000, Number(limit) || 200)));
+}
+
 export async function isProcessedWebhookEvent(eventId) {
   const store = await loadStore();
   return store.processedWebhookEvents.includes(eventId);
@@ -111,6 +118,29 @@ export async function claimNextJob(type) {
     const dueMs = j.nextAttemptAt ? Date.parse(j.nextAttemptAt) : 0;
     return Number.isNaN(dueMs) || dueMs <= nowMs;
   });
+  if (idx === -1) return null;
+
+  const now = new Date().toISOString();
+  const job = store.jobs[idx];
+  const claimed = { ...job, status: 'processing', attempts: Number(job.attempts || 0) + 1, updatedAt: now, startedAt: now };
+  store.jobs[idx] = claimed;
+  await saveStore(store);
+  return claimed;
+}
+
+export async function claimJobByCaseRef(type, caseRef) {
+  if (!caseRef) return null;
+
+  const store = await loadStore();
+  const nowMs = Date.now();
+  const idx = store.jobs.findIndex((j) => {
+    if (j.type !== type) return false;
+    if (j.payload?.caseRef !== caseRef) return false;
+    if (!(j.status === 'queued' || j.status === 'retry')) return false;
+    const dueMs = j.nextAttemptAt ? Date.parse(j.nextAttemptAt) : 0;
+    return Number.isNaN(dueMs) || dueMs <= nowMs;
+  });
+
   if (idx === -1) return null;
 
   const now = new Date().toISOString();

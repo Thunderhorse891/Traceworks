@@ -3,89 +3,160 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ | Legal OSINT Intelligence</title>
+    <title>TraceWorks™ | Public-Record Investigative Reports</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="container">
+    <main class="container homepage-v2">
       <header class="topbar">
-        <h1>Trace<span>Works™</span></h1>
-        <a class="gold-btn" href="#order">Submit a Request</a>
+        <div>
+          <p class="topbar-kicker">PUBLIC-RECORD INVESTIGATIVE INTELLIGENCE</p>
+          <h1>Trace<span>Works™</span></h1>
+        </div>
+        <nav class="top-links" aria-label="Primary">
+          <a href="#packages">Packages</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#secure-intake">Secure intake</a>
+          <a href="/launch-readiness.html">Launch readiness</a>
+          <a class="gold-btn" href="#secure-intake">Start request</a>
+        </nav>
       </header>
 
-      <section class="hero">
-        <p class="kicker">SKIP TRACING FOR LEGAL PROFESSIONALS</p>
-        <h2>Find Anyone.<br /><em>Fast.</em> Accurate. Confidential.</h2>
-        <p>Deep online intelligence and public-records OSINT workflows built for attorneys, process servers, investigators, and recovery teams.</p>
+      <section class="hero structure-hero">
+        <p class="kicker">Built for attorneys, legal ops, and investigators</p>
+        <h2>Evidence-logged public-record reports for legal workflows.</h2>
+        <p class="hero-sub">TraceWorks runs configurable county/state public-record research, logs exactly what was queried, and delivers structured reports with confidence labels and manual-review flags.</p>
+        <div class="hero-cta">
+          <a class="gold-btn" href="#packages">View packages</a>
+          <a class="ghost-btn" href="#secure-intake">Secure intake</a>
+        </div>
+        <p class="hero-proof">Confidential handling • Public-record based • Fast turnaround • Non-legal-opinion reporting</p>
       </section>
 
-      <section class="trust-row">
-        <article><h4>Evidence-First</h4><p>Every dossier includes citations, confidence, red flags, and 48-hour action items.</p></article>
-        <article><h4>Court-Aware</h4><p>Reports are structured for legal workflows, service attempts, and case-file follow-up.</p></article>
-        <article><h4>Operational Speed</h4><p>Automated collection + analyst-ready format to shorten case cycle time.</p></article>
+      <section class="trust-row" aria-label="Trust signals">
+        <article><h4>Public-record based</h4><p>Configured county/state sources with evidence timestamps.</p></article>
+        <article><h4>Evidence logged</h4><p>Each query URL + parameters + retrieval status are retained.</p></article>
+        <article><h4>Confidential delivery</h4><p>Secure intake and controlled report distribution workflow.</p></article>
+        <article><h4>Fast output</h4><p>Automated execution with explicit gaps and fallback pathways.</p></article>
       </section>
 
-      <section class="policy-strip">
-        <p><strong>Service Policy:</strong> No refunds after work starts. If quality is off, we provide a redo pass on the same case scope.</p>
+      <section id="packages" class="section-head">
+        <div>
+          <p class="kicker">Package selection</p>
+          <h3>Choose the business-facing report package</h3>
+          <p>Primary packages for legal operations; heir/probate appears in its own section below due to separate intent.</p>
+        </div>
       </section>
 
       <section class="cards" id="packageCards"></section>
 
-      <section class="process">
-        <h3>Why This Is Superior</h3>
+      <section class="heir-focus">
+        <h3>Heir / Probate Research</h3>
+        <p>Use this when the objective is heir candidate research, probate indicators, and lawful verification sequencing (not legal adjudication of heirship).</p>
+        <div class="cards heir-cards" id="heirPackageCards"></div>
+      </section>
+
+      <dialog id="packageModal" class="package-modal">
+        <article class="package-modal-content">
+          <button type="button" class="package-modal-close" id="packageModalClose" aria-label="Close package details">×</button>
+          <p class="label" id="modalPackageLabel"></p>
+          <h3 id="modalPackageTitle"></h3>
+          <p class="price" id="modalPackagePrice"></p>
+          <p id="modalPackageSummary"></p>
+          <h4>What your report includes</h4>
+          <ul id="modalPackageIncludes"></ul>
+          <div class="package-modal-actions">
+            <a id="modalReportPreview" target="_blank" rel="noopener">Preview report sample</a>
+            <button type="button" id="modalSelectPackage">Select This Package</button>
+          </div>
+        </article>
+      </dialog>
+
+      <section id="how-it-works" class="process">
+        <h3>How it works</h3>
         <ol>
-          <li><strong>Multi-provider OSINT:</strong> Expanded query plans and source ranking, not single search output.</li>
-          <li><strong>Evidence Matrix:</strong> Signal strength + provider + exact follow-up actions in one table.</li>
-          <li><strong>Red Flag Detection:</strong> Gaps and low-confidence findings are explicitly called out.</li>
-          <li><strong>Action System:</strong> Next 48-hour plan included for immediate legal team execution.</li>
+          <li><strong>Submit request:</strong> provide subject/property context and case purpose.</li>
+          <li><strong>Research engine runs:</strong> configured public-record + web intelligence workflows execute.</li>
+          <li><strong>Report generated:</strong> findings, evidence appendix, and gaps are assembled.</li>
+          <li><strong>Report delivered:</strong> artifacts are stored and delivery email is sent.</li>
         </ol>
       </section>
 
-      <section class="form-wrap" id="order">
-        <h3>Secure Intake + Checkout</h3>
-        <form id="checkoutForm">
-          <label>Selected Service<input id="packageId" name="packageId" readonly required /></label>
-          <label>Requestor Name<input name="customerName" required /></label>
-          <label>Requestor Email<input type="email" name="customerEmail" required /></label>
-          <label>Subject Name / Entity<input name="companyName" required /></label>
-          <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
-          <label>Case Objective<textarea name="goals" rows="4" placeholder="What exact outcome do you need? (service, locate, title chain, heir identification, etc.)"></textarea></label>
-          <label class="consent"><input type="checkbox" name="legalConsent" required /> I confirm this request is for lawful investigative/legal use.</label>
-          <label class="consent"><input type="checkbox" name="tosConsent" required /> I agree to <a href="/terms.html" target="_blank" rel="noopener">Terms</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.</label>
-          <button type="submit">Pay & Order</button>
-          <p id="status"></p>
-        </form>
-        <div class="links">
-          <a href="/preview/report" target="_blank" rel="noopener">Preview Live Report</a>
-          <a href="/report-tiers.html" target="_blank" rel="noopener">View All 4 Tier Previews</a>
-          <a href="/launch-readiness.html" target="_blank" rel="noopener">Launch Readiness Checklist</a>
+      <section class="form-wrap intake-shell" id="secure-intake">
+        <div class="section-head intake-head">
+          <div>
+            <p class="kicker">Secure intake</p>
+            <h3>Submit case intake</h3>
+            <p>Grouped for legal operations: subject/property info, requester info, case purpose, and compliance confirmation.</p>
+          </div>
         </div>
+
+        <form id="checkoutForm">
+          <fieldset>
+            <legend>Subject / property info</legend>
+            <label>Selected Package<input id="packageId" name="packageId" readonly required /></label>
+            <label>Subject Name / Entity<input name="companyName" required /></label>
+            <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Requester info</legend>
+            <label>Your Name<input name="customerName" required /></label>
+            <label>Email<input name="customerEmail" type="email" required /></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Case purpose</legend>
+            <label>Case Objective<textarea name="goals" rows="4" placeholder="Service, title chain review, probate research, contact verification, etc."></textarea></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Compliance confirmation</legend>
+            <label class="checkbox"><input type="checkbox" name="legalConsent" required /> I confirm lawful-use and authorization requirements.</label>
+            <label class="checkbox"><input type="checkbox" name="tosConsent" required /> I accept Terms and service limitations.</label>
+          </fieldset>
+
+          <button type="submit">Continue to Secure Checkout</button>
+          <p id="status" class="status"></p>
+        </form>
       </section>
 
+      <section class="faq-block" id="faq">
+        <h3>FAQ</h3>
+        <details><summary>What’s included?</summary><p>Configured source queries, evidence appendix, report sections, and gap disclosures.</p></details>
+        <details><summary>What’s not included?</summary><p>No legal title opinion, no legal heir adjudication, and no legal advice.</p></details>
+        <details><summary>Turnaround</summary><p>Most requests deliver same-day to 24h depending on source availability.</p></details>
+        <details><summary>Disclaimers</summary><p>Reports are investigative outputs from accessible sources and may require manual validation.</p></details>
+      </section>
 
-
-      <section class="form-wrap" id="enterprise" style="margin-top:16px;">
-        <h3>Enterprise / Agency Volume Intake</h3>
-        <p>Need daily volume? Submit this and we will propose a lawful, scalable retainer workflow.</p>
+      <section class="sales card">
+        <h3>Request Enterprise Call</h3>
+        <p>Running volume for a law firm, process network, or investigative team? Ask about account-level workflows.</p>
         <form id="salesForm">
-          <label>Name<input name="name" required /></label>
-          <label>Business Email<input type="email" name="email" required /></label>
+          <label>Full Name<input name="name" required /></label>
+          <label>Work Email<input name="email" type="email" required /></label>
           <label>Company<input name="company" required /></label>
-          <label>Estimated Monthly Cases<input name="monthlyCases" placeholder="e.g. 100" required /></label>
-          <label>Budget Range<input name="budget" placeholder="e.g. $5k-$25k/mo" /></label>
-          <label style="display:none;">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
-          <label>Notes<textarea name="message" rows="3" placeholder="What outcomes do you need per month?"></textarea></label>
+          <label>Website<input name="website" placeholder="https://" /></label>
+          <label>Monthly Cases<input name="monthlyCases" required /></label>
+          <label>Budget Range<input name="budget" /></label>
+          <label>Notes<textarea name="message" rows="3"></textarea></label>
           <button type="submit">Request Enterprise Call</button>
-          <p id="salesStatus"></p>
         </form>
+        <p id="salesStatus" class="status"></p>
       </section>
 
       <footer class="footer">
-        <p>© TraceWorks™. Legal OSINT support services for lawful professional use only.</p>
-        <p><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="/refund-policy.html">No Refunds / Redos</a> · <a href="/launch-readiness.html">Launch Checklist</a></p>
+        <p>© <span id="year"></span> TraceWorks™</p>
+        <nav>
+          <a href="/terms.html">Terms</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/refund-policy.html">Refund Policy</a>
+          <a href="/launch-readiness.html">Launch readiness</a>
+        </nav>
       </footer>
     </main>
 
-    <script src="/app.js" type="module"></script>
+    <script type="module" src="/app.js"></script>
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
   </body>
 </html>

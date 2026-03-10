@@ -31,10 +31,20 @@ export default async (event) => {
   }
 
   return jsonWithRequestId(event, 200, {
+    order_id: order.order_id || order.caseRef,
     caseRef: order.caseRef,
     status: order.status,
+    purchased_tier: order.purchased_tier || null,
+    stripe_checkout_session_id: order.stripe_checkout_session_id || null,
+    stripe_payment_intent_id: order.stripe_payment_intent_id || null,
     packageId: order.packageId,
     packageName: order.packageName,
+    artifact_url_or_path: order.artifact_url_or_path || null,
+    started_at: order.started_at || null,
+    completed_at: order.completed_at || null,
+    failure_reason: order.failure_reason || null,
+    email_delivery_status: order.email_delivery_status || null,
+    workflow_results: order.workflow_results || null,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     queuedAt: order.queuedAt || null,

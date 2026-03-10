@@ -10,7 +10,7 @@
     <main class="container">
       <section class="form-wrap" style="margin-top:24px;">
         <h1>Launch Readiness Checklist</h1>
-        <p>Use this page to confirm what is still needed before go-live.</p>
+        <p>Use this page to confirm what is still needed before launch.</p>
 
         <div class="check-grid">
           <article class="check-card">
@@ -27,11 +27,31 @@
           <article class="check-card">
             <h3>Operational checks</h3>
             <ul>
-              <li>Scheduled worker is enabled and running.</li>
+              <li>Vercel Cron job is configured and running.</li>
               <li>Dead-letter monitoring route is documented.</li>
               <li>Redo workflow owner is assigned.</li>
               <li>At least one successful test-mode checkout completed end-to-end.</li>
               <li>Inbox deliverability verified for customer + owner copies.</li>
+            </ul>
+          </article>
+
+          <article class="check-card">
+            <h3>GitHub push readiness</h3>
+            <p>If <code>git push</code> fails with “No configured push destination,” add and verify your repo remote first:</p>
+            <ul>
+              <li><code>git remote add origin https://github.com/&lt;owner&gt;/&lt;repo&gt;.git</code></li>
+              <li><code>git push -u origin work</code> (replace <code>work</code> with your active branch if different)</li>
+              <li><code>git remote -v</code> should show <code>origin</code> fetch/push URLs.</li>
+            </ul>
+          </article>
+
+          <article class="check-card">
+            <h3>Vercel deployment failure checklist</h3>
+            <ul>
+              <li>In Vercel Project Settings, set all required environment variables (Stripe, SMTP, admin, and status token values).</li>
+              <li>Confirm your API routes are deployed under <code>/api/*</code> for Vercel compatibility.</li>
+              <li>Open each failed deployment log and fix the first build/runtime error before re-deploying.</li>
+              <li>After fixes, trigger a fresh deployment from the latest commit and verify all Preview checks are green.</li>
             </ul>
           </article>
         </div>

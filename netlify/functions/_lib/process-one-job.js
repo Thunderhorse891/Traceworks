@@ -1,14 +1,15 @@
-import { claimNextJob, completeJob, failJob, incrementFulfillmentAttempt, recordDeadLetter, upsertOrder } from './store.js';
+import { claimJobByCaseRef, claimNextJob, completeJob, failJob, incrementFulfillmentAttempt, recordDeadLetter, upsertOrder } from './store.js';
 import { processFulfillmentJob } from './fulfillment.js';
+import { ORDER_STATUS } from './order-status.js';
 
-export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5 }) {
-  const job = await claimNextJob('fulfillment');
+export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, caseRef: requestedCaseRef = null }) {
+  const job = requestedCaseRef ? await claimJobByCaseRef('fulfillment', requestedCaseRef) : await claimNextJob('fulfillment');
   if (!job) return { ok: true, message: 'no_jobs' };
 
   const caseRef = job.payload?.caseRef || 'unknown';
   const attempt = await incrementFulfillmentAttempt(caseRef);
   await upsertOrder(caseRef, {
-    status: 'processing',
+    status: ORDER_STATUS.RUNNING,
     lastAttemptAt: new Date().toISOString(),
     fulfillmentAttempts: attempt,
     lastError: null,
@@ -17,7 +18,7 @@ export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5 }) 
 
   try {
     const { report } = await processFulfillmentJob(job, { ownerEmail });
-    await upsertOrder(report.caseRef, { status: 'completed', completedAt: new Date().toISOString(), lastError: null, retryAt: null });
+    await upsertOrder(report.caseRef, { status: ORDER_STATUS.COMPLETED, completedAt: new Date().toISOString(), lastError: null, retryAt: null });
     await completeJob(job.id);
     return { ok: true, jobId: job.id, caseRef: report.caseRef };
   } catch (err) {
@@ -27,7 +28,7 @@ export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5 }) 
     const retryAt = failure?.nextAttemptAt || null;
 
     await upsertOrder(caseRef, {
-      status: terminal ? 'failed' : 'retrying',
+      status: terminal ? ORDER_STATUS.FAILED : ORDER_STATUS.QUEUED,
       lastError: message,
       retryAt
     });
