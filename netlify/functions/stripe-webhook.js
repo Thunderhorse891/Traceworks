@@ -2,6 +2,9 @@ import Stripe from 'stripe';
 import { enqueueJob, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
+import { processOneFulfillmentJob } from './_lib/process-one-job.js';
+import { getBusinessEmail } from './_lib/business.js';
+import { validateStripeSecretKey, validateStripeWebhookSecret } from './_lib/stripe-config.js';
 
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
@@ -17,17 +20,19 @@ export default async (event) => {
   const limit = hitRateLimit({ key: `webhook:${ip}`, windowMs: 60_000, max: 120 });
   if (limit.limited) return jsonWithRequestId(event, 429, { error: 'Too many requests.' });
 
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!stripeKey || !webhookSecret) return jsonWithRequestId(event, 500, { error: 'Missing required environment variables.' });
+  const stripeConfig = validateStripeSecretKey(process.env.STRIPE_SECRET_KEY);
+  const webhookConfig = validateStripeWebhookSecret(process.env.STRIPE_WEBHOOK_SECRET);
+  if (!stripeConfig.ok || !webhookConfig.ok) {
+    return jsonWithRequestId(event, 500, { error: stripeConfig.ok ? webhookConfig.message : stripeConfig.message });
+  }
 
   const sig = event.headers['stripe-signature'];
   if (!sig) return jsonWithRequestId(event, 400, { error: 'Missing stripe-signature header.' });
 
-  const stripe = new Stripe(stripeKey);
+  const stripe = new Stripe(stripeConfig.key);
   let stripeEvent;
   try {
-    stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookSecret, 300);
+    stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookConfig.secret, 300);
   } catch (err) {
     return jsonWithRequestId(event, 400, { error: `Webhook Error: ${err.message}` });
   }
@@ -68,6 +73,17 @@ export default async (event) => {
       goals: metadata.goals
     }
   });
+
+  // Best-effort immediate fulfillment kick-off for this exact case so paid orders begin processing right away.
+  const immediateMs = Math.max(500, Number(process.env.IMMEDIATE_FULFILLMENT_TIMEOUT_MS || 3500));
+  try {
+    await Promise.race([
+      processOneFulfillmentJob({ ownerEmail: getBusinessEmail(), maxAttempts: 5, caseRef }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('immediate processing timeout')), immediateMs))
+    ]);
+  } catch {
+    // Scheduled queue worker will continue retries if immediate processing cannot complete in this webhook invocation.
+  }
 
   await markProcessedWebhookEvent(stripeEvent.id);
 

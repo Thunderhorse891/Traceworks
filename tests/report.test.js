@@ -52,3 +52,25 @@ test('report includes no-refund redo policy language in disclaimer', () => {
   assert.ok(report.disclaimer.includes('No refunds after work starts'));
   assert.ok(report.disclaimer.includes('redo'));
 });
+
+test('report adds explicit fallback language when direct hits are missing', () => {
+  const report = buildReport({
+    packageId: 'locate',
+    caseRef: 'TW-TEST-4',
+    intel: {
+      sources: [
+        {
+          title: 'Government index fallback',
+          url: 'https://www.usa.gov/state-county-local-governments',
+          sourceType: 'fallback',
+          confidence: 'medium',
+          provider: 'static-fallback',
+          domain: 'usa.gov'
+        }
+      ]
+    }
+  });
+
+  const lines = report.sections.flatMap((section) => section.findings);
+  assert.ok(lines.some((line) => line.includes('No direct verifiable hit surfaced')));
+});

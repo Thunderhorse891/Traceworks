@@ -5,6 +5,7 @@ import { upsertOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { createStatusToken } from './_lib/status-token.js';
+import { validateStripeSecretKey } from './_lib/stripe-config.js';
 
 function makeCaseRef() {
   return `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -33,8 +34,8 @@ export default async (event) => {
     const pkg = getPackage(packageId);
     if (!pkg) return jsonWithRequestId(event, 400, { error: 'Invalid package selected.' });
 
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeKey) return jsonWithRequestId(event, 500, { error: 'Stripe secret key is missing.' });
+    const stripeConfig = validateStripeSecretKey(process.env.STRIPE_SECRET_KEY);
+    if (!stripeConfig.ok) return jsonWithRequestId(event, 500, { error: stripeConfig.message });
 
     const caseRef = makeCaseRef();
     await upsertOrder(caseRef, {
@@ -51,7 +52,7 @@ export default async (event) => {
 
     const statusToken = createStatusToken({ caseRef, email: customerEmail });
 
-    const stripe = new Stripe(stripeKey);
+    const stripe = new Stripe(stripeConfig.key);
     const base = process.env.URL || `https://${event.headers.host}`;
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',

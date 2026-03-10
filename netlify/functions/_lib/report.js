@@ -106,11 +106,15 @@ function buildRedFlags(report) {
 }
 
 function buildNextActions(report) {
+  const escalation = report.confidence === "Guarded"
+    ? "Escalation rule: confidence is Guarded, so add manual clerk pull + analyst verification before court submission."
+    : `Escalation rule: if confidence is ${report.confidence}, require human analyst review before court submission.`;
+
   return [
     `Within 24h: verify top ${Math.min(report.sources.length, 3)} citations with direct record pulls.`,
     "Within 48h: prepare affidavit-ready source appendix with hash/timestamp capture.",
     "Before filing/service: confirm identity and address matches against official county records.",
-    `Escalation rule: if confidence is ${report.confidence}, require human analyst review before court submission.`
+    escalation
   ];
 }
 
@@ -133,12 +137,15 @@ export function buildReport({ packageId, customerName, customerEmail, companyNam
 
   const sections = blueprint.sections.map((title, index) => {
     const source = sources[index % sources.length];
+    const noDirectHit = source.provider === 'static-fallback' || source.sourceType === 'fallback';
     return {
       title,
       findings: [
         `${title} completed for ${subject}.`,
         `Objective alignment: ${objective}`,
-        `Primary corroboration: ${source.title} (${source.url}).`
+        noDirectHit
+          ? `No direct verifiable hit surfaced for this element in this run. Actionable fallback path: ${source.title} (${source.url}).`
+          : `Primary corroboration: ${source.title} (${source.url}).`
       ].map((line) => nonBlank(line))
     };
   });
