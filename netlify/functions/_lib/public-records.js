@@ -16,7 +16,12 @@ function requireConfigs(configs, name, env) {
 }
 
 function evidenceToSourceResult(evidence, dataRows = []) {
-  const status = evidence.status === 'found' ? SOURCE_STATUS.FOUND : SOURCE_STATUS.NOT_FOUND;
+  let status = SOURCE_STATUS.NOT_FOUND;
+  if (evidence.status === 'found') status = SOURCE_STATUS.FOUND;
+  if (evidence.status === 'blocked') status = SOURCE_STATUS.BLOCKED;
+  if (evidence.status === 'unavailable') status = SOURCE_STATUS.UNAVAILABLE;
+  if (evidence.status === 'error') status = SOURCE_STATUS.ERROR;
+
   return makeSourceResult({
     sourceId: evidence.sourceId,
     sourceLabel: evidence.sourceName,
@@ -27,6 +32,18 @@ function evidenceToSourceResult(evidence, dataRows = []) {
     confidence: status === SOURCE_STATUS.FOUND ? CONFIDENCE.LIKELY : CONFIDENCE.NOT_VERIFIED,
     errorDetail: evidence.notes || null
   });
+}
+
+function buildHealthSummary(evidence = []) {
+  const summary = { attempted: evidence.length, found: 0, notFound: 0, blocked: 0, unavailable: 0, error: 0 };
+  for (const item of evidence) {
+    if (item.status === 'found') summary.found += 1;
+    else if (item.status === 'blocked') summary.blocked += 1;
+    else if (item.status === 'unavailable') summary.unavailable += 1;
+    else if (item.status === 'error') summary.error += 1;
+    else summary.notFound += 1;
+  }
+  return summary;
 }
 
 function pushEvidence(payload, out) {
@@ -52,7 +69,8 @@ export async function gatherPublicRecordIntel(order, { fetchImpl = fetch, env = 
     findings: {},
     evidence: [],
     gaps: [],
-    sources: []
+    sources: [],
+    sourceHealth: { attempted: 0, found: 0, notFound: 0, blocked: 0, unavailable: 0, error: 0 }
   };
 
   if (['title', 'title_property', 'comprehensive', 'standard', 'locate'].includes(packageKey)) {
@@ -110,5 +128,6 @@ export async function gatherPublicRecordIntel(order, { fetchImpl = fetch, env = 
     if (!entityOut.results.length) payload.gaps.push('No entity registry results found');
   }
 
+  payload.sourceHealth = buildHealthSummary(payload.evidence);
   return payload;
 }

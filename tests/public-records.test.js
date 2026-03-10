@@ -105,3 +105,48 @@ test('gatherPublicRecordIntel fails loudly in strict mode when config is missing
     /Missing required public record source configuration/
   );
 });
+
+
+test('gatherPublicRecordIntel records blocked/error sources without aborting full run', async () => {
+  const env = {
+    PAID_FULFILLMENT_STRICT: 'true',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [
+        {
+          id: 'ok_html',
+          name: 'OK HTML',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/ok?q={address}' },
+          extraction: { itemRegex: '<tr><td>([^<]*)</td></tr>', map: { owner: 1 } }
+        },
+        {
+          id: 'blocked_html',
+          name: 'Blocked HTML',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/blocked?q={address}' },
+          extraction: { itemRegex: '<tr><td>([^<]*)</td></tr>', map: { owner: 1 } }
+        }
+      ],
+      countyRecorder: [{ id: 'rec_ok', name: 'Recorder OK', type: 'html', request: { urlTemplate: 'https://example.com/rec?q={owner}' }, extraction: { itemRegex: '<tr><td>([^<]*)</td></tr>', map: { recordingDate: 1 } } }],
+      probateIndex: [],
+      entitySearch: []
+    })
+  };
+
+  const fetchImpl = async (url) => {
+    if (url.includes('/ok')) return htmlResponse(200, '<table><tr><td>Jane Owner</td></tr></table>');
+    if (url.includes('/blocked')) return { ok: false, status: 403, async text() { return 'forbidden'; } };
+    if (url.includes('/rec')) return htmlResponse(200, '<table><tr><td>2024-01-01</td></tr></table>');
+    return { ok: false, status: 500, async text() { return 'error'; } };
+  };
+
+  const out = await gatherPublicRecordIntel(
+    { packageKey: 'standard', input: { address: '100 Main St', ownerName: 'Jane Owner' } },
+    { fetchImpl, env }
+  );
+
+  assert.ok(out.findings.property.length >= 1);
+  assert.ok(out.sources.some((s) => s.status === 'blocked'));
+  assert.equal(out.sourceHealth.attempted, out.evidence.length);
+  assert.ok(out.sourceHealth.blocked >= 1);
+});
