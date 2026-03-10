@@ -37,13 +37,12 @@ for (const pkg of clientPackages) {
     <p class="price">${pkg.price}</p>
     <ul>${pkg.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
     <button type="button" class="details-btn">View Package Details</button>
-    <button type="button">Select Package</button>
+    <button type="button" class="select-btn">Select Package</button>
     <a class="pay-link" href="${pkg.payLink}" target="_blank" rel="noopener">Open Stripe Payment Link →</a>
   `;
 
-  const buttons = el.querySelectorAll('button');
-  const detailsButton = buttons[0];
-  const selectButton = buttons[1];
+  const detailsButton = el.querySelector('.details-btn');
+  const selectButton = el.querySelector('.select-btn');
 
   selectButton.addEventListener('click', async () => {
     document.querySelectorAll('.card').forEach((c) => c.classList.remove('selected'));
@@ -86,13 +85,7 @@ function closePackageModal() {
 modalCloseButton?.addEventListener('click', closePackageModal);
 
 packageModal?.addEventListener('click', (event) => {
-  const rect = packageModal.getBoundingClientRect();
-  const inDialog =
-    event.clientX >= rect.left &&
-    event.clientX <= rect.right &&
-    event.clientY >= rect.top &&
-    event.clientY <= rect.bottom;
-  if (!inDialog) closePackageModal();
+  if (event.target === packageModal) closePackageModal();
 });
 
 modalSelectButton?.addEventListener('click', async () => {

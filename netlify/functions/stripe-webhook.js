@@ -71,11 +71,15 @@ export default async (event) => {
     }
   });
 
-  // Best-effort immediate fulfillment kick-off so paid orders begin processing right away.
+  // Best-effort immediate fulfillment kick-off for this exact case so paid orders begin processing right away.
+  const immediateMs = Math.max(500, Number(process.env.IMMEDIATE_FULFILLMENT_TIMEOUT_MS || 3500));
   try {
-    await processOneFulfillmentJob({ ownerEmail: getBusinessEmail(), maxAttempts: 5 });
+    await Promise.race([
+      processOneFulfillmentJob({ ownerEmail: getBusinessEmail(), maxAttempts: 5, caseRef }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('immediate processing timeout')), immediateMs))
+    ]);
   } catch {
-    // Scheduled queue worker will continue retries if this immediate attempt cannot execute.
+    // Scheduled queue worker will continue retries if immediate processing cannot complete in this webhook invocation.
   }
 
   await markProcessedWebhookEvent(stripeEvent.id);
