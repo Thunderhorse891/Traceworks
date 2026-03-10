@@ -2,6 +2,8 @@ import Stripe from 'stripe';
 import { enqueueJob, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
+import { processOneFulfillmentJob } from './_lib/process-one-job.js';
+import { getBusinessEmail } from './_lib/business.js';
 
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
@@ -68,6 +70,13 @@ export default async (event) => {
       goals: metadata.goals
     }
   });
+
+  // Best-effort immediate fulfillment kick-off so paid orders begin processing right away.
+  try {
+    await processOneFulfillmentJob({ ownerEmail: getBusinessEmail(), maxAttempts: 5 });
+  } catch {
+    // Scheduled queue worker will continue retries if this immediate attempt cannot execute.
+  }
 
   await markProcessedWebhookEvent(stripeEvent.id);
 
