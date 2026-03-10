@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TraceWorks Admin Orders</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container form-wrap" style="margin-top:24px; max-width:1200px;">
+      <h1>Admin Orders Verification</h1>
+      <p>Enter your admin bearer token to inspect real paid fulfillment traces.</p>
+      <label>Admin API Key<input id="key" type="password" placeholder="Paste ADMIN_API_KEY" /></label>
+      <button id="load">Load Orders</button>
+      <p id="status"></p>
+      <div style="overflow:auto;">
+        <table id="table" style="width:100%; border-collapse:collapse;"></table>
+      </div>
+    </main>
+
+    <script>
+      const keyEl = document.getElementById('key');
+      const btn = document.getElementById('load');
+      const statusEl = document.getElementById('status');
+      const table = document.getElementById('table');
+
+      function esc(value) {
+        return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+      }
+
+      function render(orders) {
+        const head = `
+          <thead><tr>
+            <th>order_id</th><th>customer</th><th>tier</th><th>stripe state</th><th>fulfillment state</th>
+            <th>workflow selected</th><th>sources queried</th><th>started_at</th><th>completed_at</th>
+            <th>artifact</th><th>email_delivery</th><th>failure_reason</th>
+          </tr></thead>`;
+
+        const body = `<tbody>${orders.map((o) => `
+          <tr>
+            <td>${esc(o.order_id || o.caseRef)}</td>
+            <td>${esc(o.customerName)}<br/><small>${esc(o.customerEmail)}</small></td>
+            <td>${esc(o.purchased_tier)}</td>
+            <td>${esc(o.stripe_payment_intent_id || o.stripe_checkout_session_id || 'n/a')}</td>
+            <td>${esc(o.status)}</td>
+            <td>${esc(o.workflow_selected || o.purchased_tier || 'n/a')}</td>
+            <td><small>${esc((o.sources_queried || []).map((s) => `${s.provider}:${s.hitCount}`).join(' | ') || 'n/a')}</small></td>
+            <td>${esc(o.started_at || 'n/a')}</td>
+            <td>${esc(o.completed_at || 'n/a')}</td>
+            <td><small>${esc(o.artifact_url_or_path || 'n/a')}</small></td>
+            <td>${esc(o.email_delivery_status || 'pending')}</td>
+            <td><small>${esc(o.failure_reason || 'n/a')}</small></td>
+          </tr>
+        `).join('')}</tbody>`;
+
+        table.innerHTML = head + body;
+      }
+
+      btn.addEventListener('click', async () => {
+        const key = keyEl.value.trim();
+        if (!key) {
+          statusEl.textContent = 'Admin API key required.';
+          return;
+        }
+
+        statusEl.textContent = 'Loading orders...';
+        const res = await fetch('/api/admin-orders', { headers: { authorization: `Bearer ${key}` } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          statusEl.textContent = data.error || 'Unable to load admin orders.';
+          return;
+        }
+
+        statusEl.textContent = `Loaded ${data.orders.length} orders.`;
+        render(data.orders || []);
+      });
+    </script>
+  </body>
+</html>

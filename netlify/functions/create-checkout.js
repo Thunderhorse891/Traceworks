@@ -6,6 +6,8 @@ import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { createStatusToken } from './_lib/status-token.js';
 import { validateStripeSecretKey } from './_lib/stripe-config.js';
+import { ORDER_STATUS } from './_lib/order-status.js';
+import { resolvePurchasedTier } from './_lib/tier-mapping.js';
 
 function makeCaseRef() {
   return `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -38,15 +40,26 @@ export default async (event) => {
     if (!stripeConfig.ok) return jsonWithRequestId(event, 500, { error: stripeConfig.message });
 
     const caseRef = makeCaseRef();
+    const purchasedTier = resolvePurchasedTier({ packageId });
     await upsertOrder(caseRef, {
-      status: 'checkout_created',
+      order_id: caseRef,
+      status: ORDER_STATUS.PENDING_PAYMENT,
       packageId,
       packageName: pkg.name,
+      purchased_tier: purchasedTier,
       customerName,
       customerEmail,
       subjectName: companyName,
       website,
       goals,
+      input_criteria: { companyName, website, goals },
+      stripe_checkout_session_id: null,
+      stripe_payment_intent_id: null,
+      artifact_url_or_path: null,
+      started_at: null,
+      completed_at: null,
+      failure_reason: null,
+      email_delivery_status: 'pending',
       fulfillmentAttempts: 0
     });
 
@@ -61,6 +74,10 @@ export default async (event) => {
       metadata: { caseRef, packageId, packageName: pkg.name, customerName, customerEmail, companyName, website, goals, legalConsent: 'true', tosConsent: 'true' },
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}&case_ref=${caseRef}${statusToken ? `&status_token=${encodeURIComponent(statusToken)}` : `&email=${encodeURIComponent(customerEmail)}`}`,
       cancel_url: `${base}/cancel.html`
+    });
+
+    await upsertOrder(caseRef, {
+      stripe_checkout_session_id: session.id
     });
 
     return jsonWithRequestId(event, 200, { checkoutUrl: session.url, caseRef, statusTokenIssued: Boolean(statusToken) });

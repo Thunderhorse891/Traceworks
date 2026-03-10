@@ -4,7 +4,10 @@ import { jsonWithRequestId } from './_lib/http.js';
 const startedAt = new Date().toISOString();
 
 export default async (event) => {
-  const required = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
+  const required = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'ADMIN_API_KEY'];
+  if (String(process.env.PAID_FULFILLMENT_STRICT || 'true').toLowerCase() !== 'false') {
+    required.push('ROBIN_API_URL');
+  }
   const missing = required.filter((k) => !process.env[k]);
   const metrics = await getMetrics();
 
