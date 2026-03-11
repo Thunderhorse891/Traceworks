@@ -1,0 +1,40 @@
+# Never commit real keys. Use environment variables in production.
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+OWNER_EMAIL=traceworks.tx@outlook.com
+EMAIL_FROM=traceworks.tx@outlook.com
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=smtp-user
+SMTP_PASS=smtp-pass
+
+# Paid fulfillment strict mode (default true). If true and required source config is missing, orders fail loudly.
+PAID_FULFILLMENT_STRICT=true
+REPORT_ARTIFACT_ROOT=.data/reports
+
+# Real source modules configuration (required in strict mode)
+APPRAISAL_API_URL=https://example.com/appraisal
+TAX_COLLECTOR_API_URL=https://example.com/tax
+PARCEL_GIS_API_URL=https://example.com/gis
+COUNTY_CLERK_API_URL=https://example.com/clerk
+GRANTOR_GRANTEE_API_URL=https://example.com/grantor-grantee
+MORTGAGE_INDEX_API_URL=https://example.com/mortgage
+OBITUARY_API_URL=https://example.com/obituary
+PROBATE_API_URL=https://example.com/probate
+PEOPLE_ASSOC_API_URL=https://example.com/people-association
+PEOPLE_ASSOC_LICENSED=false
+DEFAULT_COUNTY=
+DEFAULT_STATE=
+
+# JSON configuration override for config-driven public-record adapters.
+# If blank, TraceWorks uses built-in Texas-first source pack (Harris/Travis/Dallas/Bexar/Tarrant + TX SOS/OpenCorporates/SEC EDGAR).
+# Example shape: {"countyProperty":[...],"countyRecorder":[...],"probateIndex":[...],"entitySearch":[...]}
+PUBLIC_RECORD_SOURCE_CONFIG=
+
+TRACEWORKS_STORE_PATH=.data/traceworks-store.json
+ADMIN_API_KEY=change-me
+QUEUE_MAX_PER_RUN=5
+QUEUE_CRON_SECRET=change-me-cron-secret
+QUEUE_LAG_ALERT_MS=900000
+STATUS_TOKEN_SECRET=change-me-long-random
+IMMEDIATE_FULFILLMENT_TIMEOUT_MS=3500

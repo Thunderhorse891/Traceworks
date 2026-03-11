@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TraceWorks™ Payment Complete</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container form-wrap" style="margin-top:24px; max-width:760px;">
+      <h1>Payment complete ✅</h1>
+      <p>Your case has been queued for fulfillment. We’ll keep this status page updated automatically.</p>
+      <p id="status">Loading order status…</p>
+      <ul id="details"></ul>
+      <p><a href="/">Back to home</a></p>
+    </main>
+
+    <script>
+      const p = new URLSearchParams(location.search);
+      const caseRef = p.get('case_ref');
+      const email = p.get('email');
+      const statusToken = p.get('status_token') || p.get('statusToken');
+      const statusEl = document.getElementById('status');
+      const detailsEl = document.getElementById('details');
+
+      function row(label, value) {
+        const li = document.createElement('li');
+        li.textContent = `${label}: ${value || 'n/a'}`;
+        return li;
+      }
+
+      function renderOrder(data) {
+        detailsEl.innerHTML = '';
+        detailsEl.appendChild(row('Case', data.caseRef));
+        detailsEl.appendChild(row('Package', data.packageName || data.packageId));
+        detailsEl.appendChild(row('Fulfillment attempts', data.fulfillmentAttempts));
+        if (data.queuedAt) detailsEl.appendChild(row('Queued at', new Date(data.queuedAt).toLocaleString()));
+        if (data.lastAttemptAt) detailsEl.appendChild(row('Last attempt', new Date(data.lastAttemptAt).toLocaleString()));
+        if (data.retryAt) detailsEl.appendChild(row('Next retry', new Date(data.retryAt).toLocaleString()));
+        if (data.completedAt) detailsEl.appendChild(row('Completed at', new Date(data.completedAt).toLocaleString()));
+      }
+
+      async function load() {
+        if (!caseRef || (!statusToken && !email)) {
+          statusEl.textContent = 'Missing case reference or status token. Please contact support with your payment receipt.';
+          return;
+        }
+
+        try {
+          const authParam = statusToken
+            ? `statusToken=${encodeURIComponent(statusToken)}`
+            : `email=${encodeURIComponent(email)}`;
+          const res = await fetch(`/api/get-order?caseRef=${encodeURIComponent(caseRef)}&${authParam}`);
+          const data = await res.json().catch(() => ({}));
+
+          if (res.ok) {
+            if (data.status === 'completed') {
+              statusEl.textContent = `Case ${data.caseRef} is complete. Report delivery should be in your inbox.`;
+            } else if (data.status === 'failed') {
+              statusEl.textContent = `Case ${data.caseRef} hit a terminal issue. Our team will review manually.`;
+            } else if (data.status === 'retrying') {
+              statusEl.textContent = `Case ${data.caseRef} hit a transient issue and is scheduled for automatic retry.`;
+            } else if (data.status === 'processing') {
+              statusEl.textContent = `Case ${data.caseRef} is actively processing now.`;
+            } else {
+              statusEl.textContent = `Case ${data.caseRef} is ${data.status}. Typical turnaround is 10–45 minutes.`;
+            }
+            renderOrder(data);
+            return;
+          }
+
+          if (res.status === 404) {
+            statusEl.textContent = 'Order status not visible yet. Refresh in 30–60 seconds.';
+            return;
+          }
+
+          statusEl.textContent = data.error || 'Unable to load status right now.';
+        } catch {
+          statusEl.textContent = 'Status service unavailable. If you are testing locally, make sure your API routes are running and reachable.';
+        }
+      }
+
+      load();
+      setInterval(load, 20000);
+    </script>
+  </body>
+</html>
