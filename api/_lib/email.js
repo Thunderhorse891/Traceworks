@@ -4,8 +4,10 @@ import { getBusinessEmail } from './business.js';
 function getTransport() {
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  // Support both SMTP_USER and SMTP_USERNAME naming conventions
+  const user = process.env.SMTP_USER || process.env.SMTP_USERNAME;
+  // Support both SMTP_PASS and SMTP_PASSWORD naming conventions
+  const pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD;
 
   if (!host || !user || !pass) {
     throw new Error('SMTP credentials are missing.');

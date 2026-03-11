@@ -7,39 +7,46 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-const cards = document.getElementById('packageCards');
 const packageInput = document.getElementById('packageId');
 const statusEl = document.getElementById('status');
+
+const packagesGrid = document.getElementById('packages-grid');
 
 async function track(type, detail = '') {
   try {
     await fetch('/api/track-event', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ type, packageId: packageInput.value, page: 'home', detail })
+      body: JSON.stringify({ type, packageId: packageInput?.value || '', page: 'home', detail })
     });
   } catch {}
 }
 
-for (const pkg of clientPackages) {
+function buildCard(pkg, index) {
   const el = document.createElement('article');
-  el.className = 'card';
+  el.className = 'card' + (pkg.id === 'comprehensive' ? ' card-featured' : '');
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
 
-  // Build card content safely without innerHTML XSS risk
-  const label = document.createElement('p');
-  label.className = 'label';
-  label.textContent = pkg.id.toUpperCase().replace(/_/g, ' ');
+  const idx = document.createElement('span');
+  idx.className = 'card-index';
+  idx.textContent = String(index + 1).padStart(2, '0');
 
   const title = document.createElement('h4');
   title.textContent = pkg.name;
 
-  const price = document.createElement('p');
-  price.className = 'price';
-  price.textContent = pkg.price;
+  const priceWrap = document.createElement('div');
+  const priceEl = document.createElement('div');
+  priceEl.className = 'price';
+  priceEl.textContent = pkg.price;
+  const priceLabel = document.createElement('div');
+  priceLabel.className = 'price-label';
+  priceLabel.textContent = pkg.id === 'custom' ? 'Contact for scope' : 'Per report';
+  priceWrap.appendChild(priceEl);
+  priceWrap.appendChild(priceLabel);
 
-  const desc = document.createElement('p');
-  desc.className = 'card-desc';
-  desc.textContent = pkg.description || '';
+  const divider = document.createElement('div');
+  divider.className = 'card-divider';
 
   const ul = document.createElement('ul');
   for (const b of pkg.bullets) {
@@ -50,12 +57,13 @@ for (const pkg of clientPackages) {
 
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.textContent = pkg.payLink ? 'Select Package' : 'Contact for Quote';
+  btn.className = 'card-btn' + (pkg.id === 'custom' ? ' custom-btn' : '');
+  btn.textContent = pkg.payLink ? 'Select This Report' : 'Request Custom Quote';
 
-  el.appendChild(label);
+  el.appendChild(idx);
   el.appendChild(title);
-  el.appendChild(price);
-  el.appendChild(desc);
+  el.appendChild(priceWrap);
+  el.appendChild(divider);
   el.appendChild(ul);
   el.appendChild(btn);
 
@@ -65,51 +73,63 @@ for (const pkg of clientPackages) {
     payLinkEl.href = pkg.payLink;
     payLinkEl.target = '_blank';
     payLinkEl.rel = 'noopener';
-    payLinkEl.textContent = 'Open Stripe Payment Link →';
+    payLinkEl.textContent = 'Direct Stripe Payment Link';
     el.appendChild(payLinkEl);
 
     payLinkEl.addEventListener('click', async () => {
-      packageInput.value = pkg.id;
+      if (packageInput) packageInput.value = pkg.id;
       await track('payment_link_clicked', pkg.id);
     });
   }
 
-  btn.addEventListener('click', async () => {
+  function selectCard() {
     if (!pkg.payLink) {
       document.getElementById('enterprise')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
     document.querySelectorAll('.card').forEach((c) => c.classList.remove('selected'));
     el.classList.add('selected');
-    packageInput.value = pkg.id;
-    statusEl.textContent = `${pkg.name} selected. Fill out the form below to proceed to secure checkout.`;
-    await track('package_selected', pkg.id);
-  });
+    if (packageInput) packageInput.value = pkg.id;
+    if (statusEl) statusEl.textContent = `${pkg.name} selected — complete the form below.`;
+    document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    track('package_selected', pkg.id);
+  }
 
-  cards.appendChild(el);
+  btn.addEventListener('click', selectCard);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCard(); } });
+
+  return el;
 }
 
+// Render all packages: paid first, custom (contact-us) last
+const paid   = clientPackages.filter((p) => p.id !== 'custom');
+const custom = clientPackages.filter((p) => p.id === 'custom');
+const allOrdered = [...paid, ...custom];
+
+allOrdered.forEach((pkg, i) => packagesGrid?.appendChild(buildCard(pkg, i)));
+
+// ── Checkout Form ────────────────────────────────────────────────────
 function checked(form, name) {
   return form.querySelector(`[name="${name}"]`)?.checked === true;
 }
 
-document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
 
-  if (!packageInput.value) {
-    statusEl.textContent = 'Please select a service package before checkout.';
+  if (!packageInput?.value) {
+    if (statusEl) statusEl.textContent = 'Please select a report tier above before checkout.';
     await track('checkout_blocked', 'missing_package');
     return;
   }
 
   if (!checked(form, 'legalConsent') || !checked(form, 'tosConsent')) {
-    statusEl.textContent = 'Please accept legal use and terms before checkout.';
+    if (statusEl) statusEl.textContent = 'Please confirm legal use and accept terms before checkout.';
     await track('checkout_blocked', 'missing_consents');
     return;
   }
 
-  statusEl.textContent = 'Creating secure checkout...';
+  if (statusEl) statusEl.textContent = 'Creating secure checkout session…';
   const payload = Object.fromEntries(new FormData(form).entries());
   payload.legalConsent = checked(form, 'legalConsent');
   payload.tosConsent = checked(form, 'tosConsent');
@@ -125,52 +145,51 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
     });
     data = await response.json();
   } catch {
-    statusEl.textContent = 'Network error. Please check your connection and try again.';
+    if (statusEl) statusEl.textContent = 'Network error — please check your connection and try again.';
     await track('checkout_error', 'network_failure');
     return;
   }
 
   if (!response.ok) {
-    statusEl.textContent = data.error || 'Unable to start checkout.';
-    await track('checkout_error', statusEl.textContent);
+    if (statusEl) statusEl.textContent = data.error || 'Unable to start checkout.';
+    await track('checkout_error', data.error || 'unknown');
     return;
   }
+
   await track('checkout_redirect', data.caseRef || '');
   window.location.href = data.checkoutUrl;
 });
 
-
-const salesForm = document.getElementById('salesForm');
+// ── Enterprise Form ──────────────────────────────────────────────────
 const salesStatus = document.getElementById('salesStatus');
 
-if (salesForm && salesStatus) {
-  salesForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    salesStatus.textContent = 'Submitting enterprise inquiry...';
-    const payload = Object.fromEntries(new FormData(salesForm).entries());
+document.getElementById('salesForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  if (salesStatus) salesStatus.textContent = 'Submitting inquiry…';
+  const payload = Object.fromEntries(new FormData(form).entries());
 
-    let res, data;
-    try {
-      res = await fetch('/api/contact-sales', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      data = await res.json();
-    } catch {
-      salesStatus.textContent = 'Network error. Please try again.';
-      await track('sales_lead_error', 'network_failure');
-      return;
-    }
+  let res, data;
+  try {
+    res = await fetch('/api/contact-sales', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    data = await res.json();
+  } catch {
+    if (salesStatus) salesStatus.textContent = 'Network error. Please try again.';
+    await track('sales_lead_error', 'network_failure');
+    return;
+  }
 
-    if (!res.ok) {
-      salesStatus.textContent = data.error || 'Unable to submit inquiry right now.';
-      await track('sales_lead_error', salesStatus.textContent);
-      return;
-    }
+  if (!res.ok) {
+    if (salesStatus) salesStatus.textContent = data.error || 'Unable to submit inquiry right now.';
+    await track('sales_lead_error', data.error || 'unknown');
+    return;
+  }
 
-    salesStatus.textContent = 'Received. We will contact you from traceworks.tx@outlook.com.';
-    salesForm.reset();
-    await track('sales_lead_submitted', payload.monthlyCases || '');
-  });
-}
+  if (salesStatus) salesStatus.textContent = 'Received. We will be in touch from traceworks.tx@outlook.com.';
+  form.reset();
+  await track('sales_lead_submitted', payload.monthlyCases || '');
+});

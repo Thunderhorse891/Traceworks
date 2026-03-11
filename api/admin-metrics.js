@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const metrics = await getMetrics();
   const threshold = Math.max(60_000, Number(process.env.QUEUE_LAG_ALERT_MS || 15 * 60_000));
-  const degraded = metrics.queueOldestMs >= threshold || Number(metrics.jobsByStatus?.failed || 0) > 0;
+  const degraded = metrics.queueOldestMs >= threshold || Number(metrics.byStatus?.failed || 0) > 0;
 
   return sendJsonWithRequestId(req, res, 200, {
     ok: true,

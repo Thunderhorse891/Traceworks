@@ -4,8 +4,21 @@ import { sendJsonWithRequestId } from './_lib/http.js';
 const startedAt = new Date().toISOString();
 
 export default async function handler(req, res) {
-  const required = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
-  const missing = required.filter((k) => !process.env[k]);
+  const missing = [];
+
+  const required = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'SMTP_HOST'];
+  for (const k of required) {
+    if (!process.env[k]) missing.push(k);
+  }
+
+  // Accept both SMTP_USER / SMTP_USERNAME and SMTP_PASS / SMTP_PASSWORD
+  if (!process.env.SMTP_USER && !process.env.SMTP_USERNAME) {
+    missing.push('SMTP_USER');
+  }
+  if (!process.env.SMTP_PASS && !process.env.SMTP_PASSWORD) {
+    missing.push('SMTP_PASS');
+  }
+
   const metrics = await getMetrics();
 
   return sendJsonWithRequestId(req, res, 200, {
