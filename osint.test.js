@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStatusToken, verifyStatusToken } from '../netlify/functions/_lib/status-token.js';
+import { createStatusToken, verifyStatusToken } from './netlify/functions/_lib/status-token.js';
 
 test('status token roundtrip verifies caseRef/email', () => {
   process.env.STATUS_TOKEN_SECRET = 'test-secret-123';

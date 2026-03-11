@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { enqueueJob, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
+import { claimWebhookEvent, enqueueJob, unmarkProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
 import { sendJsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 
@@ -46,50 +46,53 @@ export default async function handler(req, res) {
     return sendJsonWithRequestId(req, res, 400, { error: `Webhook Error: ${err.message}` });
   }
 
-  if (await isProcessedWebhookEvent(stripeEvent.id)) {
+  const claimed = await claimWebhookEvent(stripeEvent.id);
+  if (!claimed) {
     return sendJsonWithRequestId(req, res, 200, { ok: true, duplicate: true });
   }
 
   if (stripeEvent.type !== 'checkout.session.completed') {
-    await markProcessedWebhookEvent(stripeEvent.id);
     return sendJsonWithRequestId(req, res, 200, { ok: true, ignored: true });
   }
 
-  const session = stripeEvent.data.object;
-  const metadata = session.metadata || {};
-  const caseRef = metadata.caseRef || `TW-${session.id}`;
+  try {
+    const session = stripeEvent.data.object;
+    const metadata = session.metadata || {};
+    const caseRef = metadata.caseRef || `TW-${session.id}`;
 
-  await upsertOrder(caseRef, {
-    status: 'queued',
-    stripeSessionId: session.id,
-    packageId: metadata.packageId,
-    packageName: metadata.packageName,
-    customerName: metadata.customerName,
-    customerEmail: metadata.customerEmail || session.customer_details?.email,
-    subjectName: metadata.subjectName,
-    county: metadata.county,
-    state: metadata.state,
-    website: metadata.website,
-    goals: metadata.goals,
-    queuedAt: new Date().toISOString()
-  });
-
-  await enqueueJob({
-    type: 'fulfillment',
-    payload: {
-      caseRef,
+    await upsertOrder(caseRef, {
+      status: 'queued',
+      stripeSessionId: session.id,
       packageId: metadata.packageId,
+      packageName: metadata.packageName,
       customerName: metadata.customerName,
       customerEmail: metadata.customerEmail || session.customer_details?.email,
       subjectName: metadata.subjectName,
       county: metadata.county,
       state: metadata.state,
       website: metadata.website,
-      goals: metadata.goals
-    }
-  });
+      goals: metadata.goals,
+      queuedAt: new Date().toISOString()
+    });
 
-  await markProcessedWebhookEvent(stripeEvent.id);
+    await enqueueJob({
+      type: 'fulfillment',
+      payload: {
+        caseRef,
+        packageId: metadata.packageId,
+        customerName: metadata.customerName,
+        customerEmail: metadata.customerEmail || session.customer_details?.email,
+        subjectName: metadata.subjectName,
+        county: metadata.county,
+        state: metadata.state,
+        website: metadata.website,
+        goals: metadata.goals
+      }
+    });
 
-  return sendJsonWithRequestId(req, res, 200, { ok: true });
+    return sendJsonWithRequestId(req, res, 200, { ok: true });
+  } catch (err) {
+    await unmarkProcessedWebhookEvent(stripeEvent.id);
+    return sendJsonWithRequestId(req, res, 500, { error: 'Webhook processing failed.' });
+  }
 }

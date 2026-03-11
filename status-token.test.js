@@ -8,7 +8,7 @@ test('store persists order/events/deadletters and queue jobs with backoff', asyn
   const dir = await mkdtemp(join(tmpdir(), 'tw-store-'));
   process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
 
-  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  const store = await import(`./netlify/functions/_lib/store.js?ts=${Date.now()}`);
   await store.upsertOrder('TW-X', { status: 'processing', customerEmail: 'a@b.com' });
   const order = await store.getOrder('TW-X');
   assert.equal(order.status, 'processing');
@@ -56,7 +56,7 @@ test('store can claim a due job by caseRef without claiming unrelated jobs', asy
   const dir = await mkdtemp(join(tmpdir(), 'tw-store-'));
   process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
 
-  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  const store = await import(`./netlify/functions/_lib/store.js?ts=${Date.now()}`);
 
   const jobA = await store.enqueueJob({ type: 'fulfillment', payload: { caseRef: 'TW-A' } });
   const jobB = await store.enqueueJob({ type: 'fulfillment', payload: { caseRef: 'TW-B' } });

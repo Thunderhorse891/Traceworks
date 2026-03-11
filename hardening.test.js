@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { gatherPublicRecordIntel } from '../netlify/functions/_lib/public-records.js';
+import { gatherPublicRecordIntel } from './netlify/functions/_lib/public-records.js';
 
 function jsonResponse(status, data) {
   return {

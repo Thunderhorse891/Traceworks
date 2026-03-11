@@ -70,6 +70,22 @@ export async function markProcessedWebhookEvent(eventId) {
   // but the set stays small in practice (Stripe sends each event once).
 }
 
+/**
+ * Atomically claim a webhook event ID.
+ * Returns true exactly once for a given eventId, false for duplicates.
+ */
+export async function claimWebhookEvent(eventId) {
+  const added = await kv.sadd(K.webhooks, eventId);
+  return Number(added) > 0;
+}
+
+/**
+ * Release a previously claimed event ID so Stripe retries can be processed.
+ */
+export async function unmarkProcessedWebhookEvent(eventId) {
+  await kv.srem(K.webhooks, eventId);
+}
+
 // ── ANALYTICS ─────────────────────────────────────────────────
 
 export async function recordAnalytics(event) {

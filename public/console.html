@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traceworks Console • Dashboard</title>
+  <link rel="stylesheet" href="/traceworks-shell.css" />
+</head>
+<body class="tw-shell-body" data-page="dashboard">
+  <div class="tw-shell">
+    <aside class="tw-nav">
+      <div class="tw-logo">Trace<span>works</span> Console</div>
+      <a class="active" href="/console.html">Dashboard</a><a href="/cases.html">Cases</a><a href="/search.html">Search</a><a href="/reports.html">Reports</a>
+      <a href="/sources.html">Sources</a><a href="/workflows.html">Workflows</a><a href="/billing.html">Billing</a><a href="/admin.html">Admin</a>
+    </aside>
+    <main class="tw-main">
+      <section class="tw-top"><h1>Operations Command Center</h1><div class="tw-chip warn">Investigation-first workspace</div></section>
+      <section id="kpis" class="tw-kpis"></section>
+      <section class="tw-grid-2">
+        <article class="tw-card"><h2 class="tw-section-title">Active Cases</h2><table class="tw-table"><thead><tr><th>Case</th><th>Subject</th><th>Workflow</th><th>Sources</th><th>Confidence</th></tr></thead><tbody id="recent-cases"></tbody></table></article>
+        <article class="tw-card"><h2 class="tw-section-title">Source Health</h2><table class="tw-table"><thead><tr><th>Connector</th><th>Category</th><th>Status</th><th>Freshness</th></tr></thead><tbody id="source-health"></tbody></table></article>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="/traceworks-shell.js"></script>
+</body></html>

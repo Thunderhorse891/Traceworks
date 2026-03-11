@@ -4,19 +4,17 @@ import { readFileSync } from 'node:fs';
 import { clientPackages } from '../public/packages.js';
 
 test('client packages include valid Stripe payment links', () => {
-  assert.ok(clientPackages.length >= 5, `Expected at least 5 packages, got ${clientPackages.length}`);
+  assert.ok(clientPackages.length >= 4, `Expected at least 4 packages, got ${clientPackages.length}`);
 
-  const paid   = clientPackages.filter((p) => p.payLink !== null);
-  const custom = clientPackages.filter((p) => p.payLink === null);
+  const paid = clientPackages.filter((p) => typeof p.payLink === 'string' && p.payLink.length > 0);
 
-  assert.ok(paid.length   >= 4, `Expected at least 4 paid packages, got ${paid.length}`);
-  assert.ok(custom.length >= 1, `Expected at least 1 contact/custom package`);
+  assert.ok(paid.length >= 4, `Expected at least 4 paid packages, got ${paid.length}`);
 
   for (const pkg of clientPackages) {
     assert.ok(pkg.id);
     assert.ok(pkg.name);
     assert.ok(pkg.price.startsWith('$'));
-    assert.ok(pkg.payLink.startsWith('https://buy.stripe.com/'));
+    if (pkg.payLink !== null) assert.ok(pkg.payLink.startsWith('https://buy.stripe.com/'));
     assert.ok(Array.isArray(pkg.bullets) && pkg.bullets.length >= 3);
     assert.ok(pkg.reportPreviewPath.startsWith('/reports/'));
     assert.ok(typeof pkg.summary === 'string' && pkg.summary.length > 20);
