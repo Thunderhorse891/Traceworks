@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { gatherOsint } from '../netlify/functions/_lib/osint.js';
+import { gatherOsint } from './netlify/functions/_lib/osint.js';
 
 function mockFetch(url) {
   if (url.includes('duckduckgo.com')) {

@@ -10,8 +10,8 @@ test('processPaidOrder runs paid workflow, creates artifact, and records deliver
   process.env.REPORT_ARTIFACT_ROOT = join(dir, 'artifacts');
   process.env.PAID_FULFILLMENT_STRICT = 'false';
 
-  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
-  const { processPaidOrder } = await import(`../netlify/functions/_lib/fulfillment.js?ts=${Date.now()}`);
+  const store = await import(`./netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  const { processPaidOrder } = await import(`./netlify/functions/_lib/fulfillment.js?ts=${Date.now()}`);
 
   const orderId = 'TW-E2E-1';
   await store.upsertOrder(orderId, {

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildReport, reportToHtml } from '../netlify/functions/_lib/report.js';
-import { normalizeCheckoutPayload, validateCheckoutPayload } from '../netlify/functions/_lib/validation.js';
+import { buildReport, reportToHtml } from './netlify/functions/_lib/report.js';
+import { normalizeCheckoutPayload, validateCheckoutPayload } from './netlify/functions/_lib/validation.js';
 
 const PACKAGE_IDS = ['locate', 'comprehensive', 'title', 'heir'];
 

@@ -61,6 +61,7 @@ export function makeWorkflowResults({
   tier,
   inputs,
   sources = [],
+  heirCandidates = [],
   startedAt,
   completedAt = new Date().toISOString(),
 }) {
@@ -94,6 +95,7 @@ export function makeWorkflowResults({
     overallStatus,
     partialReasons:  partialReasons.length  ? partialReasons  : undefined,
     failureReasons:  failureReasons.length  ? failureReasons  : undefined,
+    heirCandidates,
     sourceSummary: { total: sources.length, found, partial, notFound, unavailable, errors },
   };
 }
