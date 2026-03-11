@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Sales — TraceWorks™</title>
+  <meta name="description" content="Contact the TraceWorks sales team for enterprise pricing, custom connectors, and volume investigation plans." />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#09090f" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .cs-layout { max-width: 960px; margin: 0 auto; padding: 64px 24px 80px; display: grid; grid-template-columns: 1fr 360px; gap: 48px; }
+    @media (max-width: 780px) { .cs-layout { grid-template-columns: 1fr; } }
+    .cs-form-wrap { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 4px; padding: 36px; }
+    .field-group { margin-bottom: 18px; }
+    .field-group label { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+    .field-group input, .field-group select, .field-group textarea {
+      width: 100%; padding: 10px 14px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 2px; color: var(--text-1); font-size: 13px; box-sizing: border-box; font-family: inherit;
+    }
+    .field-group input:focus, .field-group select:focus, .field-group textarea:focus { outline: none; border-color: var(--gold); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 480px) { .field-row { grid-template-columns: 1fr; } }
+    .sidebar-card { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 4px; padding: 24px; margin-bottom: 20px; }
+    .sidebar-card h4 { font-size: 13px; font-weight: 600; color: var(--text-1); margin: 0 0 10px; }
+    .sidebar-card p { font-size: 13px; color: var(--text-2); line-height: 1.6; margin: 0; }
+    .sidebar-card a { color: var(--gold); text-decoration: none; }
+    .benefit-list { list-style: none; margin: 10px 0 0; padding: 0; }
+    .benefit-list li { font-size: 13px; color: var(--text-2); padding: 6px 0; display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .benefit-list li:last-child { border-bottom: none; }
+    .benefit-list li::before { content: "—"; color: var(--gold); flex-shrink: 0; }
+    .success-msg { padding: 28px; background: rgba(58,158,110,.1); border: 1px solid rgba(58,158,110,.2); border-radius: 4px; text-align: center; display: none; }
+    .success-msg h3 { font-family: var(--serif); font-size: 22px; color: #5ecb94; margin: 0 0 8px; }
+    .success-msg p { font-size: 14px; color: var(--text-2); margin: 0; }
+    .err-msg { padding: 12px 16px; background: rgba(220,60,60,.1); border: 1px solid rgba(220,60,60,.2); border-radius: 3px; color: #f07070; font-size: 13px; margin-top: 12px; display: none; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="topbar">
+      <a href="/" style="text-decoration:none;"><h1 style="margin:0;font-size:20px;">Trace<span style="color:var(--gold);">Works™</span></h1></a>
+      <nav class="topbar-nav">
+        <a href="/packages.html">Reports</a>
+        <a href="/enterprise.html">Enterprise</a>
+        <a href="/dashboard.html">My Orders</a>
+        <a href="/#order" class="btn-primary">Submit a Request</a>
+      </nav>
+    </div>
+  </header>
+
+  <div style="max-width:960px;margin:0 auto;padding:64px 24px 0;">
+    <span class="eyebrow">Sales Inquiry</span>
+    <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,40px);color:var(--text-1);margin:12px 0 8px;">Talk to Our Team</h2>
+    <p style="color:var(--text-2);font-size:15px;margin:0 0 40px;max-width:560px;">For enterprise pricing, custom connectors, and volume investigation plans — describe your practice and we will respond within one business day.</p>
+  </div>
+
+  <div class="cs-layout">
+    <div>
+      <div class="cs-form-wrap">
+        <div id="formSuccess" class="success-msg">
+          <h3>Message Received</h3>
+          <p>Our team will respond within one business day to the email address you provided.</p>
+        </div>
+        <form id="salesForm" onsubmit="submitForm(event)">
+          <div class="field-row">
+            <div class="field-group"><label>First Name *</label><input type="text" name="firstName" required maxlength="60" /></div>
+            <div class="field-group"><label>Last Name *</label><input type="text" name="lastName" required maxlength="60" /></div>
+          </div>
+          <div class="field-group"><label>Business Email *</label><input type="email" name="email" required maxlength="120" /></div>
+          <div class="field-row">
+            <div class="field-group"><label>Company / Firm *</label><input type="text" name="company" required maxlength="120" /></div>
+            <div class="field-group"><label>Job Title</label><input type="text" name="jobTitle" maxlength="80" placeholder="Probate Attorney" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field-group"><label>Phone</label><input type="tel" name="phone" maxlength="20" /></div>
+            <div class="field-group">
+              <label>Monthly Volume</label>
+              <select name="volume">
+                <option value="">Select range…</option>
+                <option value="1-5">1–5 reports/month</option>
+                <option value="6-20">6–20 reports/month</option>
+                <option value="21-50">21–50 reports/month</option>
+                <option value="50+">50+ reports/month</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Primary Use Case</label>
+            <select name="useCase">
+              <option value="">Select…</option>
+              <option value="probate">Probate / Estate Litigation</option>
+              <option value="title">Real Estate Due Diligence / Title Research</option>
+              <option value="asset-recovery">Asset Recovery</option>
+              <option value="skip-trace">Skip Trace / Locate</option>
+              <option value="entity">Entity / Corporate Investigation</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Message / Requirements</label>
+            <textarea name="message" rows="5" style="resize:vertical;" maxlength="2000" placeholder="Describe your typical investigations, jurisdictions you operate in, turnaround time requirements, or integration needs…"></textarea>
+          </div>
+          <input type="text" name="_hp" style="display:none;" tabindex="-1" autocomplete="off" />
+          <p style="font-size:11px;color:var(--text-4);margin:0 0 16px;">By submitting this form you agree to our <a href="/privacy.html" style="color:var(--text-4);">Privacy Policy</a>. We will never share your contact information.</p>
+          <button type="submit" id="submitBtn" class="btn-primary" style="width:100%;padding:13px;font-size:14px;">Send Inquiry</button>
+          <div id="formError" class="err-msg"></div>
+        </form>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-card">
+        <h4>Why TraceWorks</h4>
+        <ul class="benefit-list">
+          <li>Automated public-record OSINT — no manual research hours</li>
+          <li>Every source logged with full audit trail</li>
+          <li>Confidence ratings on every finding</li>
+          <li>Honest disclosure of unavailable or blocked sources</li>
+          <li>Delivered to inbox as structured HTML report</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Direct Contact</h4>
+        <p>For urgent inquiries: <a href="mailto:traceworks.tx@outlook.com">traceworks.tx@outlook.com</a></p>
+        <p style="margin-top:10px;font-size:12px;color:var(--text-3);">Response time: 1 business day.</p>
+      </div>
+      <div class="sidebar-card">
+        <h4>Coverage</h4>
+        <p>Texas-focused. Harris, Travis, Bexar, Dallas, Tarrant, Collin, Denton, Montgomery, Galveston, Williamson counties. Multi-state available for enterprise clients.</p>
+        <p style="margin-top:10px;"><a href="/packages.html">View report tiers &rarr;</a></p>
+      </div>
+      <div class="sidebar-card" style="border-color:rgba(201,168,76,.15);background:rgba(201,168,76,.03);">
+        <h4 style="color:var(--gold);">Ready to buy now?</h4>
+        <p>Individual reports — no sales call required.</p>
+        <a href="/#order" class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:10px;margin-top:14px;font-size:13px;">Submit a Request</a>
+      </div>
+    </div>
+  </div>
+
+  <footer style="border-top:1px solid rgba(255,255,255,.07);padding:40px 24px;text-align:center;">
+    <p style="font-size:12px;color:var(--text-4);">© 2025 TraceWorks™. All rights reserved. &nbsp;|&nbsp; <a href="/terms.html" style="color:var(--text-4);">Terms</a> &nbsp;|&nbsp; <a href="/privacy.html" style="color:var(--text-4);">Privacy</a> &nbsp;|&nbsp; <a href="/refund-policy.html" style="color:var(--text-4);">Refunds</a></p>
+  </footer>
+
+  <script>
+    async function submitForm(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('submitBtn');
+      const errEl = document.getElementById('formError');
+      errEl.style.display = 'none';
+      btn.textContent = 'Sending…';
+      btn.disabled = true;
+
+      const body = {};
+      new FormData(form).forEach((v, k) => { body[k] = v; });
+      body.name = `${body.firstName || ''} ${body.lastName || ''}`.trim();
+      body.source = 'contact-sales-page';
+
+      try {
+        const res = await fetch('/api/contact-sales', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        form.style.display = 'none';
+        document.getElementById('formSuccess').style.display = '';
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = '';
+      } finally {
+        btn.textContent = 'Send Inquiry';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
