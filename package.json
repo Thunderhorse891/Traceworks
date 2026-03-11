@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --test && npm run lint:js",
+    "check": "node --test tests/*.test.js && npm run lint:js",
     "lint:js": "node scripts/check-syntax.mjs",
-    "start": "npx netlify-cli dev"
+    "start": "npx netlify-cli dev",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "nodemailer": "^6.9.15",
