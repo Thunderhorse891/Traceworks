@@ -3,16 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ — Offline</title>
+    <title>TraceWorks™ — No Connection</title>
+    <meta name="theme-color" content="#09090f" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="container" style="max-width:640px; padding-top:80px; text-align:center;">
-      <h1 style="font-family:Georgia,serif; font-size:clamp(32px,5vw,56px); color:#f3f6ff;">Trace<span style="color:#d8b34c;">Works™</span></h1>
-      <p style="color:#d8b34c; letter-spacing:.15em; font-size:12px; text-transform:uppercase; margin-bottom:32px;">Connection Unavailable</p>
-      <p style="color:#95a3c5; font-size:18px; max-width:480px; margin:0 auto 24px;">You appear to be offline. TraceWorks requires a live internet connection to submit and track investigative report requests.</p>
-      <p style="color:#667496; font-size:14px;">Please check your connection and reload the page.</p>
-      <button onclick="window.location.reload()" style="margin-top:32px; padding:14px 32px; font-size:15px;">Try Again</button>
-    </main>
+    <header class="site-header">
+      <div class="topbar">
+        <h1>Trace<span>Works™</span></h1>
+      </div>
+    </header>
+
+    <div class="admin-page" style="max-width:560px; text-align:center;">
+      <span class="eyebrow">Connection Unavailable</span>
+      <h1 style="margin-bottom:12px;">You're offline</h1>
+      <p style="color:var(--text-2); font-size:15px; margin-bottom:32px;">
+        TraceWorks requires a live connection to submit requests and track reports.<br />
+        Any previously loaded pages are available below.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:12px; align-items:center; margin-bottom:40px;">
+        <button onclick="location.reload()" class="btn-primary" style="width:220px;">Try Again</button>
+        <a href="/" class="btn-outline" style="width:220px; text-align:center;">Go to Home</a>
+      </div>
+
+      <div style="border-top:1px solid var(--border); padding-top:24px;">
+        <p style="font-size:12px; color:var(--text-4); letter-spacing:.05em; text-transform:uppercase; margin-bottom:12px;">Cached pages available offline</p>
+        <nav style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+          <a href="/terms.html" style="font-size:12px; color:var(--text-3);">Terms of Service</a>
+          <a href="/privacy.html" style="font-size:12px; color:var(--text-3);">Privacy Policy</a>
+          <a href="/refund-policy.html" style="font-size:12px; color:var(--text-3);">Refund Policy</a>
+          <a href="/report-tiers.html" style="font-size:12px; color:var(--text-3);">Sample Reports</a>
+        </nav>
+      </div>
+    </div>
+
+    <script>
+      // Auto-reload when connection returns
+      window.addEventListener('online', () => location.reload());
+    </script>
   </body>
 </html>

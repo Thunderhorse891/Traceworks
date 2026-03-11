@@ -7,6 +7,31 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// PWA install prompt
+let _installPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _installPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.hidden = false;
+});
+
+window.addEventListener('appinstalled', () => {
+  _installPrompt = null;
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.hidden = true;
+});
+
+async function triggerInstall() {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  const { outcome } = await _installPrompt.userChoice;
+  if (outcome === 'accepted') _installPrompt = null;
+}
+
+window.triggerInstall = triggerInstall;
+
 const packageInput = document.getElementById('packageId');
 const statusEl = document.getElementById('status');
 
