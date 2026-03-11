@@ -3,85 +3,452 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ Payment Complete</title>
+    <title>TraceWorks™ — Order Confirmed</title>
+    <meta name="theme-color" content="#09090f" />
     <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .success-wrap {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 64px 24px 72px;
+      }
+
+      .confirm-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        background: rgba(58,158,110,0.1);
+        border: 1px solid rgba(58,158,110,0.3);
+        border-radius: 20px;
+        margin-bottom: 24px;
+      }
+      .confirm-badge .dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: #3a9e6e;
+        animation: pulse 2s infinite;
+      }
+      .confirm-badge span {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #3a9e6e;
+      }
+
+      .success-title {
+        font-family: var(--serif);
+        font-size: clamp(28px, 5vw, 44px);
+        color: var(--white);
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+        line-height: 1.1;
+      }
+
+      .success-sub {
+        font-size: 15px;
+        color: var(--text-2);
+        line-height: 1.7;
+        margin-bottom: 32px;
+      }
+
+      .case-panel {
+        background: rgba(0,0,0,0.35);
+        border: 1px solid var(--border-faint);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin-bottom: 28px;
+      }
+
+      .case-panel-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border-faint);
+        background: rgba(0,0,0,0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .case-panel-header h3 {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-2);
+        letter-spacing: 0.04em;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid;
+      }
+      .status-pill.queued      { background: rgba(100,100,200,0.1); color: #8080e0; border-color: rgba(100,100,200,0.3); }
+      .status-pill.processing  { background: rgba(201,168,76,0.1);  color: var(--gold); border-color: rgba(201,168,76,0.3); }
+      .status-pill.completed   { background: rgba(58,158,110,0.1);  color: #3a9e6e; border-color: rgba(58,158,110,0.3); }
+      .status-pill.failed      { background: rgba(158,58,58,0.1);   color: #e05555; border-color: rgba(158,58,58,0.3); }
+      .status-pill.retrying    { background: rgba(201,168,76,0.1);  color: var(--gold); border-color: rgba(201,168,76,0.3); }
+      .status-pill.default     { background: rgba(80,88,112,0.15);  color: var(--text-3); border-color: var(--border-faint); }
+
+      .case-fields {
+        display: grid;
+        gap: 0;
+      }
+
+      .case-field {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 11px 20px;
+        border-bottom: 1px solid var(--border-faint);
+        gap: 12px;
+      }
+      .case-field:last-child { border-bottom: none; }
+
+      .case-field-label {
+        font-size: 11px;
+        color: var(--text-3);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        flex-shrink: 0;
+      }
+      .case-field-value {
+        font-size: 13px;
+        color: var(--text-1);
+        text-align: right;
+        font-family: var(--mono);
+      }
+
+      .timeline {
+        margin-bottom: 28px;
+      }
+
+      .timeline-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.20em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 16px;
+      }
+
+      .timeline-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid var(--border-faint);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      .timeline-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-faint);
+      }
+      .timeline-step:last-child { border-bottom: none; }
+
+      .timeline-step-dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 1px solid var(--border-mid);
+        flex-shrink: 0;
+        margin-top: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .timeline-step-dot.done {
+        background: rgba(58,158,110,0.15);
+        border-color: rgba(58,158,110,0.4);
+      }
+      .timeline-step-dot.done::after {
+        content: '✓';
+        font-size: 10px;
+        color: #3a9e6e;
+      }
+      .timeline-step-dot.active {
+        background: rgba(201,168,76,0.1);
+        border-color: rgba(201,168,76,0.5);
+        animation: pulse 1.5s infinite;
+      }
+      .timeline-step-dot.active::after {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      .timeline-step-text strong {
+        display: block;
+        font-size: 13px;
+        color: var(--text-1);
+        margin-bottom: 2px;
+      }
+      .timeline-step-text span {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+
+      .notice-block {
+        background: rgba(201,168,76,0.05);
+        border: 1px solid rgba(201,168,76,0.15);
+        border-left: 3px solid var(--gold-dim);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        font-size: 13px;
+        color: var(--text-2);
+        line-height: 1.65;
+        margin-bottom: 24px;
+      }
+
+      .action-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.4; }
+      }
+
+      @media (max-width: 500px) {
+        .case-field { flex-direction: column; gap: 2px; }
+        .case-field-value { text-align: left; }
+      }
+    </style>
   </head>
   <body>
-    <main class="container form-wrap" style="margin-top:24px; max-width:760px;">
-      <h1>Payment complete ✅</h1>
-      <p>Your case has been queued for fulfillment. We’ll keep this status page updated automatically.</p>
-      <p id="status">Loading order status…</p>
-      <ul id="details"></ul>
-      <p><a href="/">Back to home</a></p>
-    </main>
+    <header class="site-header">
+      <div class="topbar">
+        <h1>Trace<span>Works™</span></h1>
+        <nav class="topbar-nav">
+          <a href="/">Home</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="success-wrap">
+      <div class="confirm-badge">
+        <span class="dot"></span>
+        <span>Payment Confirmed</span>
+      </div>
+
+      <h1 class="success-title">Your case is in the queue.</h1>
+      <p class="success-sub">Research begins automatically. Your report will be emailed when complete — typically within 10–45 minutes. You do not need to stay on this page.</p>
+
+      <!-- Case Status Panel -->
+      <div class="case-panel">
+        <div class="case-panel-header">
+          <h3>Order Status</h3>
+          <span class="status-pill default" id="statusPill">Loading…</span>
+        </div>
+        <div class="case-fields" id="caseFields">
+          <div class="case-field">
+            <span class="case-field-label">Case Reference</span>
+            <span class="case-field-value" id="fieldCaseRef">—</span>
+          </div>
+          <div class="case-field">
+            <span class="case-field-label">Package</span>
+            <span class="case-field-value" id="fieldPackage">—</span>
+          </div>
+          <div class="case-field">
+            <span class="case-field-label">Status</span>
+            <span class="case-field-value" id="fieldStatus">—</span>
+          </div>
+          <div class="case-field">
+            <span class="case-field-label">Queued</span>
+            <span class="case-field-value" id="fieldQueued">—</span>
+          </div>
+          <div class="case-field" id="rowAttempts">
+            <span class="case-field-label">Attempts</span>
+            <span class="case-field-value" id="fieldAttempts">—</span>
+          </div>
+          <div class="case-field" id="rowCompleted" style="display:none;">
+            <span class="case-field-label">Completed</span>
+            <span class="case-field-value" id="fieldCompleted">—</span>
+          </div>
+          <div class="case-field" id="rowError" style="display:none;">
+            <span class="case-field-label">Note</span>
+            <span class="case-field-value" id="fieldError" style="color:var(--text-3); font-family:var(--sans);">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- What Happens Next -->
+      <div class="timeline">
+        <p class="timeline-title">What Happens Next</p>
+        <div class="timeline-steps">
+          <div class="timeline-step">
+            <div class="timeline-step-dot done"></div>
+            <div class="timeline-step-text">
+              <strong>Payment Confirmed</strong>
+              <span>Stripe confirmed your payment and triggered the research workflow.</span>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="timeline-step-dot active" id="stepResearch"></div>
+            <div class="timeline-step-text">
+              <strong>Automated Research Running</strong>
+              <span>The engine is querying county appraisal, TX SOS, deed index, probate, and people sources.</span>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="timeline-step-dot" id="stepReport"></div>
+            <div class="timeline-step-text">
+              <strong>Report Generated</strong>
+              <span>Findings compiled, confidence-labeled, and source-traced.</span>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <div class="timeline-step-dot" id="stepDelivery"></div>
+            <div class="timeline-step-text">
+              <strong>Delivered to Your Inbox</strong>
+              <span>HTML report emailed with source trace panel. Check spam if not received within 60 minutes.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notice-block">
+        <strong style="color:var(--text-1);">Save your case reference.</strong> Use it to follow up if your report is not received. Contact <a href="mailto:traceworks.tx@outlook.com" style="color:var(--gold-dim);">traceworks.tx@outlook.com</a> and include your case reference number.
+      </div>
+
+      <div class="action-row">
+        <a href="/" class="btn-outline">Return to Home</a>
+      </div>
+    </div>
 
     <script>
-      const p = new URLSearchParams(location.search);
-      const caseRef = p.get('case_ref');
-      const email = p.get('email');
-      const statusToken = p.get('status_token') || p.get('statusToken');
-      const statusEl = document.getElementById('status');
-      const detailsEl = document.getElementById('details');
+      const params      = new URLSearchParams(location.search);
+      const caseRef     = params.get('case_ref');
+      const email       = params.get('email');
+      const statusToken = params.get('status_token') || params.get('statusToken');
 
-      function row(label, value) {
-        const li = document.createElement('li');
-        li.textContent = `${label}: ${value || 'n/a'}`;
-        return li;
+      const statusPill    = document.getElementById('statusPill');
+      const fieldCaseRef  = document.getElementById('fieldCaseRef');
+      const fieldPackage  = document.getElementById('fieldPackage');
+      const fieldStatus   = document.getElementById('fieldStatus');
+      const fieldQueued   = document.getElementById('fieldQueued');
+      const fieldAttempts = document.getElementById('fieldAttempts');
+      const fieldCompleted= document.getElementById('fieldCompleted');
+      const fieldError    = document.getElementById('fieldError');
+      const rowCompleted  = document.getElementById('rowCompleted');
+      const rowError      = document.getElementById('rowError');
+      const stepResearch  = document.getElementById('stepResearch');
+      const stepReport    = document.getElementById('stepReport');
+      const stepDelivery  = document.getElementById('stepDelivery');
+
+      const TERMINAL = new Set(['completed', 'failed', 'manual_review']);
+      let pollInterval = null;
+
+      function fmt(iso) {
+        if (!iso) return '—';
+        try { return new Date(iso).toLocaleString(undefined, { hour12: true }); } catch { return iso; }
+      }
+
+      function setPill(status) {
+        const map = {
+          queued:     'queued',
+          processing: 'processing',
+          completed:  'completed',
+          failed:     'failed',
+          retrying:   'retrying',
+        };
+        const cls = map[status] || 'default';
+        statusPill.className = 'status-pill ' + cls;
+        statusPill.textContent = (status || 'unknown').replace(/_/g, ' ').toUpperCase();
+      }
+
+      function updateTimeline(status) {
+        const active = 'timeline-step-dot active';
+        const done   = 'timeline-step-dot done';
+        const pend   = 'timeline-step-dot';
+        if (status === 'completed') {
+          stepResearch.className = done;
+          stepReport.className   = done;
+          stepDelivery.className = done;
+        } else if (status === 'processing') {
+          stepResearch.className = active;
+          stepReport.className   = pend;
+          stepDelivery.className = pend;
+        } else if (status === 'failed') {
+          stepResearch.className = 'timeline-step-dot';
+          stepReport.className   = 'timeline-step-dot';
+          stepDelivery.className = 'timeline-step-dot';
+        } else {
+          stepResearch.className = active;
+        }
       }
 
       function renderOrder(data) {
-        detailsEl.innerHTML = '';
-        detailsEl.appendChild(row('Case', data.caseRef));
-        detailsEl.appendChild(row('Package', data.packageName || data.packageId));
-        detailsEl.appendChild(row('Fulfillment attempts', data.fulfillmentAttempts));
-        if (data.queuedAt) detailsEl.appendChild(row('Queued at', new Date(data.queuedAt).toLocaleString()));
-        if (data.lastAttemptAt) detailsEl.appendChild(row('Last attempt', new Date(data.lastAttemptAt).toLocaleString()));
-        if (data.retryAt) detailsEl.appendChild(row('Next retry', new Date(data.retryAt).toLocaleString()));
-        if (data.completedAt) detailsEl.appendChild(row('Completed at', new Date(data.completedAt).toLocaleString()));
+        fieldCaseRef.textContent  = data.caseRef || '—';
+        fieldPackage.textContent  = data.packageName || data.packageId || '—';
+        fieldStatus.textContent   = (data.status || '—').replace(/_/g, ' ');
+        fieldQueued.textContent   = fmt(data.queuedAt || data.createdAt);
+        fieldAttempts.textContent = data.fulfillmentAttempts ?? '—';
+
+        if (data.completedAt) {
+          rowCompleted.style.display = '';
+          fieldCompleted.textContent = fmt(data.completedAt);
+        }
+        if (data.lastError) {
+          rowError.style.display = '';
+          fieldError.textContent = data.lastError;
+        }
+
+        setPill(data.status);
+        updateTimeline(data.status);
       }
 
-      async function load() {
+      async function poll() {
         if (!caseRef || (!statusToken && !email)) {
-          statusEl.textContent = 'Missing case reference or status token. Please contact support with your payment receipt.';
+          statusPill.textContent = 'ERROR';
+          fieldStatus.textContent = 'Missing case reference — contact traceworks.tx@outlook.com with your payment receipt.';
+          clearInterval(pollInterval);
           return;
         }
 
         try {
-          const authParam = statusToken
+          const auth = statusToken
             ? `statusToken=${encodeURIComponent(statusToken)}`
             : `email=${encodeURIComponent(email)}`;
-          const res = await fetch(`/api/get-order?caseRef=${encodeURIComponent(caseRef)}&${authParam}`);
+          const res  = await fetch(`/api/get-order?caseRef=${encodeURIComponent(caseRef)}&${auth}`);
           const data = await res.json().catch(() => ({}));
 
           if (res.ok) {
-            if (data.status === 'completed') {
-              statusEl.textContent = `Case ${data.caseRef} is complete. Report delivery should be in your inbox.`;
-            } else if (data.status === 'failed') {
-              statusEl.textContent = `Case ${data.caseRef} hit a terminal issue. Our team will review manually.`;
-            } else if (data.status === 'retrying') {
-              statusEl.textContent = `Case ${data.caseRef} hit a transient issue and is scheduled for automatic retry.`;
-            } else if (data.status === 'processing') {
-              statusEl.textContent = `Case ${data.caseRef} is actively processing now.`;
-            } else {
-              statusEl.textContent = `Case ${data.caseRef} is ${data.status}. Typical turnaround is 10–45 minutes.`;
-            }
             renderOrder(data);
-            return;
+            if (TERMINAL.has(data.status)) clearInterval(pollInterval);
+          } else if (res.status === 404) {
+            statusPill.className = 'status-pill default';
+            statusPill.textContent = 'QUEUED';
+            fieldCaseRef.textContent = caseRef;
+            fieldStatus.textContent  = 'Pending — check back in 30 seconds';
+          } else {
+            statusPill.textContent = 'UNAVAILABLE';
+            fieldStatus.textContent = data.error || 'Status temporarily unavailable — your order is still processing.';
           }
-
-          if (res.status === 404) {
-            statusEl.textContent = 'Order status not visible yet. Refresh in 30–60 seconds.';
-            return;
-          }
-
-          statusEl.textContent = data.error || 'Unable to load status right now.';
         } catch {
           statusEl.textContent = 'Status service unavailable. If you are testing locally, make sure your API routes are running and reachable.';
         }
       }
 
-      load();
-      setInterval(load, 20000);
+      // Set case ref immediately from URL
+      if (caseRef) fieldCaseRef.textContent = caseRef;
+
+      poll();
+      pollInterval = setInterval(poll, 20_000);
     </script>
   </body>
 </html>

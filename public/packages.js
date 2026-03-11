@@ -1,3 +1,5 @@
+// Pay links: replace REPLACE_* with your real Stripe Payment Links from the Dashboard.
+// Tier IDs must match api/_lib/packages.js exactly.
 export const clientPackages = [
   {
     id: 'locate',

@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ Launch Readiness</title>
+    <title>TraceWorks™ — Launch Readiness</title>
+    <meta name="theme-color" content="#09090f" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -67,33 +68,79 @@
     </main>
 
     <script>
-      const statusEl = document.getElementById('healthStatus');
-      const missingEl = document.getElementById('missingList');
+      const overallEl      = document.getElementById('overallStatus');
+      const overallTextEl  = document.getElementById('overallStatusText');
+      const healthSummary  = document.getElementById('healthSummary');
+      const missingEl      = document.getElementById('missingList');
+      const metricsGrid    = document.getElementById('metricsGrid');
+      const dotStripe      = document.getElementById('dot-stripe');
+      const dotSmtp        = document.getElementById('dot-smtp');
+
+      function setStatus(state, text) {
+        overallEl.className = 'status-indicator ' + state;
+        overallTextEl.textContent = text;
+      }
+
+      function metricCard(label, value) {
+        const d = document.createElement('div');
+        d.className = 'metric-card';
+        const v = document.createElement('div');
+        v.className = 'metric-value';
+        v.textContent = value ?? '—';
+        const l = document.createElement('div');
+        l.className = 'metric-label';
+        l.textContent = label;
+        d.appendChild(v);
+        d.appendChild(l);
+        return d;
+      }
 
       async function loadHealth() {
         try {
-          const res = await fetch('/api/health');
-          const data = await res.json();
+          const res  = await fetch('/api/health');
+          const data = await res.json().catch(() => ({}));
+
           if (!res.ok) {
-            statusEl.textContent = data.error || 'Health endpoint unavailable.';
+            setStatus('error', 'Endpoint Error');
+            healthSummary.textContent = data.error || 'Health endpoint returned an error.';
             return;
           }
 
           const missing = Array.isArray(data.envMissing) ? data.envMissing : [];
+
           if (missing.length === 0) {
-            statusEl.textContent = '✅ Environment appears ready (no missing required env vars).';
-            return;
+            setStatus('ok', 'All Clear');
+            healthSummary.textContent = 'All required environment variables detected. System appears ready.';
+          } else {
+            setStatus('error', missing.length + ' Missing');
+            healthSummary.textContent = missing.length + ' required environment variable' + (missing.length > 1 ? 's' : '') + ' not set:';
+            missingEl.innerHTML = '';
+            for (const name of missing) {
+              const li = document.createElement('li');
+              li.textContent = name;
+              missingEl.appendChild(li);
+            }
           }
 
-          statusEl.textContent = `⚠️ Missing ${missing.length} required env vars:`;
-          missingEl.innerHTML = '';
-          for (const name of missing) {
-            const li = document.createElement('li');
-            li.textContent = name;
-            missingEl.appendChild(li);
+          const missingSet = new Set(missing);
+          if (dotStripe) dotStripe.className = 'checklist-item-dot ' + (missingSet.has('STRIPE_SECRET_KEY') || missingSet.has('STRIPE_WEBHOOK_SECRET') ? 'error' : 'ok');
+          if (dotSmtp)   dotSmtp.className   = 'checklist-item-dot ' + (missingSet.has('SMTP_HOST') || missingSet.has('SMTP_USER') || missingSet.has('SMTP_PASS') ? 'error' : 'ok');
+
+          if (data.metrics) {
+            metricsGrid.style.display = 'grid';
+            const m = data.metrics;
+            metricsGrid.innerHTML = '';
+            metricsGrid.appendChild(metricCard('Total Orders',   m.ordersTotal ?? '—'));
+            metricsGrid.appendChild(metricCard('Queue Depth',    m.queueDepth  ?? '—'));
+            metricsGrid.appendChild(metricCard('Completed',      m.byStatus?.completed  ?? '—'));
+            metricsGrid.appendChild(metricCard('Failed',         m.byStatus?.failed     ?? '—'));
+            metricsGrid.appendChild(metricCard('Dead Letters',   m.deadLetters ?? '—'));
+            metricsGrid.appendChild(metricCard('Queue Age (s)',  m.queueOldestMs != null ? Math.round(m.queueOldestMs / 1000) : '—'));
           }
+
         } catch {
-          statusEl.textContent = 'Unable to reach /api/health from this preview mode.';
+          setStatus('warn', 'Unreachable');
+          healthSummary.textContent = 'Cannot reach /api/health. Expected in preview mode without vercel dev running.';
         }
       }
 
