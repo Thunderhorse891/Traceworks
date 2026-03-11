@@ -440,7 +440,7 @@
             fieldStatus.textContent = data.error || 'Status temporarily unavailable — your order is still processing.';
           }
         } catch {
-          fieldStatus.textContent = 'Status service unavailable — your order is still being processed.';
+          statusEl.textContent = 'Status service unavailable. If you are testing locally, make sure your API routes are running and reachable.';
         }
       }
 

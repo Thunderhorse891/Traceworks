@@ -8,160 +8,64 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header class="site-header">
-      <div class="topbar">
-        <h1>Trace<span>Works™</span></h1>
-        <nav class="topbar-nav">
-          <a href="/">Home</a>
-        </nav>
-      </div>
-    </header>
+    <main class="container">
+      <section class="form-wrap" style="margin-top:24px;">
+        <h1>Launch Readiness Checklist</h1>
+        <p>Use this page to confirm what is still needed before launch.</p>
 
-    <div class="admin-page">
-      <span class="eyebrow">Internal Operations</span>
-      <h1>Launch Readiness</h1>
-      <p>Pre-launch verification and live environment status. Not linked from public navigation.</p>
+        <div class="check-grid">
+          <article class="check-card">
+            <h3>What we need from you</h3>
+            <ul>
+              <li>Stripe live API keys + webhook secret.</li>
+              <li>SMTP production credentials and approved sender domain.</li>
+              <li>Owner/support email inbox for report copies and escalations.</li>
+              <li>Final legal policy language sign-off (Terms/Privacy/No-refund redo policy).</li>
+              <li>Admin API key + status token secret (long random values).</li>
+            </ul>
+          </article>
 
-      <!-- Live Environment Status -->
-      <div class="status-panel">
-        <div class="status-panel-header">
-          <h3>Live Environment — /api/health</h3>
-          <span class="status-indicator checking" id="overallStatus">
-            <span class="dot"></span>
-            <span id="overallStatusText">Checking…</span>
-          </span>
-        </div>
-        <div class="status-body">
-          <p id="healthSummary" style="font-size:13px; color:var(--text-2);">Querying <code style="font-family:var(--mono); font-size:11px; color:var(--text-3);">/api/health</code>…</p>
-          <ul class="env-list" id="missingList"></ul>
-          <div class="metrics-grid" id="metricsGrid" style="display:none; margin-top:16px;"></div>
-        </div>
-      </div>
+          <article class="check-card">
+            <h3>Operational checks</h3>
+            <ul>
+              <li>Vercel Cron job is configured and running.</li>
+              <li>Dead-letter monitoring route is documented.</li>
+              <li>Redo workflow owner is assigned.</li>
+              <li>At least one successful test-mode checkout completed end-to-end.</li>
+              <li>Inbox deliverability verified for customer + owner copies.</li>
+            </ul>
+          </article>
 
-      <!-- Credentials Required -->
-      <div class="checklist-section">
-        <div class="checklist-section-header">
-          <h3>What we need from you — Credentials &amp; Configuration</h3>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot" id="dot-stripe"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Stripe Live API Key + Webhook Secret</strong>
-            <span style="font-size:12px; color:var(--text-3);">STRIPE_SECRET_KEY — must be <code style="font-family:var(--mono)">sk_live_</code> format. Current value uses <code style="font-family:var(--mono)">mk_</code> prefix which is non-standard — verify in Stripe Dashboard → Developers → API Keys. STRIPE_WEBHOOK_SECRET is set (<code style="font-family:var(--mono)">whsec_…</code>).</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot" id="dot-smtp"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">SMTP Production Credentials</strong>
-            <span style="font-size:12px; color:var(--text-3);">SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS — configured for smtp-mail.outlook.com. Verify SPF/DKIM alignment on the sending domain for deliverability.</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Owner / Support Email Inbox</strong>
-            <span style="font-size:12px; color:var(--text-3);">OWNER_EMAIL — receives owner copies of every report and all ops alert emails. Currently: <code style="font-family:var(--mono); font-size:11px;">traceworks.tx@outlook.com</code></span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot ok"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Admin API Key + Status Token Secret</strong>
-            <span style="font-size:12px; color:var(--text-3);">ADMIN_API_KEY guards /api/admin-metrics and /api/process-queue. STATUS_TOKEN_SECRET signs order status tokens. Both generated and set.</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Vercel KV Storage Connected</strong>
-            <span style="font-size:12px; color:var(--text-3);">KV_REST_API_URL, KV_REST_API_TOKEN — create a KV database in Vercel Dashboard → Storage → KV and link it to this project. Required for order storage, queue, and analytics.</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot warn"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Stripe Payment Links — REPLACE_ Placeholders</strong>
-            <span style="font-size:12px; color:var(--text-3);">public/packages.js contains REPLACE_* placeholder URLs. Create Stripe Payment Links in the Dashboard at the prices: $99, $249, $325, $399, $549 and update the payLink fields. The /api/create-checkout path works without them — payment links are an alternative checkout method.</span>
-          </div>
-        </div>
-      </div>
+          <article class="check-card">
+            <h3>GitHub push readiness</h3>
+            <p>If <code>git push</code> fails with “No configured push destination,” add and verify your repo remote first:</p>
+            <ul>
+              <li><code>git remote add origin https://github.com/&lt;owner&gt;/&lt;repo&gt;.git</code></li>
+              <li><code>git push -u origin work</code> (replace <code>work</code> with your active branch if different)</li>
+              <li><code>git remote -v</code> should show <code>origin</code> fetch/push URLs.</li>
+            </ul>
+          </article>
 
-      <!-- Legal Sign-Off -->
-      <div class="checklist-section">
-        <div class="checklist-section-header">
-          <h3>Legal Policy Sign-Off</h3>
+          <article class="check-card">
+            <h3>Vercel deployment failure checklist</h3>
+            <ul>
+              <li>In Vercel Project Settings, set all required environment variables (Stripe, SMTP, admin, and status token values).</li>
+              <li>Confirm your API routes are deployed under <code>/api/*</code> for Vercel compatibility.</li>
+              <li>Open each failed deployment log and fix the first build/runtime error before re-deploying.</li>
+              <li>After fixes, trigger a fresh deployment from the latest commit and verify all Preview checks are green.</li>
+            </ul>
+          </article>
         </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Terms of Service</strong>
-            <span style="font-size:12px; color:var(--text-3);">Must include FCRA advisory, governing law (Texas), arbitration clause, and no-warranty language. <a href="/terms.html" target="_blank" rel="noopener" style="color:var(--gold-dim);">Review current draft →</a></span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Privacy Policy</strong>
-            <span style="font-size:12px; color:var(--text-3);">Discloses data collected, third-party processors (Stripe, SMTP/Outlook), and data retention. <a href="/privacy.html" target="_blank" rel="noopener" style="color:var(--gold-dim);">Review →</a></span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">No-Refund Redo Policy</strong>
-            <span style="font-size:12px; color:var(--text-3);">No refunds after research begins. Redo pass for source unavailability. Clear scope definition required. <a href="/refund-policy.html" target="_blank" rel="noopener" style="color:var(--gold-dim);">Review →</a></span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Operational Checks -->
-      <div class="checklist-section">
-        <div class="checklist-section-header">
-          <h3>Operational Readiness</h3>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Vercel Cron Job Active</strong>
-            <span style="font-size:12px; color:var(--text-3);">vercel.json schedules /api/process-queue-scheduled every 2 minutes. Verify under Vercel Project → Settings → Cron Jobs after deploy.</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">End-to-End Test Checkout Completed</strong>
-            <span style="font-size:12px; color:var(--text-3);">Run at least one full checkout in Stripe test mode: intake → Stripe session → webhook → queue → fulfillment → email delivery → success page status.</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Inbox Deliverability Verified</strong>
-            <span style="font-size:12px; color:var(--text-3);">Confirm both customer and owner copies land in inbox, not spam. Outlook sending via smtp-mail.outlook.com may require app password if 2FA is enabled.</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Redo Workflow Owner Assigned</strong>
-            <span style="font-size:12px; color:var(--text-3);">Someone monitors the dead-letter queue via GET /api/admin-metrics (Bearer ADMIN_API_KEY) and manually triggers retries via POST /api/process-queue when needed.</span>
-          </div>
-        </div>
-        <div class="checklist-item">
-          <span class="checklist-item-dot warn"></span>
-          <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Stripe Key Format — Verify Before Launch</strong>
-            <span style="font-size:12px; color:var(--text-3);">STRIPE_SECRET_KEY has <code style="font-family:var(--mono)">mk_</code> prefix. Standard Stripe live secret keys start with <code style="font-family:var(--mono)">sk_live_</code>. Log into Stripe Dashboard → Developers → API Keys and confirm the correct key is set in Vercel environment variables.</span>
-          </div>
-        </div>
-      </div>
+        <section class="check-card">
+          <h3>Live environment status</h3>
+          <p id="healthStatus">Checking `/api/health`…</p>
+          <ul id="missingList"></ul>
+        </section>
 
-      <div style="margin-top:32px; display:flex; gap:14px; flex-wrap:wrap;">
-        <a href="/" class="btn-outline">Back to Home</a>
-        <a href="/api/health" target="_blank" rel="noopener" class="btn-outline">Raw Health JSON</a>
-      </div>
-    </div>
+        <p><a href="/">Back to home</a></p>
+      </section>
+    </main>
 
     <script>
       const overallEl      = document.getElementById('overallStatus');

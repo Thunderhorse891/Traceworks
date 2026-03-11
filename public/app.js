@@ -1,39 +1,23 @@
 import { clientPackages } from './packages.js';
 
-// Register service worker for PWA offline support
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}
-
-// PWA install prompt
-let _installPrompt = null;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  _installPrompt = e;
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.hidden = false;
-});
-
-window.addEventListener('appinstalled', () => {
-  _installPrompt = null;
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.hidden = true;
-});
-
-async function triggerInstall() {
-  if (!_installPrompt) return;
-  _installPrompt.prompt();
-  const { outcome } = await _installPrompt.userChoice;
-  if (outcome === 'accepted') _installPrompt = null;
-}
-
-window.triggerInstall = triggerInstall;
-
+const cards = document.getElementById('packageCards');
+const heirCards = document.getElementById('heirPackageCards');
 const packageInput = document.getElementById('packageId');
 const statusEl = document.getElementById('status');
+const packageModal = document.getElementById('packageModal');
+const modalCloseButton = document.getElementById('packageModalClose');
+const modalSelectButton = document.getElementById('modalSelectPackage');
+
+const modalFields = {
+  label: document.getElementById('modalPackageLabel'),
+  title: document.getElementById('modalPackageTitle'),
+  price: document.getElementById('modalPackagePrice'),
+  summary: document.getElementById('modalPackageSummary'),
+  includes: document.getElementById('modalPackageIncludes'),
+  previewLink: document.getElementById('modalReportPreview')
+};
+
+let activePackage = null;
 
 const packagesGrid = document.getElementById('packages-grid');
 
@@ -49,69 +33,24 @@ async function track(type, detail = '') {
 
 function buildCard(pkg, index) {
   const el = document.createElement('article');
-  el.className = 'card' + (pkg.id === 'comprehensive' ? ' card-featured' : '');
-  el.setAttribute('role', 'button');
-  el.setAttribute('tabindex', '0');
+  el.className = 'card';
+  el.innerHTML = `
+    <p class="label">${pkg.id.toUpperCase()}</p>
+    ${pkg.featured ? '<p class="feature-badge">Most Selected</p>' : ''}
+    <h4>${pkg.name}</h4>
+    <p class="price">${pkg.price}</p>
+    <p class="pkg-meta"><strong>Best for:</strong> ${pkg.bestFor || 'Legal locate intelligence workflows'}</p>
+    <p class="pkg-turnaround">${pkg.turnaround || 'Typical delivery: same day to 24h'}</p>
+    <ul>${pkg.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
+    <button type="button" class="details-btn">View Package Details</button>
+    <button type="button" class="select-btn">Select Package</button>
+    <a class="pay-link" href="${pkg.payLink}" target="_blank" rel="noopener">Open Stripe Payment Link →</a>
+  `;
 
-  const idx = document.createElement('span');
-  idx.className = 'card-index';
-  idx.textContent = String(index + 1).padStart(2, '0');
+  const detailsButton = el.querySelector('.details-btn');
+  const selectButton = el.querySelector('.select-btn');
 
-  const title = document.createElement('h4');
-  title.textContent = pkg.name;
-
-  const priceWrap = document.createElement('div');
-  const priceEl = document.createElement('div');
-  priceEl.className = 'price';
-  priceEl.textContent = pkg.price;
-  const priceLabel = document.createElement('div');
-  priceLabel.className = 'price-label';
-  priceLabel.textContent = pkg.id === 'custom' ? 'Contact for scope' : 'Per report';
-  priceWrap.appendChild(priceEl);
-  priceWrap.appendChild(priceLabel);
-
-  const divider = document.createElement('div');
-  divider.className = 'card-divider';
-
-  const ul = document.createElement('ul');
-  for (const b of pkg.bullets) {
-    const li = document.createElement('li');
-    li.textContent = b;
-    ul.appendChild(li);
-  }
-
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'card-btn' + (pkg.id === 'custom' ? ' custom-btn' : '');
-  btn.textContent = pkg.payLink ? 'Select This Report' : 'Request Custom Quote';
-
-  el.appendChild(idx);
-  el.appendChild(title);
-  el.appendChild(priceWrap);
-  el.appendChild(divider);
-  el.appendChild(ul);
-  el.appendChild(btn);
-
-  if (pkg.payLink) {
-    const payLinkEl = document.createElement('a');
-    payLinkEl.className = 'pay-link';
-    payLinkEl.href = pkg.payLink;
-    payLinkEl.target = '_blank';
-    payLinkEl.rel = 'noopener';
-    payLinkEl.textContent = 'Direct Stripe Payment Link';
-    el.appendChild(payLinkEl);
-
-    payLinkEl.addEventListener('click', async () => {
-      if (packageInput) packageInput.value = pkg.id;
-      await track('payment_link_clicked', pkg.id);
-    });
-  }
-
-  function selectCard() {
-    if (!pkg.payLink) {
-      document.getElementById('enterprise')?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
+  selectButton.addEventListener('click', async () => {
     document.querySelectorAll('.card').forEach((c) => c.classList.remove('selected'));
     el.classList.add('selected');
     if (packageInput) packageInput.value = pkg.id;
@@ -120,20 +59,54 @@ function buildCard(pkg, index) {
     track('package_selected', pkg.id);
   }
 
-  btn.addEventListener('click', selectCard);
-  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCard(); } });
+  detailsButton.addEventListener('click', async () => {
+    openPackageModal(pkg);
+    await track('package_details_opened', pkg.id);
+  });
 
-  return el;
+  el.querySelector('.pay-link').addEventListener('click', async () => {
+    packageInput.value = pkg.id;
+    await track('payment_link_clicked', pkg.id);
+  });
+
+if (pkg.id === 'heir' && heirCards) heirCards.appendChild(el);
+  else cards.appendChild(el);
 }
 
-// Render all packages: paid first, custom (contact-us) last
-const paid   = clientPackages.filter((p) => p.id !== 'custom');
-const custom = clientPackages.filter((p) => p.id === 'custom');
-const allOrdered = [...paid, ...custom];
+function openPackageModal(pkg) {
+  if (!packageModal) return;
+  activePackage = pkg;
+  modalFields.label.textContent = pkg.id.toUpperCase();
+  modalFields.title.textContent = pkg.name;
+  modalFields.price.textContent = pkg.price;
+  modalFields.summary.textContent = pkg.summary || 'Detailed package scope is shown below.';
+  modalFields.includes.innerHTML = (pkg.previewIncludes || pkg.bullets || []).map((item) => `<li>${item}</li>`).join('');
+  modalFields.previewLink.href = pkg.reportPreviewPath || '/report-tiers.html';
+  modalFields.previewLink.textContent = `Open ${pkg.name} sample report`;
+  packageModal.showModal();
+}
 
-allOrdered.forEach((pkg, i) => packagesGrid?.appendChild(buildCard(pkg, i)));
+function closePackageModal() {
+  if (packageModal?.open) packageModal.close();
+}
 
-// ── Checkout Form ────────────────────────────────────────────────────
+modalCloseButton?.addEventListener('click', closePackageModal);
+
+packageModal?.addEventListener('click', (event) => {
+  if (event.target === packageModal) closePackageModal();
+});
+
+modalSelectButton?.addEventListener('click', async () => {
+  if (!activePackage) return;
+  const selectedCard = [...document.querySelectorAll('.card')].find((card) => card.querySelector('.label')?.textContent === activePackage.id.toUpperCase());
+  document.querySelectorAll('.card').forEach((c) => c.classList.remove('selected'));
+  selectedCard?.classList.add('selected');
+  packageInput.value = activePackage.id;
+  statusEl.textContent = `${activePackage.name} selected from package details. Continue to secure intake checkout.`;
+  closePackageModal();
+  await track('package_selected_from_modal', activePackage.id);
+});
+
 function checked(form, name) {
   return form.querySelector(`[name="${name}"]`)?.checked === true;
 }

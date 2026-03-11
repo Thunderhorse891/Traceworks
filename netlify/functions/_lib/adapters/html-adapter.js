@@ -1,0 +1,71 @@
+import { SourceAdapterError, buildEvidenceEntry, requireValue } from './base-adapter.js';
+
+function matchAll(text, regex) {
+  const out = [];
+  let m;
+  const flags = regex.flags.includes('g') ? regex.flags : `${regex.flags}g`;
+  const r = new RegExp(regex.source, flags);
+  while ((m = r.exec(text)) !== null) out.push(m);
+  return out;
+}
+
+function expandTemplate(template, values) {
+  return template.replace(/\{(\w+)\}/g, (_, key) => {
+    const v = values[key];
+    return v === undefined || v === null ? '' : encodeURIComponent(String(v));
+  });
+}
+
+async function fetchHtml({ url, method = 'GET', headers = {}, body, fetchImpl = fetch }) {
+  const res = await fetchImpl(url, { method, headers, body });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new SourceAdapterError(`HTTP ${res.status} while fetching ${url}`, {
+      status: res.status,
+      url,
+      bodyPreview: text.slice(0, 500)
+    });
+  }
+
+  return { url, html: text };
+}
+
+export async function runHtmlAdapter(config, query, { fetchImpl = fetch } = {}) {
+  requireValue('config.id', config.id);
+  requireValue('config.name', config.name);
+  requireValue('config.request.urlTemplate', config.request?.urlTemplate);
+  requireValue('config.extraction.itemRegex', config.extraction?.itemRegex);
+
+  const url = expandTemplate(config.request.urlTemplate, query);
+  const method = config.request.method || 'GET';
+  const headers = config.request.headers || {};
+  const body = config.request.bodyTemplate ? expandTemplate(config.request.bodyTemplate, query) : undefined;
+
+  const { html } = await fetchHtml({ url, method, headers, body, fetchImpl });
+
+  const itemRegex = new RegExp(config.extraction.itemRegex, 'gis');
+  const matches = matchAll(html, itemRegex);
+
+  const results = matches
+    .map((m) => {
+      const row = {};
+      for (const [field, idx] of Object.entries(config.extraction.map || {})) {
+        row[field] = (m[idx] || '').replace(/\s+/g, ' ').trim();
+      }
+      return row;
+    })
+    .filter((row) => Object.values(row).some(Boolean));
+
+  return {
+    results,
+    evidence: buildEvidenceEntry({
+      sourceId: config.id,
+      sourceName: config.name,
+      query,
+      url,
+      status: results.length ? 'found' : 'not_found',
+      rawCount: matches.length,
+      extractedCount: results.length
+    })
+  };
+}

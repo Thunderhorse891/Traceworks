@@ -1,176 +1,40 @@
-# Traceworks (Preview-First Netlify App)
-
-TraceWorks™ is a legal-focused OSINT order flow with paid checkout and automated dossier delivery.
-
-## What this build now includes
-
-- Four legal service packages aligned to your pricing cards:
-  - Skip Trace & Locate ($75)
-  - Comprehensive Locate + Assets ($150)
-  - Property & Title Research ($200)
-  - Heir & Beneficiary Locate ($100)
-- Stripe checkout session creation
-- Webhook processing that triggers OSINT collection + report generation
-- Professional HTML dossier email + text fallback sent to customer and owner
-- Source citation table and confidence level in every report
-- No blank/null sections (fallback text is always inserted)
-
-
-## Service policy
-
-- No refunds once investigative work has started.
-- One same-scope redo can be requested (see `/refund-policy.html`) if quality issues are identified in good faith.
-
-## Architecture
-
-- `public/` dark, legal-style site and order form
-- `netlify/functions/create-checkout.js` Stripe checkout creator
-- `netlify/functions/stripe-webhook.js` payment success → queue job
-- `netlify/functions/process-queue.js` protected worker endpoint for one-job processing
-- `netlify/functions/process-queue-scheduled.js` cron worker that drains queued jobs automatically
-- `netlify/functions/report-preview.js` live report preview endpoint
-- `netlify/functions/_lib/osint.js` OSINT source gathering layer
-- `netlify/functions/_lib/report.js` sophisticated dossier generation and rendering
-- `netlify/functions/_lib/email.js` SMTP email dispatch
-- `netlify/functions/contact-sales.js` enterprise lead intake routed to business mailbox
-
-## Local preview
-
-```bash
-npm install
-cp .env.example .env
-npx netlify-cli dev
-```
-
-Then open:
-
-- Website: `http://localhost:8888/`
-- Live dossier preview (dynamic): `http://localhost:8888/preview/report?packageId=comprehensive`
-- All 4 tier dossier previews: `http://localhost:8888/report-tiers.html`
-- Launch readiness checklist: `http://localhost:8888/launch-readiness.html`
-- Tier files:
-  - `http://localhost:8888/reports/report-locate.html`
-  - `http://localhost:8888/reports/report-comprehensive.html`
-  - `http://localhost:8888/reports/report-title.html`
-  - `http://localhost:8888/reports/report-heir.html`
-
-## Stripe webhook testing
-
-```bash
-stripe listen --forward-to localhost:8888/api/stripe-webhook
-```
-
-Paste the returned webhook secret into `.env` as `STRIPE_WEBHOOK_SECRET`.
-
-## Required env vars
-
-See `.env.example`. Optional: `QUEUE_MAX_PER_RUN` (default 5) controls scheduled worker batch size.
-Set `QUEUE_CRON_SECRET` to protect scheduled worker invocations.
-Set `QUEUE_LAG_ALERT_MS` to define queue-lag alert thresholds for ops notifications.
-Set `STATUS_TOKEN_SECRET` to enable signed status links on success pages (recommended).
-Owner notifications default to `traceworks.tx@outlook.com` (override with `OWNER_EMAIL` if needed).
-
-## Important
-
-This is preview-first. Do not publish production until you approve final design/content and test mode checkout flow.
-
-
-## Missing items that are now added
-
-- **Input validation hardening**: checkout now validates email, required fields, and package selection server-side.
-- **Legal/terms consent gates**: order form now requires lawful-use acknowledgement and terms consent before payment.
-- **Case reference tracking**: every order now gets a unique `caseRef` persisted in Stripe metadata and included in report/email subject lines.
-- **Webhook duplicate protection**: retries with the same Stripe event id are ignored in-process to reduce duplicate report emails.
-- **Four tier dossier previews**: dedicated preview index and tier-specific dossier pages are included for client review.
-
-
-## OSINT engine upgrade (top-tier architecture)
-
-- Multi-provider collection pipeline (`duckduckgo`, `wikipedia`, `reddit`) across an expanded query plan.
-- Package-aware query expansion (`locate`, `comprehensive`, `title`, `heir`) to target relevant signals.
-- Source deduplication + ranking by confidence and domain diversity.
-- Coverage telemetry in the dossier (providers with hits, domain count, source count, query plan).
-- Deterministic fallbacks to authoritative public-record indexes when provider coverage is limited.
-
-> Important: no investigative system can guarantee "all" information exists or is publicly accessible. This build maximizes collection breadth and always returns a complete, non-blank, actionable dossier.
-
-
-## Superior upgrades added in this iteration
-
-- Executive-quality dossier sections now include: **Evidence Matrix**, **Red Flags & Gaps**, and **Next 48 Hours Actions**.
-- Homepage now includes trust/conversion blocks that explain why Traceworks output is stronger than basic lookup reports.
-- Reports now surface clearer operational value for legal teams by turning research into explicit immediate action steps.
-
-
-## Critical go-live gaps implemented in this pass
-
-- Persistent order store abstraction for case lifecycle (`checkout_created` → `processing` → `completed`/`failed`).
-- Persistent webhook idempotency keys to reduce duplicate fulfillment emails.
-- Email delivery retries in webhook processing.
-- Customer status endpoint (`/api/get-order`) and upgraded success page with live status lookup.
-- Terms and Privacy pages linked from checkout consent.
-- Lightweight analytics event capture endpoint (`/api/track-event`) and frontend event tracking hooks.
-
-
-## Next 5 production-readiness fixes implemented
-
-- Security JSON response helper with hardened default headers.
-- API rate limiting for checkout, tracking, and order-status polling.
-- Stricter payload validation (URL normalization/validation, field length checks).
-- Enhanced health endpoint includes env checks and lightweight service metrics.
-- Protected admin metrics endpoint (`/api/admin-metrics`) using `Bearer ADMIN_API_KEY`.
-
-
-## Next 10 reliability/security upgrades implemented
-
-1. Request ID propagation (`x-request-id`) on JSON API responses.
-2. Atomic store writes (temp file + rename) to reduce corruption risk.
-3. Dead-letter capture for failed webhook fulfillment attempts.
-4. Fulfillment-attempt counters tracked per case.
-5. Webhook method enforcement (`POST` only).
-6. Explicit Stripe signature header validation in webhook handler.
-7. Rate limiting added to webhook and admin metrics endpoints.
-8. Input sanitization/length limits for analytics tracking payloads.
-9. Admin metrics endpoint now enforces method + auth + rate limits.
-10. Health endpoint now returns startup timestamp/version fields for ops diagnostics.
-
-
-## Phase 2 reliability upgrades
-
-- Exponential retry backoff for fulfillment jobs with `nextAttemptAt` scheduling in the queue store.
-- Retry-state visibility in customer status (`retrying` + `retryAt`) to improve transparency after transient failures.
-- Dead-letter recording now occurs only after terminal failure (max attempts reached).
-
-
-## Phase 3 security upgrades
-
-- Checkout now issues signed status tokens for success-page polling links (reduces dependency on email query auth in URL).
-- `get-order` now validates signed status tokens and keeps legacy email fallback for backward compatibility.
-
-
-## Phase 4 operator onboarding upgrades
-
-- Added a launch-readiness page that explicitly lists remaining client-provided go-live dependencies.
-- Added a live health/env-missing check block to surface missing required environment variables in one place.
-
-
-## Phase 5 monetization upgrades
-
-- Added enterprise/agency lead intake form on homepage for higher-ticket monthly volume deals.
-- Added `/api/contact-sales` endpoint that validates lead payloads and emails business-owner lead alerts for rapid sales follow-up.
-
-
-## Phase 7 security hardening upgrades
-
-- Added stricter security headers for JSON/HTML responses (`content-security-policy`, `permissions-policy`).
-- Hardened Stripe webhook processing with payload-size limits, signature tolerance, and explicit ignore behavior for non-checkout events.
-- Locked status-token signing to dedicated `STATUS_TOKEN_SECRET` only (no fallback to other secrets).
-- Hardened enterprise lead endpoint with payload-size guard, stronger email validation, and honeypot field handling.
-- Added optional cron secret guard for scheduled queue worker (`QUEUE_CRON_SECRET`).
-
-
-## Phase 8 ops alerting upgrades
-
-- Scheduled queue worker now records audit events for each run and computes queue lag status.
-- Added owner ops alert emails for queue lag threshold breaches and scheduled-run failures.
-- Admin metrics now include a `degraded` signal based on queue lag and failed jobs.
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
+<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Traceworks Dossier</title>
+  <style>
+    body{margin:0;background:#060b16;color:#dce4f8;font-family:Inter,Arial,sans-serif}
+    .wrap{max-width:1040px;margin:22px auto;background:#0f1729;border:1px solid #2b3552;border-radius:14px;overflow:hidden}
+    .hero{padding:26px;background:linear-gradient(120deg,#090d18,#141b2d 60%,#6b5a2a);border-bottom:1px solid #2b3552}
+    h1{margin:0;font-size:34px;color:#f4f7ff;font-family:Georgia,serif}.sub{color:#a8b4d6}
+    .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:14px}
+    .pill{background:#121c33;border:1px solid #334268;border-radius:8px;padding:10px}
+    .body{padding:20px}
+    .card{background:#111a30;border:1px solid #334268;border-radius:10px;padding:14px;margin-bottom:12px}
+    .card h3{margin:0 0 8px;color:#f6d273}.card ul{margin:0;padding-left:18px}
+    h2{font-size:20px;margin:18px 0 10px;color:#f6d273;font-family:Georgia,serif}
+    table{width:100%;border-collapse:collapse;background:#10192e;border:1px solid #334268;margin-bottom:14px}
+    th,td{padding:10px;border-bottom:1px solid #273353;text-align:left;font-size:13px;vertical-align:top}th{color:#f6d273}
+    a{color:#9ac1ff}
+    .disclaimer{margin-top:14px;color:#9bacd1;font-size:12px}
+  </style></head><body>
+  <article class="wrap"><header class="hero"><h1>Property &amp; Title Intelligence Dossier</h1><p class="sub">Traceworks Intelligence Dossier — premium legal OSINT reporting format.</p>
+  <div class="meta"><div class="pill"><strong>Case Ref:</strong> TW-TITLE-1001</div><div class="pill"><strong>Client:</strong> Hamilton &amp; Vale LLP</div><div class="pill"><strong>Subject:</strong> Jordan Mercer</div><div class="pill"><strong>Package:</strong> Property &amp; Title Research</div><div class="pill"><strong>Confidence:</strong> Medium</div><div class="pill"><strong>Generated:</strong> 2026-03-09T17:03:22.738Z</div><div class="pill"><strong>Objective:</strong> Produce a court-ready intelligence brief with corroborated source citations.</div></div></header>
+  <div class="body"><section class="card"><h3>OSINT Coverage Summary</h3><ul><li>Providers with hits: 3</li><li>Distinct domains: 6</li><li>Total sources: 10</li><li>Query plan: Jordan Mercer texas | Jordan Mercer texas title | Jordan Mercer texas lien</li></ul></section><section class="card"><h3>Parcel/Subject Snapshot</h3><ul><li>Parcel/Subject Snapshot completed for Jordan Mercer.</li><li>Objective alignment: Produce a court-ready intelligence brief with corroborated source citations.</li><li>Primary corroboration: County Clerk Official Records Search (https://www.county-clerk.example/records).</li></ul></section><section class="card"><h3>Ownership Trail — Who/What/When/Why/How</h3><ul><li>Ownership Trail — Who/What/When/Why/How completed for Jordan Mercer.</li><li>Objective alignment: Produce a court-ready intelligence brief with corroborated source citations.</li><li>Primary corroboration: Tax Assessor Parcel Index (https://www.tax-assessor.example/parcel).</li></ul></section><section class="card"><h3>Lien &amp; Encumbrance Review</h3><ul><li>Lien &amp; Encumbrance Review completed for Jordan Mercer.</li><li>Objective alignment: Produce a court-ready intelligence brief with corroborated source citations.</li><li>Primary corroboration: Secretary of State Business Registry (https://www.sos.example/business-search).</li></ul></section><section class="card"><h3>Lease / Operator / Royalty Clarity</h3><ul><li>Lease / Operator / Royalty Clarity completed for Jordan Mercer.</li><li>Objective alignment: Produce a court-ready intelligence brief with corroborated source citations.</li><li>Primary corroboration: Court Docket Public Access (https://www.courts.example/docket).</li></ul></section><section class="card"><h3>Title Risk and Curative Actions</h3><ul><li>Title Risk and Curative Actions completed for Jordan Mercer.</li><li>Objective alignment: Produce a court-ready intelligence brief with corroborated source citations.</li><li>Primary corroboration: Property Transfers Index (https://www.property.example/transfers).</li></ul></section>
+  <h2>Evidence Matrix</h2>
+  <table><thead><tr><th>#</th><th>Signal</th><th>Strength</th><th>Domain</th><th>Provider</th><th>Follow-up</th></tr></thead><tbody><tr><td>1</td><td>County Clerk Official Records Search</td><td>high</td><td>county-clerk.example</td><td>duckduckgo</td><td>Capture certified copy or timestamped screenshot for filing packet.</td></tr><tr><td>2</td><td>Tax Assessor Parcel Index</td><td>high</td><td>tax-assessor.example</td><td>duckduckgo</td><td>Capture certified copy or timestamped screenshot for filing packet.</td></tr><tr><td>3</td><td>Secretary of State Business Registry</td><td>medium</td><td>sos.example</td><td>wikipedia</td><td>Capture certified copy or timestamped screenshot for filing packet.</td></tr><tr><td>4</td><td>Court Docket Public Access</td><td>medium</td><td>courts.example</td><td>reddit</td><td>Capture certified copy or timestamped screenshot for filing packet.</td></tr><tr><td>5</td><td>Property Transfers Index</td><td>medium</td><td>property.example</td><td>duckduckgo</td><td>Capture certified copy or timestamped screenshot for filing packet.</td></tr><tr><td>6</td><td>Probate Calendar</td><td>medium</td><td>probate.example</td><td>duckduckgo</td><td>Capture certified copy or timestamped screenshot for filing packet.</td></tr></tbody></table>
+  <h2>Red Flags & Gaps</h2><section class="card"><ul><li>No major data-quality red flags detected in this run.</li></ul></section>
+  <h2>Next 48 Hours Actions</h2><section class="card"><ul><li>Within 24h: verify top 3 citations with direct record pulls.</li><li>Within 48h: prepare affidavit-ready source appendix with hash/timestamp capture.</li><li>Before filing/service: confirm identity and address matches against official county records.</li><li>Escalation rule: if confidence is Medium, require human analyst review before court submission.</li></ul></section>
+  <h2>Ownership Trail — Who / What / When / How / Why</h2>
+  <table><thead><tr><th>#</th><th>Who</th><th>What Happened</th><th>When</th><th>Instrument / Mechanism</th><th>Why / Context</th></tr></thead><tbody><tr><td>1</td><td>Jordan Mercer (Baseline)</td><td>Initial public-record baseline</td><td>Historical baseline</td><td>County Clerk Official Records Search</td><td>Corroborated from county-records</td></tr><tr><td>2</td><td>Related party 1</td><td>Transfer / filing / relationship signal</td><td>Date requires clerk-level verification</td><td>Tax Assessor Parcel Index</td><td>Corroborated from property-index</td></tr><tr><td>3</td><td>Related party 2</td><td>Transfer / filing / relationship signal</td><td>Date requires clerk-level verification</td><td>Secretary of State Business Registry</td><td>Corroborated from state-registry</td></tr><tr><td>4</td><td>Related party 3</td><td>Transfer / filing / relationship signal</td><td>Date requires clerk-level verification</td><td>Court Docket Public Access</td><td>Corroborated from court-records</td></tr><tr><td>5</td><td>Related party 4</td><td>Transfer / filing / relationship signal</td><td>Date requires clerk-level verification</td><td>Property Transfers Index</td><td>Corroborated from property-index</td></tr></tbody></table>
+  <h2>Source Citations</h2>
+  <table><thead><tr><th>#</th><th>Source</th><th>URL</th><th>Type</th><th>Confidence</th></tr></thead><tbody><tr><td>1</td><td>County Clerk Official Records Search</td><td><a href="https://www.county-clerk.example/records">https://www.county-clerk.example/records</a></td><td>county-records</td><td>high</td></tr><tr><td>2</td><td>Tax Assessor Parcel Index</td><td><a href="https://www.tax-assessor.example/parcel">https://www.tax-assessor.example/parcel</a></td><td>property-index</td><td>high</td></tr><tr><td>3</td><td>Secretary of State Business Registry</td><td><a href="https://www.sos.example/business-search">https://www.sos.example/business-search</a></td><td>state-registry</td><td>medium</td></tr><tr><td>4</td><td>Court Docket Public Access</td><td><a href="https://www.courts.example/docket">https://www.courts.example/docket</a></td><td>court-records</td><td>medium</td></tr><tr><td>5</td><td>Property Transfers Index</td><td><a href="https://www.property.example/transfers">https://www.property.example/transfers</a></td><td>property-index</td><td>medium</td></tr><tr><td>6</td><td>Probate Calendar</td><td><a href="https://www.probate.example/calendar">https://www.probate.example/calendar</a></td><td>probate-records</td><td>medium</td></tr></tbody></table>
+  <p class="disclaimer">Multi-provider OSINT completed (3 providers yielded hits).<br/>This dossier is an investigative research brief for legal/business support and is not legal advice. Verify filing decisions with licensed professionals.</p></div></article>
+  <script>
+    // Register the service worker for offline support when available.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+      });
+    }
+  </script>
+  </body></html>

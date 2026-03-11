@@ -21,3 +21,11 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+# Local Netlify folder
+.netlify
+node_modules/
+.env
+.env.local
+.next/
+dist/
+build/
