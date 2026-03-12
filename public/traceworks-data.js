@@ -1,5 +1,5 @@
 // Analyst console data model (replace with API-backed persistence).
-// Package IDs must match api/_lib/packages.js exactly.
+// Package IDs must match netlify/functions/_lib/packages.js exactly.
 export const graph = {
   cases: [
     {
@@ -38,13 +38,13 @@ export const graph = {
   ],
 };
 
-// Package definitions — must match api/_lib/packages.js IDs and amounts
+// Package definitions — must match netlify/functions/_lib/packages.js IDs and amounts
 export const workflowDefinitions = [
-  { id: 'standard',              name: 'Skip Trace & Locate',          amount: 9900,  deliveryHours: 24,  steps: 5,  sla: 'Same day' },
-  { id: 'ownership_encumbrance', name: 'Property & Title Research',     amount: 24900, deliveryHours: 48,  steps: 7,  sla: 'Same day–24h' },
-  { id: 'probate_heirship',      name: 'Heir & Beneficiary Locate',     amount: 32500, deliveryHours: 72,  steps: 9,  sla: '24h' },
-  { id: 'asset_network',         name: 'Asset Network',                 amount: 39900, deliveryHours: 72,  steps: 11, sla: '24h–48h' },
-  { id: 'comprehensive',         name: 'Comprehensive Locate + Assets', amount: 54900, deliveryHours: 96,  steps: 14, sla: '24h–48h' },
+  { id: 'standard',              name: 'Standard Property Snapshot',               amount: 9900,  deliveryHours: 24, steps: 3,  sla: 'Same day' },
+  { id: 'ownership_encumbrance', name: 'Ownership & Encumbrance Intelligence',      amount: 24900, deliveryHours: 48, steps: 5,  sla: 'Same day–24h' },
+  { id: 'probate_heirship',      name: 'Probate & Heirship Investigation',          amount: 32500, deliveryHours: 72, steps: 4,  sla: '24h' },
+  { id: 'asset_network',         name: 'Asset & Property Network',                  amount: 39900, deliveryHours: 72, steps: 6,  sla: '24h–48h' },
+  { id: 'comprehensive',         name: 'Comprehensive Investigative Report',        amount: 54900, deliveryHours: 96, steps: 14, sla: '24h–48h' },
 ];
 
 export const sourceRegistry = [
@@ -52,6 +52,6 @@ export const sourceRegistry = [
   { id: 'tx-sos',        category: 'corporate_registry',  health: 'healthy',  freshness: '6h',  coverage: 'Texas statewide' },
   { id: 'tx-courts',     category: 'court_dockets',       health: 'healthy',  freshness: '2h',  coverage: 'County + district courts' },
   { id: 'deed-index',    category: 'deed_instruments',    health: 'degraded', freshness: 'N/A', coverage: 'Requires browser auth per county' },
-  { id: 'people-search', category: 'public_people_data',  health: 'healthy',  freshness: '12h', coverage: 'National (TruePeopleSearch / FastPeopleSearch)' },
+  { id: 'people-search', category: 'public_people_data',  health: 'healthy',  freshness: '12h', coverage: 'National (licensed API)' },
   { id: 'obit-index',    category: 'obituary_index',      health: 'healthy',  freshness: '24h', coverage: 'Legacy.com / Tributes.com' },
 ];

@@ -47,7 +47,7 @@ function mkWorkflow(order, tier, sources, extra = {}) {
     tier,
     startedAt,
     completedAt,
-    inputs: order.input_criteria || { subjectName: order.subjectName, website: order.website, goals: order.goals },
+    inputs: order.input_criteria || { subjectName: order.subjectName, county: order.county, state: order.state, website: order.website, goals: order.goals },
     sources,
     overallStatus,
     partialReasons: overallStatus === 'partial' ? reasons : [],
@@ -58,8 +58,8 @@ function mkWorkflow(order, tier, sources, extra = {}) {
 
 export async function runStandardReport(order, ctx = {}) {
   requireConfiguredSources(['APPRAISAL_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL']);
-  const county = order.county || process.env.DEFAULT_COUNTY || '';
-  const state = order.state || process.env.DEFAULT_STATE || '';
+  const county = order.county || order.input_criteria?.county || process.env.DEFAULT_COUNTY || '';
+  const state = order.state || order.input_criteria?.state || process.env.DEFAULT_STATE || '';
   const query = order.subjectName || order.website || order.goals || '';
 
   const publicRecords = await gatherPublicRecordIntel({ packageKey: 'standard', input: { address: order.website || '', ownerName: order.subjectName || '', county, state } }, { fetchImpl: ctx.fetchImpl });
@@ -72,10 +72,10 @@ export async function runStandardReport(order, ctx = {}) {
   return mkWorkflow(order, 'standard', [...publicRecords.sources, s1, s2, s3], { startedAt: ctx.startedAt, publicRecords });
 }
 
-export async function runTitlePropertyReport(order, ctx = {}) {
+export async function runOwnershipEncumbranceReport(order, ctx = {}) {
   requireConfiguredSources(['APPRAISAL_API_URL', 'COUNTY_CLERK_API_URL', 'GRANTOR_GRANTEE_API_URL']);
-  const county = order.county || process.env.DEFAULT_COUNTY || '';
-  const state = order.state || process.env.DEFAULT_STATE || '';
+  const county = order.county || order.input_criteria?.county || process.env.DEFAULT_COUNTY || '';
+  const state = order.state || order.input_criteria?.state || process.env.DEFAULT_STATE || '';
   const query = order.subjectName || order.website || order.goals || '';
 
   const publicRecords = await gatherPublicRecordIntel({ packageKey: 'title_property', input: { address: order.website || '', ownerName: order.subjectName || '', county, state, parcel: order.parcelId || '' } }, { fetchImpl: ctx.fetchImpl });
@@ -91,13 +91,13 @@ export async function runTitlePropertyReport(order, ctx = {}) {
   if (Array.isArray(s3.data?.instruments)) instruments.push(...s3.data.instruments);
   const chain = chainContinuityAnalyzer(instruments);
 
-  return mkWorkflow(order, 'title_property', [...publicRecords.sources, s1, s2, s3, s4], { startedAt: ctx.startedAt, chainAnalysis: chain, publicRecords });
+  return mkWorkflow(order, 'ownership_encumbrance', [...publicRecords.sources, s1, s2, s3, s4], { startedAt: ctx.startedAt, chainAnalysis: chain, publicRecords });
 }
 
-export async function runHeirLocationReport(order, ctx = {}) {
+export async function runProbateHeirshipReport(order, ctx = {}) {
   requireConfiguredSources(['OBITUARY_API_URL', 'PROBATE_API_URL']);
-  const county = order.county || process.env.DEFAULT_COUNTY || '';
-  const state = order.state || process.env.DEFAULT_STATE || '';
+  const county = order.county || order.input_criteria?.county || process.env.DEFAULT_COUNTY || '';
+  const state = order.state || order.input_criteria?.state || process.env.DEFAULT_STATE || '';
   const decedentName = order.subjectName || '';
 
   const publicRecords = await gatherPublicRecordIntel({ packageKey: 'heir_location', input: { decedentName, ownerName: order.subjectName || '', county, state } }, { fetchImpl: ctx.fetchImpl });
@@ -109,18 +109,44 @@ export async function runHeirLocationReport(order, ctx = {}) {
   const candidates = Array.isArray(s3?.data?.candidates) ? s3.data.candidates : [];
   const scoredCandidates = heirCandidateScorer(candidates);
 
-  return mkWorkflow(order, 'heir_location', [...publicRecords.sources, s1, s2, s3], { startedAt: ctx.startedAt, scoredCandidates, publicRecords });
+  return mkWorkflow(order, 'probate_heirship', [...publicRecords.sources, s1, s2, s3], { startedAt: ctx.startedAt, scoredCandidates, publicRecords });
+}
+
+export async function runAssetNetworkReport(order, ctx = {}) {
+  requireConfiguredSources(['APPRAISAL_API_URL', 'COUNTY_CLERK_API_URL', 'GRANTOR_GRANTEE_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL']);
+  const county = order.county || order.input_criteria?.county || process.env.DEFAULT_COUNTY || '';
+  const state = order.state || order.input_criteria?.state || process.env.DEFAULT_STATE || '';
+  const query = order.subjectName || order.website || order.goals || '';
+
+  const publicRecords = await gatherPublicRecordIntel({ packageKey: 'title_property', input: { address: order.website || '', ownerName: order.subjectName || '', county, state } }, { fetchImpl: ctx.fetchImpl });
+
+  const s1 = await appraisalDistrictScraper({ county, state, query, fetchImpl: ctx.fetchImpl });
+  const parcelId = s1?.data?.parcelId || s1?.data?.apn || '';
+  const s2 = await taxCollectorScraper({ county, state, parcelId, fetchImpl: ctx.fetchImpl });
+  const s3 = await parcelGisLookup({ county, state, query, fetchImpl: ctx.fetchImpl });
+  const s4 = await countyClerkDeedIndexScraper({ county, state, query, queryType: 'owner', fetchImpl: ctx.fetchImpl });
+  const s5 = await grantorGranteeIndexScraper({ county, state, ownerName: order.subjectName, parcelId, fetchImpl: ctx.fetchImpl });
+
+  const instruments = [];
+  if (Array.isArray(s4.data?.instruments)) instruments.push(...s4.data.instruments);
+  if (Array.isArray(s5.data?.instruments)) instruments.push(...s5.data.instruments);
+  const chain = chainContinuityAnalyzer(instruments);
+
+  return mkWorkflow(order, 'asset_network', [...publicRecords.sources, s1, s2, s3, s4, s5], { startedAt: ctx.startedAt, chainAnalysis: chain, publicRecords });
 }
 
 export async function runComprehensiveReport(order, ctx = {}) {
-  const [standard, title, heir] = await Promise.all([
+  const [standard, ownership, heirship] = await Promise.all([
     runStandardReport(order, ctx),
-    runTitlePropertyReport(order, ctx),
-    runHeirLocationReport(order, ctx)
+    runOwnershipEncumbranceReport(order, ctx),
+    runProbateHeirshipReport(order, ctx)
   ]);
 
-  const sources = [...standard.sources, ...title.sources, ...heir.sources];
-  const combined = mkWorkflow(order, 'comprehensive', sources, { startedAt: ctx.startedAt, publicRecords: { standard: standard.publicRecords, title: title.publicRecords, heir: heir.publicRecords } });
+  const sources = [...standard.sources, ...ownership.sources, ...heirship.sources];
+  const combined = mkWorkflow(order, 'comprehensive', sources, {
+    startedAt: ctx.startedAt,
+    publicRecords: { standard: standard.publicRecords, ownership: ownership.publicRecords, heirship: heirship.publicRecords }
+  });
   const discrepancy = crossSourceDiscrepancyAnalyzer(combined);
   const confidenceMatrix = confidenceMatrixBuilder(combined);
   const nextSteps = recommendedNextStepsGenerator(discrepancy, confidenceMatrix);
@@ -135,8 +161,9 @@ export async function runComprehensiveReport(order, ctx = {}) {
 
 export function tierRunnerFor(purchasedTier) {
   if (purchasedTier === REPORT_TIER.STANDARD_REPORT) return runStandardReport;
-  if (purchasedTier === REPORT_TIER.TITLE_PROPERTY_REPORT) return runTitlePropertyReport;
-  if (purchasedTier === REPORT_TIER.HEIR_LOCATION_REPORT) return runHeirLocationReport;
+  if (purchasedTier === REPORT_TIER.OWNERSHIP_ENCUMBRANCE_REPORT) return runOwnershipEncumbranceReport;
+  if (purchasedTier === REPORT_TIER.PROBATE_HEIRSHIP_REPORT) return runProbateHeirshipReport;
+  if (purchasedTier === REPORT_TIER.ASSET_NETWORK_REPORT) return runAssetNetworkReport;
   if (purchasedTier === REPORT_TIER.COMPREHENSIVE_REPORT) return runComprehensiveReport;
   throw new Error(`No workflow handler configured for purchased tier: ${purchasedTier}`);
 }

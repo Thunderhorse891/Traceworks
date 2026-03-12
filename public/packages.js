@@ -1,73 +1,117 @@
-// Pay links: replace REPLACE_* with your real Stripe Payment Links from the Dashboard.
-// Tier IDs must match api/_lib/packages.js exactly.
+// Frontend package definitions.
+// IDs here MUST match netlify/functions/_lib/packages.js exactly.
+// payLink values must be updated to live Stripe Payment Links from your Stripe Dashboard
+// whenever prices change or new products are created.
 export const clientPackages = [
   {
-    id: 'locate',
-    name: 'Skip Trace & Locate',
-    price: '$75',
-    bestFor: 'Fast service attempts and urgent contact verification',
+    id: 'standard',
+    name: 'Standard Property Snapshot',
+    price: '$99',
+    bestFor: 'Quick property ownership lookup and parcel verification',
     turnaround: 'Typical delivery: same day',
     payLink: 'https://buy.stripe.com/8x2aEXgLPbEKcxke4lenS01',
-    bullets: ['Current address verification', 'Phone number lookup', 'Public records cross-reference', 'PDF dossier via email'],
+    bullets: [
+      'County appraisal district lookup',
+      'Tax assessment / parcel record',
+      'GIS parcel boundary lookup',
+      'Source trace panel — every query logged'
+    ],
     reportPreviewPath: '/reports/report-locate.html',
     summary:
-      'Fast, legal-use locate package for service attempts, collections, and case support when you need a defensible starting dossier.',
+      'Fast public-record property snapshot for legal professionals needing ownership confirmation, parcel data, and assessment history.',
     previewIncludes: [
-      'Identity snapshot with known aliases and baseline signals',
-      'Address probability grid with confidence notes',
-      'Contact surface map and follow-up actions for next 48 hours'
+      'County CAD owner of record with parcel ID and legal description',
+      'Tax assessment status and last-known assessment value',
+      'Parcel GIS result with any known address discrepancies'
+    ]
+  },
+  {
+    id: 'ownership_encumbrance',
+    name: 'Ownership & Encumbrance Intelligence Report',
+    price: '$249',
+    featured: true,
+    bestFor: 'Deed research, title due diligence, and lien identification',
+    turnaround: 'Typical delivery: same day to 24h',
+    payLink: 'https://buy.stripe.com/14A9ATgLP6kqbtgaS9enS02',
+    bullets: [
+      'County CAD + deed index + grantor-grantee records',
+      'Mortgage and trust deed index',
+      'Chain-of-title continuity analysis',
+      'Source trace panel — every instrument logged'
+    ],
+    reportPreviewPath: '/reports/report-title.html',
+    summary:
+      'Deed and encumbrance intelligence for title due diligence, acquisition research, and curative planning. Not a title opinion.',
+    previewIncludes: [
+      'Instrument history with volume/page references and recording dates',
+      'Grantor-grantee index entries with party names',
+      'Chain continuity assessment with any flagged gaps or conflicts'
+    ]
+  },
+  {
+    id: 'probate_heirship',
+    name: 'Probate & Heirship Investigation Report',
+    price: '$325',
+    bestFor: 'Heir locate, probate support, and beneficiary identification',
+    turnaround: 'Typical delivery: 24h',
+    payLink: 'https://buy.stripe.com/9B628rgLP7ou2WK6BTenS03',
+    bullets: [
+      'Obituary index cross-reference',
+      'Probate case index lookup',
+      'Licensed people association data (if configured)',
+      'Heir candidate scoring — probable / possible / low-confidence'
+    ],
+    reportPreviewPath: '/reports/report-heir.html',
+    summary:
+      'Heir and beneficiary investigation for probate support, estate administration, and court-workflow preparation. Not a legal heirship adjudication.',
+    previewIncludes: [
+      'Obituary cross-reference with death year and location signals',
+      'Probate case index result with case number and status if found',
+      'Heir candidate matrix with confidence labels and contact leads'
+    ]
+  },
+  {
+    id: 'asset_network',
+    name: 'Asset & Property Network Report',
+    price: '$399',
+    bestFor: 'Asset tracing, enforcement strategy, and collections support',
+    turnaround: 'Typical delivery: 24h to 48h',
+    payLink: 'https://buy.stripe.com/aFadR953724a9l8aS9enS04',
+    bullets: [
+      'CAD + tax + GIS parcel network lookup',
+      'Deed index and grantor-grantee cross-reference',
+      'Chain-of-title analysis across found parcels',
+      'Source trace panel — all instruments and queries logged'
+    ],
+    reportPreviewPath: '/reports/report-comprehensive.html',
+    summary:
+      'Extended property and asset network research for enforcement, collections, and recovery strategy. Combines property snapshot with deed and encumbrance intelligence.',
+    previewIncludes: [
+      'Multi-parcel ownership network from CAD and GIS sources',
+      'Deed and grantor-grantee cross-reference for known parcels',
+      'Chain continuity flags and documented source limitations'
     ]
   },
   {
     id: 'comprehensive',
-    name: 'Comprehensive Locate + Assets',
-    price: '$150',
-    featured: true,
-    bestFor: 'Collections, enforcement, and deeper recovery strategy',
-    turnaround: 'Typical delivery: same day to 24h',
-    payLink: 'https://buy.stripe.com/14A9ATgLP6kqbtgaS9enS02',
-    bullets: ['Everything in Skip Trace & Locate', 'Asset & property search', 'Employment verification attempt', 'Documented source citations'],
+    name: 'Comprehensive Investigative Report',
+    price: '$549',
+    bestFor: 'Full-scope legal investigation: property, deed, and heir research combined',
+    turnaround: 'Typical delivery: 24h to 48h',
+    payLink: 'https://buy.stripe.com/aFadR953724a9l8aS9enS04',
+    bullets: [
+      'All property snapshot + deed + heir modules combined',
+      'Cross-source discrepancy analysis',
+      'Confidence matrix across all findings',
+      'Recommended next steps for legal workflow'
+    ],
     reportPreviewPath: '/reports/report-comprehensive.html',
     summary:
-      'Expanded package for legal teams that need locate plus asset and business context to improve enforcement and recovery strategy.',
+      'Maximum-scope investigative report combining property, encumbrance, and heirship research into a single deliverable. For complex matters requiring full public-record coverage.',
     previewIncludes: [
-      'Consolidated identity and contact intelligence matrix',
-      'Asset and property exposure indicators with source references',
-      'Employment/business link analysis and collection strategy recommendations'
-    ]
-  },
-  {
-    id: 'title',
-    name: 'Property & Title Research',
-    price: '$200',
-    bestFor: 'Title disputes, due diligence, and curative planning',
-    turnaround: 'Typical delivery: 24h',
-    payLink: 'https://buy.stripe.com/9B628rgLP7ou2WK6BTenS03',
-    bullets: ['Deed/index intelligence summary', 'Lien & encumbrance indicators', 'Quitclaim/deed filing signal review', 'County filing summary (not title opinion)'],
-    reportPreviewPath: '/reports/report-title.html',
-    summary:
-      'Title-focused intelligence for property disputes, acquisition due diligence, and curative legal planning.',
-    previewIncludes: [
-      'Ownership trail in who/what/when/how/why format',
-      'Lien and encumbrance risk summary',
-      'Title curative action checklist and filing priorities'
-    ]
-  },
-  {
-    id: 'heir',
-    name: 'Heir & Beneficiary Locate',
-    price: '$100',
-    bestFor: 'Probate support and heir contact sequencing',
-    turnaround: 'Typical delivery: same day to 24h',
-    payLink: 'https://buy.stripe.com/aFadR953724a9l8aS9enS04',
-    bullets: ['Probate and estate index support', 'Heir-candidate research (not adjudication)', 'Contactability risk notes', 'Court-workflow summary'],
-    reportPreviewPath: '/reports/report-heir.html',
-    summary:
-      'Probate support package to identify likely heirs/beneficiaries and prioritize lawful verification workflow for court preparation.',
-    previewIncludes: [
-      'Heir candidate matrix and relationship confidence',
-      'Probate filing signals and docket-oriented next steps',
-      'Contactability ranking with verification sequence'
+      'All property, deed, and heir sections with full source trace',
+      'Cross-source conflict flags where owner data disagrees',
+      'Confidence matrix and analyst-oriented next steps'
     ]
   }
 ];

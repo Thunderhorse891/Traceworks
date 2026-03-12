@@ -18,9 +18,9 @@ export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, ca
 
   try {
     const { report } = await processFulfillmentJob(job, { ownerEmail });
-    await upsertOrder(report.caseRef, { status: ORDER_STATUS.COMPLETED, completedAt: new Date().toISOString(), lastError: null, retryAt: null });
+    await upsertOrder(caseRef, { status: ORDER_STATUS.COMPLETED, completedAt: new Date().toISOString(), lastError: null, retryAt: null });
     await completeJob(job.id);
-    return { ok: true, jobId: job.id, caseRef: report.caseRef };
+    return { ok: true, jobId: job.id, caseRef };
   } catch (err) {
     const message = String(err?.message || err || 'unknown error');
     const failure = await failJob(job.id, message, maxAttempts);
