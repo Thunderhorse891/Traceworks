@@ -463,6 +463,280 @@ export function heirCandidateScorer(candidates, subjectLastName) {
   }).sort((a, b) => b.heirScore - a.heirScore);
 }
 
+// ── WHOIS / RDAP LOOKUP ───────────────────────────────────────────────────────
+// Queries rdap.org JSON API for domain or IP registration data.
+// Free, no authentication required.
+
+export async function whoisRdapLookup(domainOrIp, fetchImpl = fetch) {
+  const queriedAt = new Date().toISOString();
+  const isIp = /^\d{1,3}(\.\d{1,3}){3}$|^[0-9a-fA-F:]{2,39}$/.test(domainOrIp);
+  const rdapUrl = isIp
+    ? `https://rdap.org/ip/${encodeURIComponent(domainOrIp)}`
+    : `https://rdap.org/domain/${encodeURIComponent(domainOrIp)}`;
+
+  try {
+    const res = await fetchImpl(rdapUrl, {
+      headers: {
+        'Accept': 'application/rdap+json, application/json',
+        'User-Agent': 'Mozilla/5.0 TraceWorks OSINT Engine',
+      },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (res.status === 429) {
+      return makeSourceResult({ sourceId: 'whois_rdap', sourceLabel: 'WHOIS/RDAP Registry', sourceUrl: rdapUrl, queryUsed: domainOrIp, queriedAt, status: 'blocked', errorDetail: 'RDAP rate limited (HTTP 429)', data: null, confidence: 'unavailable' });
+    }
+    if (!res.ok) {
+      return makeSourceResult({ sourceId: 'whois_rdap', sourceLabel: 'WHOIS/RDAP Registry', sourceUrl: rdapUrl, queryUsed: domainOrIp, queriedAt, status: 'error', errorDetail: `HTTP ${res.status}`, data: null, confidence: 'unavailable' });
+    }
+
+    const json = await res.json();
+
+    // Parse domain RDAP response
+    const entities = json.entities || [];
+    const registrar = entities.find((e) => e.roles?.includes('registrar'))?.vcardArray?.[1]
+      ?.find((f) => f[0] === 'fn')?.[3] || null;
+    const registrant = entities.find((e) => e.roles?.includes('registrant'))?.vcardArray?.[1]
+      ?.find((f) => f[0] === 'fn')?.[3] || null;
+
+    const events = {};
+    for (const ev of (json.events || [])) {
+      if (ev.eventAction) events[ev.eventAction] = ev.eventDate;
+    }
+
+    const nameservers = (json.nameservers || []).map((ns) => ns.ldhName).filter(Boolean);
+
+    // IP RDAP extras
+    const org  = json.name || json.handle || null;
+    const cidr = json.cidr0_cidrs
+      ? json.cidr0_cidrs.map((c) => `${c.v4prefix || c.v6prefix}/${c.length}`).join(', ')
+      : null;
+    const country = json.country || null;
+
+    const data = {
+      query:         domainOrIp,
+      type:          isIp ? 'ip' : 'domain',
+      registrar,
+      registrant,
+      org,
+      cidr,
+      country,
+      created:       events['registration'] || null,
+      expires:       events['expiration'] || null,
+      last_changed:  events['last changed'] || null,
+      status:        Array.isArray(json.status) ? json.status : [json.status].filter(Boolean),
+      nameservers,
+    };
+
+    return makeSourceResult({
+      sourceId:    'whois_rdap',
+      sourceLabel: isIp ? 'RDAP IP Registry (rdap.org)' : 'RDAP Domain Registry (rdap.org)',
+      sourceUrl:   rdapUrl,
+      queryUsed:   domainOrIp,
+      queriedAt,
+      status:      'found',
+      data,
+      confidence:  (registrant || registrar || org) ? 'likely' : 'possible',
+    });
+  } catch (err) {
+    const detail = err.name === 'TimeoutError' ? `Timeout after ${TIMEOUT_MS}ms` : err.message;
+    return makeSourceResult({ sourceId: 'whois_rdap', sourceLabel: 'WHOIS/RDAP Registry', sourceUrl: rdapUrl, queryUsed: domainOrIp, queriedAt, status: 'error', errorDetail: detail, data: null, confidence: 'unavailable' });
+  }
+}
+
+// ── WAYBACK MACHINE CDX API ───────────────────────────────────────────────────
+// Free, no authentication required. Returns historical snapshots for a URL/domain.
+// Endpoint: http://web.archive.org/cdx/search/cdx
+
+export async function waybackLookup(query, fetchImpl = fetch) {
+  const queriedAt = new Date().toISOString();
+  const params = new URLSearchParams({
+    url:      `${query}*`,
+    output:   'json',
+    limit:    '10',
+    fl:       'timestamp,original,statuscode,mimetype',
+    collapse: 'urlkey',
+  });
+  const cdxUrl = `http://web.archive.org/cdx/search/cdx?${params}`;
+
+  try {
+    const res = await fetchImpl(cdxUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 TraceWorks OSINT Engine' },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (res.status === 429) {
+      return makeSourceResult({ sourceId: 'wayback_cdx', sourceLabel: 'Wayback Machine CDX API', sourceUrl: cdxUrl, queryUsed: query, queriedAt, status: 'blocked', errorDetail: 'Wayback CDX rate limited (HTTP 429)', data: null, confidence: 'unavailable' });
+    }
+    if (!res.ok) {
+      return makeSourceResult({ sourceId: 'wayback_cdx', sourceLabel: 'Wayback Machine CDX API', sourceUrl: cdxUrl, queryUsed: query, queriedAt, status: 'error', errorDetail: `HTTP ${res.status}`, data: null, confidence: 'unavailable' });
+    }
+
+    const rows = await res.json();
+    if (!rows || rows.length <= 1) {
+      return makeSourceResult({ sourceId: 'wayback_cdx', sourceLabel: 'Wayback Machine CDX API', sourceUrl: cdxUrl, queryUsed: query, queriedAt, status: 'not_found', data: null, confidence: 'not_found' });
+    }
+
+    const [header, ...dataRows] = rows;
+    const snapshots = dataRows.map((row) => {
+      const record = Object.fromEntries(header.map((k, i) => [k, row[i]]));
+      const ts = record.timestamp || '';
+      const formatted = ts.length >= 14
+        ? `${ts.slice(0,4)}-${ts.slice(4,6)}-${ts.slice(6,8)}T${ts.slice(8,10)}:${ts.slice(10,12)}:${ts.slice(12,14)}Z`
+        : ts;
+      return {
+        timestamp:   formatted,
+        original:    record.original,
+        status_code: record.statuscode,
+        mimetype:    record.mimetype,
+        wayback_url: `https://web.archive.org/web/${record.timestamp || ''}/${record.original || ''}`,
+      };
+    });
+
+    return makeSourceResult({
+      sourceId:    'wayback_cdx',
+      sourceLabel: 'Wayback Machine CDX API',
+      sourceUrl:   cdxUrl,
+      queryUsed:   query,
+      queriedAt,
+      status:      'found',
+      data:        { snapshots, totalReturned: snapshots.length, query },
+      confidence:  CONFIDENCE.CONFIRMED,
+    });
+  } catch (err) {
+    const detail = err.name === 'TimeoutError' ? `Timeout after ${TIMEOUT_MS}ms` : err.message;
+    return makeSourceResult({ sourceId: 'wayback_cdx', sourceLabel: 'Wayback Machine CDX API', sourceUrl: cdxUrl, queryUsed: query, queriedAt, status: 'error', errorDetail: detail, data: null, confidence: 'unavailable' });
+  }
+}
+
+// ── COMMON CRAWL INDEX API ────────────────────────────────────────────────────
+// Free, no authentication. Queries the CC-MAIN-2024-10 crawl index.
+// Endpoint: https://index.commoncrawl.org/CC-MAIN-2024-10-index
+
+export async function commonCrawlLookup(query, fetchImpl = fetch) {
+  const queriedAt = new Date().toISOString();
+  const params = new URLSearchParams({
+    url:    `${query}*`,
+    output: 'json',
+    limit:  '10',
+  });
+  const indexUrl = `https://index.commoncrawl.org/CC-MAIN-2024-10-index?${params}`;
+
+  try {
+    const res = await fetchImpl(indexUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 TraceWorks OSINT Engine' },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (res.status === 404) {
+      return makeSourceResult({ sourceId: 'common_crawl', sourceLabel: 'Common Crawl Index API', sourceUrl: indexUrl, queryUsed: query, queriedAt, status: 'not_found', data: null, confidence: 'not_found' });
+    }
+    if (!res.ok) {
+      return makeSourceResult({ sourceId: 'common_crawl', sourceLabel: 'Common Crawl Index API', sourceUrl: indexUrl, queryUsed: query, queriedAt, status: 'error', errorDetail: `HTTP ${res.status}`, data: null, confidence: 'unavailable' });
+    }
+
+    // CC returns NDJSON — one JSON object per line
+    const text = await res.text();
+    const records = text.trim().split('\n')
+      .filter(Boolean)
+      .map((line) => { try { return JSON.parse(line); } catch { return null; } })
+      .filter(Boolean);
+
+    if (records.length === 0) {
+      return makeSourceResult({ sourceId: 'common_crawl', sourceLabel: 'Common Crawl Index API', sourceUrl: indexUrl, queryUsed: query, queriedAt, status: 'not_found', data: null, confidence: 'not_found' });
+    }
+
+    const hits = records.map((r) => ({
+      url:       r.url,
+      timestamp: r.timestamp,
+      status:    r.status,
+      mime_type: r.mime,
+      languages: r.languages,
+      filename:  r.filename,
+      offset:    r.offset,
+      length:    r.length,
+    }));
+
+    return makeSourceResult({
+      sourceId:    'common_crawl',
+      sourceLabel: 'Common Crawl Index API (CC-MAIN-2024-10)',
+      sourceUrl:   indexUrl,
+      queryUsed:   query,
+      queriedAt,
+      status:      'found',
+      data:        { hits, totalReturned: hits.length, query },
+      confidence:  CONFIDENCE.CONFIRMED,
+    });
+  } catch (err) {
+    const detail = err.name === 'TimeoutError' ? `Timeout after ${TIMEOUT_MS}ms` : err.message;
+    return makeSourceResult({ sourceId: 'common_crawl', sourceLabel: 'Common Crawl Index API', sourceUrl: indexUrl, queryUsed: query, queriedAt, status: 'error', errorDetail: detail, data: null, confidence: 'unavailable' });
+  }
+}
+
+// ── OPENCORPORATES API (free tier) ────────────────────────────────────────────
+// Free tier: ~20 req/min, no API key required for basic company search.
+// Endpoint: https://api.opencorporates.com/v0.4/companies/search
+
+export async function openCorporatesSearch(companyName, fetchImpl = fetch) {
+  const queriedAt = new Date().toISOString();
+  const params = new URLSearchParams({
+    q:                 companyName,
+    jurisdiction_code: 'us_tx',
+    format:            'json',
+  });
+  const apiUrl = `https://api.opencorporates.com/v0.4/companies/search?${params}`;
+
+  try {
+    const res = await fetchImpl(apiUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 TraceWorks OSINT Engine', 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (res.status === 429) {
+      return makeSourceResult({ sourceId: 'opencorporates', sourceLabel: 'OpenCorporates API', sourceUrl: apiUrl, queryUsed: companyName, queriedAt, status: 'blocked', errorDetail: 'OpenCorporates rate limited (HTTP 429)', data: null, confidence: 'unavailable' });
+    }
+    if (!res.ok) {
+      return makeSourceResult({ sourceId: 'opencorporates', sourceLabel: 'OpenCorporates API', sourceUrl: apiUrl, queryUsed: companyName, queriedAt, status: 'error', errorDetail: `HTTP ${res.status}`, data: null, confidence: 'unavailable' });
+    }
+
+    const json = await res.json();
+    const companiesRaw = json?.results?.companies || [];
+    const companies = companiesRaw.map((wrap) => {
+      const c = wrap.company || wrap;
+      return {
+        name:               c.name,
+        company_number:     c.company_number,
+        jurisdiction_code:  c.jurisdiction_code,
+        incorporation_date: c.incorporation_date,
+        dissolution_date:   c.dissolution_date,
+        company_type:       c.company_type,
+        current_status:     c.current_status,
+        registered_address: c.registered_address?.in_full || null,
+        agent_name:         c.agent_name || null,
+        opencorporates_url: c.opencorporates_url,
+      };
+    });
+
+    if (companies.length === 0) {
+      return makeSourceResult({ sourceId: 'opencorporates', sourceLabel: 'OpenCorporates API', sourceUrl: apiUrl, queryUsed: companyName, queriedAt, status: 'not_found', data: null, confidence: 'not_found' });
+    }
+
+    return makeSourceResult({
+      sourceId:    'opencorporates',
+      sourceLabel: 'OpenCorporates API (Free Tier — us_tx)',
+      sourceUrl:   apiUrl,
+      queryUsed:   companyName,
+      queriedAt,
+      status:      'found',
+      data:        { companies: companies.slice(0, 10), totalReturned: companies.length },
+      confidence:  companies.length >= 2 ? 'likely' : 'possible',
+    });
+  } catch (err) {
+    const detail = err.name === 'TimeoutError' ? `Timeout after ${TIMEOUT_MS}ms` : err.message;
+    return makeSourceResult({ sourceId: 'opencorporates', sourceLabel: 'OpenCorporates API', sourceUrl: apiUrl, queryUsed: companyName, queriedAt, status: 'error', errorDetail: detail, data: null, confidence: 'unavailable' });
+  }
+}
+
 // ── COUNTY DEED INDEX (manual review — requires county-specific portals) ──
 
 export function countyDeedIndexUnavailable(county, state, query) {
