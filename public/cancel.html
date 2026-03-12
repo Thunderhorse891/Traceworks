@@ -3,14 +3,83 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ Checkout Canceled</title>
+    <title>TraceWorks™ — Checkout Canceled</title>
+    <meta name="theme-color" content="#09090f" />
     <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .cancel-wrap {
+        max-width: 580px;
+        margin: 0 auto;
+        padding: 80px 24px 80px;
+        text-align: center;
+      }
+      .cancel-rule {
+        display: block;
+        width: 40px;
+        height: 1px;
+        background: var(--border-mid);
+        margin: 0 auto 28px;
+      }
+      .cancel-title {
+        font-family: var(--serif);
+        font-size: clamp(28px, 5vw, 42px);
+        color: var(--white);
+        letter-spacing: -0.02em;
+        margin-bottom: 14px;
+        line-height: 1.1;
+      }
+      .cancel-sub {
+        font-size: 15px;
+        color: var(--text-2);
+        line-height: 1.7;
+        max-width: 420px;
+        margin: 0 auto 36px;
+      }
+      .cancel-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .cancel-note {
+        margin-top: 32px;
+        font-size: 12px;
+        color: var(--text-4);
+        line-height: 1.6;
+      }
+      .cancel-note a {
+        color: var(--text-3);
+        text-decoration: none;
+      }
+      .cancel-note a:hover { color: var(--text-2); }
+    </style>
   </head>
   <body>
-    <main class="container form-wrap" style="margin-top:24px; max-width:760px;">
-      <h1>Checkout canceled</h1>
-      <p>No charge was made. You can return to the home page and submit your order again when ready.</p>
-      <p><a href="/">Back to home</a></p>
-    </main>
+    <header class="site-header">
+      <div class="topbar">
+        <h1>Trace<span>Works™</span></h1>
+        <nav class="topbar-nav">
+          <a href="/">Home</a>
+          <a href="/packages.html">Reports</a>
+          <a href="/#order" class="btn-primary">Submit a Request</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="cancel-wrap">
+      <span class="eyebrow" style="margin-bottom:20px; display:block;">Checkout Canceled</span>
+      <span class="cancel-rule"></span>
+      <h1 class="cancel-title">No charge was made.</h1>
+      <p class="cancel-sub">Your session was canceled before payment completed. You can return to the homepage and submit a request whenever you are ready.</p>
+      <div class="cancel-actions">
+        <a href="/#order" class="btn-primary">Return to Checkout</a>
+        <a href="/" class="btn-outline">View Report Tiers</a>
+      </div>
+      <p class="cancel-note">
+        Questions? Contact <a href="mailto:traceworks.tx@outlook.com">traceworks.tx@outlook.com</a>
+        &nbsp;·&nbsp; <a href="/terms.html">Terms</a>
+        &nbsp;·&nbsp; <a href="/privacy.html">Privacy</a>
+      </p>
+    </div>
   </body>
 </html>

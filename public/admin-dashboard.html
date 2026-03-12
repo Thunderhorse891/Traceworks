@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Console — TraceWorks™</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    body { font-family: var(--mono, monospace); }
+    .admin-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+    .login-wrap { max-width: 420px; margin: 100px auto; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    @media (max-width: 700px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+    .metric-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 4px; padding: 20px; }
+    .metric-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3, #6b7a99); margin-bottom: 8px; }
+    .metric-value { font-size: 28px; font-weight: 700; color: var(--text-1, #f3f6ff); letter-spacing: -.02em; }
+    .metric-sub { font-size: 11px; color: var(--text-3, #6b7a99); margin-top: 4px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .section-header h3 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3, #6b7a99); margin: 0; }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .admin-table th { text-align: left; padding: 10px 12px; color: var(--text-4, #3d4a6b); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .admin-table td { padding: 10px 12px; color: var(--text-2, #b8c4e0); border-bottom: 1px solid rgba(255,255,255,.04); }
+    .admin-table tr:hover td { background: rgba(255,255,255,.02); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .dot-ok { background: #5ecb94; }
+    .dot-warn { background: var(--gold, #c9a84c); }
+    .dot-error { background: #f07070; }
+    .dot-check { background: #8ba3f0; }
+    .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; letter-spacing: .05em; }
+    .s-queued { background: rgba(100,130,220,.15); color: #8ba3f0; }
+    .s-processing { background: rgba(201,168,76,.12); color: var(--gold); }
+    .s-completed { background: rgba(58,158,110,.12); color: #5ecb94; }
+    .s-failed { background: rgba(220,60,60,.12); color: #f07070; }
+    .s-retrying { background: rgba(220,140,40,.12); color: #f0a040; }
+    .field-group { margin-bottom: 16px; }
+    .field-group label { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+    .field-group input { width: 100%; padding: 10px 12px; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.1); border-radius: 2px; color: var(--text-1); font-size: 13px; box-sizing: border-box; font-family: var(--mono); }
+    .field-group input:focus { outline: none; border-color: var(--gold); }
+    .panel { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.07); border-radius: 4px; padding: 20px; margin-bottom: 20px; }
+    .health-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 12px; }
+    .health-row:last-child { border-bottom: none; }
+    .err-msg { padding: 12px 16px; background: rgba(220,60,60,.1); border: 1px solid rgba(220,60,60,.2); border-radius: 3px; color: #f07070; font-size: 12px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="topbar">
+      <a href="/" style="text-decoration:none;"><h1 style="margin:0;font-size:20px;">Trace<span style="color:var(--gold,#c9a84c);">Works™</span></h1></a>
+      <nav class="topbar-nav">
+        <a href="/">Home</a>
+        <a href="/launch-readiness.html">Launch Readiness</a>
+        <span id="logoutBtn" onclick="logout()" style="cursor:pointer;color:var(--text-3);font-size:13px;display:none;">Logout</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Login screen -->
+  <div id="loginScreen" class="login-wrap" style="display:none;">
+    <span class="eyebrow">Admin Console</span>
+    <h2 style="font-family:var(--serif,Georgia,serif);font-size:28px;color:var(--text-1);margin:12px 0 24px;">Authenticate</h2>
+    <div class="panel">
+      <form id="loginForm" onsubmit="authenticate(event)">
+        <div class="field-group">
+          <label>Admin API Key</label>
+          <input type="password" id="apiKey" placeholder="Bearer token" required autocomplete="off" />
+        </div>
+        <button type="submit" class="btn-primary" id="loginBtn" style="width:100%;padding:10px;">Authenticate</button>
+        <div id="loginError" class="err-msg" style="display:none;"></div>
+      </form>
+    </div>
+    <p style="font-size:11px;color:var(--text-4);text-align:center;margin-top:16px;">Enter your ADMIN_API_KEY. Credentials are stored in sessionStorage only.</p>
+  </div>
+
+  <!-- Admin dashboard -->
+  <div id="adminDash" class="admin-wrap" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <span class="eyebrow">Admin Console</span>
+        <h2 style="font-family:var(--serif,Georgia,serif);font-size:24px;color:var(--text-1);margin:8px 0 0;">Operations Dashboard</h2>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="refresh()" class="btn-outline" style="font-size:12px;padding:8px 16px;">Refresh</button>
+        <button onclick="logout()" style="font-size:12px;padding:8px 16px;background:none;border:1px solid rgba(255,255,255,.1);color:var(--text-3);border-radius:2px;cursor:pointer;">Logout</button>
+      </div>
+    </div>
+
+    <!-- Metrics cards -->
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-label">Total Orders</div><div class="metric-value" id="mTotal">—</div></div>
+      <div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value" id="mRevenue">—</div></div>
+      <div class="metric-card"><div class="metric-label">Queue Depth</div><div class="metric-value" id="mQueue">—</div></div>
+      <div class="metric-card"><div class="metric-label">Failed Jobs</div><div class="metric-value" id="mFailed">—</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+      <!-- System health -->
+      <div class="panel">
+        <div class="section-header"><h3>System Health</h3><span id="healthStatus"></span></div>
+        <div id="healthRows"></div>
+      </div>
+
+      <!-- By-status breakdown -->
+      <div class="panel">
+        <div class="section-header"><h3>Orders by Status</h3></div>
+        <div id="byStatusRows"></div>
+      </div>
+    </div>
+
+    <!-- Orders table -->
+    <div class="panel">
+      <div class="section-header">
+        <h3>Recent Orders</h3>
+        <span id="orderCount" style="font-size:11px;color:var(--text-4);"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Case Ref</th>
+              <th>Package</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th>Amount</th>
+              <th>Attempts</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+      <p id="noOrders" style="font-size:12px;color:var(--text-4);text-align:center;padding:20px;display:none;">No orders found.</p>
+    </div>
+
+    <p id="lastRefresh" style="font-size:11px;color:var(--text-4);text-align:center;margin-top:16px;"></p>
+    <div id="dashError" class="err-msg" style="display:none;"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'tw_admin_key';
+
+    function getKey() { return sessionStorage.getItem(STORAGE_KEY) || ''; }
+
+    function logout() {
+      sessionStorage.removeItem(STORAGE_KEY);
+      document.getElementById('adminDash').style.display = 'none';
+      document.getElementById('loginScreen').style.display = '';
+      document.getElementById('logoutBtn').style.display = 'none';
+    }
+
+    function statusBadge(status) {
+      const labels = { queued:'Queued', processing:'Processing', completed:'Completed', failed:'Failed', retrying:'Retrying', checkout_created:'Checkout', draft:'Draft' };
+      return `<span class="status-badge s-${status}">${labels[status] || status}</span>`;
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function fmtAmt(cents) {
+      if (!cents) return '—';
+      return '$' + (Number(cents) / 100).toFixed(2);
+    }
+
+    async function loadData() {
+      const key = getKey();
+      const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
+      const errEl = document.getElementById('dashError');
+      errEl.style.display = 'none';
+
+      try {
+        const [metricsRes, ordersRes, healthRes] = await Promise.all([
+          fetch('/api/admin-metrics', { headers }),
+          fetch('/api/admin-orders?limit=50', { headers }),
+          fetch('/api/health'),
+        ]);
+
+        if (metricsRes.status === 401 || ordersRes.status === 401) { logout(); return; }
+
+        const metrics = await metricsRes.json();
+        const orders = await ordersRes.json();
+        const health = await healthRes.json();
+
+        // Metrics cards
+        document.getElementById('mTotal').textContent = orders.total ?? '—';
+        document.getElementById('mRevenue').textContent = orders.aggregate?.revenueTotalFormatted || '—';
+        document.getElementById('mQueue').textContent = metrics.metrics?.queueDepth ?? '—';
+        document.getElementById('mFailed').textContent = metrics.metrics?.byStatus?.failed ?? 0;
+
+        // Health
+        const missing = health.envMissing || [];
+        const degraded = metrics.degraded;
+        document.getElementById('healthStatus').innerHTML = degraded
+          ? '<span style="font-size:10px;color:#f07070;"><span class="status-dot dot-error"></span>Degraded</span>'
+          : '<span style="font-size:10px;color:#5ecb94;"><span class="status-dot dot-ok"></span>Healthy</span>';
+
+        const healthChecks = [
+          { label: 'Stripe', ok: !missing.includes('STRIPE_SECRET_KEY') },
+          { label: 'Webhooks', ok: !missing.includes('STRIPE_WEBHOOK_SECRET') },
+          { label: 'SMTP', ok: !missing.some(k => k.startsWith('SMTP')) },
+          { label: 'Queue', ok: (metrics.metrics?.queueDepth ?? 0) < 50 },
+          { label: 'Failed Jobs', ok: (metrics.metrics?.byStatus?.failed ?? 0) === 0 },
+          { label: 'Admin API Key', ok: true },
+        ];
+        document.getElementById('healthRows').innerHTML = healthChecks.map(c =>
+          `<div class="health-row"><span style="color:var(--text-2);">${c.label}</span><span class="status-dot ${c.ok ? 'dot-ok' : 'dot-error'}"></span></div>`
+        ).join('');
+
+        // By-status
+        const bs = orders.aggregate?.byStatus || {};
+        document.getElementById('byStatusRows').innerHTML = Object.entries(bs).length
+          ? Object.entries(bs).map(([s, n]) => `<div class="health-row"><span>${statusBadge(s)}</span><span style="color:var(--text-1);font-weight:700;">${n}</span></div>`).join('')
+          : '<p style="font-size:12px;color:var(--text-4);">No orders.</p>';
+
+        // Orders table
+        const rows = orders.orders || [];
+        document.getElementById('orderCount').textContent = `Showing ${rows.length} of ${orders.total}`;
+        document.getElementById('noOrders').style.display = rows.length ? 'none' : '';
+        document.getElementById('ordersBody').innerHTML = rows.map(o => `
+          <tr>
+            <td style="font-family:var(--mono);color:var(--text-1);">${o.caseRef || '—'}</td>
+            <td>${o.packageId || o.tier || '—'}</td>
+            <td>${statusBadge(o.status || 'unknown')}</td>
+            <td>${fmtDate(o.createdAt)}</td>
+            <td>${fmtAmt(o.amountTotal)}</td>
+            <td style="color:${(o.fulfillmentAttempts||0)>2?'#f07070':'var(--text-2)'};">${o.fulfillmentAttempts || 0}</td>
+          </tr>`).join('');
+
+        document.getElementById('lastRefresh').textContent = `Last refreshed: ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = '';
+      }
+    }
+
+    async function authenticate(e) {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      const errEl = document.getElementById('loginError');
+      errEl.style.display = 'none';
+      btn.textContent = 'Authenticating…';
+      btn.disabled = true;
+      const key = document.getElementById('apiKey').value.trim();
+      try {
+        const res = await fetch('/api/admin-metrics', { headers: { Authorization: `Bearer ${key}` } });
+        if (res.status === 401) throw new Error('Invalid API key.');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        sessionStorage.setItem(STORAGE_KEY, key);
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('adminDash').style.display = '';
+        document.getElementById('logoutBtn').style.display = '';
+        await loadData();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = '';
+      } finally {
+        btn.textContent = 'Authenticate';
+        btn.disabled = false;
+      }
+    }
+
+    async function refresh() { await loadData(); }
+
+    // Init
+    if (getKey()) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminDash').style.display = '';
+      document.getElementById('logoutBtn').style.display = '';
+      loadData();
+      setInterval(loadData, 60000);
+    } else {
+      document.getElementById('loginScreen').style.display = '';
+    }
+  </script>
+</body>
+</html>

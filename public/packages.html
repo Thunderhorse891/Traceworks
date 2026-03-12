@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Packages — TraceWorks™</title>
+  <meta name="description" content="Six investigative report tiers from quick ownership snapshots to comprehensive multi-source investigations. Public-record OSINT for legal professionals." />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#09090f" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .pkg-hero {
+      padding: 80px 24px 64px;
+      max-width: 1260px;
+      margin: 0 auto;
+      border-bottom: 1px solid var(--border-faint);
+    }
+    .pkg-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border-faint);
+      border: 1px solid var(--border-faint);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .pkg-card {
+      background: var(--bg);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      transition: background 0.18s;
+    }
+    .pkg-card:hover { background: rgba(255,255,255,0.018); }
+    .pkg-card.featured {
+      background: var(--gold-glow);
+      outline: 1px solid var(--gold-dim);
+      outline-offset: -1px;
+      z-index: 1;
+    }
+    .pkg-flag {
+      position: absolute;
+      top: 0;
+      right: 24px;
+      background: var(--gold);
+      color: #0c0d10;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 0 0 4px 4px;
+    }
+    .pkg-tier {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-4);
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+    .pkg-name {
+      font-family: var(--serif);
+      font-size: 19px;
+      color: var(--white);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+      margin-top: 4px;
+    }
+    .pkg-price {
+      font-family: var(--serif);
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .pkg-price-alt {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .pkg-delivery {
+      font-size: 11px;
+      color: var(--text-3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-top: 1px solid var(--border-faint);
+      padding-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pkg-delivery::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3a9e6e;
+      flex-shrink: 0;
+    }
+    .pkg-list {
+      list-style: none;
+      padding: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pkg-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.4;
+    }
+    .pkg-list li::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--gold-dim);
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+    .pkg-btn {
+      display: block;
+      text-align: center;
+      padding: 11px 20px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.18s;
+      border: 1px solid var(--border-mid);
+      color: var(--text-2);
+      background: transparent;
+    }
+    .pkg-btn:hover {
+      border-color: var(--gold-dim);
+      color: var(--gold);
+      background: var(--gold-ghost);
+    }
+    .pkg-btn-gold {
+      background: var(--gold);
+      color: #0c0d10;
+      border-color: var(--gold);
+    }
+    .pkg-btn-gold:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      color: #0c0d10;
+      transform: translateY(-1px);
+    }
+    .compare-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-faint);
+      border-radius: var(--radius-lg);
+    }
+    .ctable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 700px;
+    }
+    .ctable thead th {
+      background: rgba(0,0,0,0.3);
+      padding: 13px 16px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      border-bottom: 1px solid var(--border-faint);
+      white-space: nowrap;
+    }
+    .ctable thead th:first-child { text-align: left; color: var(--text-2); padding-left: 20px; }
+    .ctable tbody td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border-faint);
+      color: var(--text-2);
+      text-align: center;
+      vertical-align: middle;
+    }
+    .ctable tbody tr:last-child td { border-bottom: none; }
+    .ctable tbody td:first-child {
+      text-align: left;
+      color: var(--text-1);
+      font-weight: 500;
+      padding-left: 20px;
+    }
+    .ctable tbody tr:hover td { background: rgba(255,255,255,0.015); }
+    .c-yes { color: #3a9e6e; font-size: 15px; }
+    .c-no { color: var(--text-4); font-size: 13px; }
+    .c-partial { color: var(--gold-dim); font-size: 11px; letter-spacing: 0.04em; font-weight: 600; }
+    @media (max-width: 960px) {
+      .pkg-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .pkg-grid { grid-template-columns: 1fr; }
+      .pkg-hero { padding: 56px 16px 40px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="topbar">
+      <a href="/" style="text-decoration:none;"><h1 style="margin:0;font-size:20px;">Trace<span style="color:var(--gold);">Works™</span></h1></a>
+      <nav class="topbar-nav">
+        <a href="/packages.html" style="color:var(--text-1);">Reports</a>
+        <a href="/#process">How It Works</a>
+        <a href="/enterprise.html">Enterprise</a>
+        <a href="/dashboard.html">My Orders</a>
+        <a href="/#order" class="btn-primary">Submit a Request</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <div class="pkg-hero">
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-line"></span>
+      <span class="eyebrow">Investigation Tiers &nbsp;·&nbsp; Texas Public Record</span>
+    </div>
+    <h2 style="font-family:var(--serif);font-size:clamp(38px,6vw,72px);line-height:0.95;color:var(--white);letter-spacing:-0.02em;margin-bottom:24px;">
+      Six tiers.<br /><em style="color:var(--gold);font-style:italic;">One standard.</em>
+    </h2>
+    <p style="font-size:16px;color:var(--text-2);max-width:540px;line-height:1.75;margin-bottom:0;">
+      Every report is sourced from Texas public records, returned with full source citations and confidence ratings. No fabrication. No inference without documentation.
+    </p>
+  </div>
+
+  <!-- Package grid -->
+  <section class="section-block">
+    <div class="pkg-grid">
+
+      <!-- Tier 01 — Standard -->
+      <div class="pkg-card">
+        <div>
+          <div class="pkg-tier">Tier 01 &nbsp;&mdash;&nbsp; Standard</div>
+          <div class="pkg-name">Standard Property Snapshot</div>
+        </div>
+        <div class="pkg-price">$99</div>
+        <div class="pkg-delivery">24-hour delivery</div>
+        <ul class="pkg-list">
+          <li>Property Identification</li>
+          <li>Ownership Snapshot</li>
+          <li>Value &amp; Tax Summary</li>
+          <li>Source Trace Panel</li>
+        </ul>
+        <a href="/#order?package=standard" class="pkg-btn">Purchase This Tier</a>
+      </div>
+
+      <!-- Tier 02 — Ownership & Encumbrance -->
+      <div class="pkg-card">
+        <div>
+          <div class="pkg-tier">Tier 02 &nbsp;&mdash;&nbsp; Ownership</div>
+          <div class="pkg-name">Ownership &amp; Encumbrance Intelligence Report</div>
+        </div>
+        <div class="pkg-price">$249</div>
+        <div class="pkg-delivery">48-hour delivery</div>
+        <ul class="pkg-list">
+          <li>Full Property Identification</li>
+          <li>Ownership Evidence &amp; Deed Chain</li>
+          <li>Encumbrance Signals</li>
+          <li>Transaction Timeline</li>
+          <li>Entity Findings</li>
+          <li>Source Trace Panel</li>
+        </ul>
+        <a href="/#order?package=ownership_encumbrance" class="pkg-btn">Purchase This Tier</a>
+      </div>
+
+      <!-- Tier 03 — Probate -->
+      <div class="pkg-card">
+        <div>
+          <div class="pkg-tier">Tier 03 &nbsp;&mdash;&nbsp; Probate</div>
+          <div class="pkg-name">Probate &amp; Heirship Investigation Report</div>
+        </div>
+        <div class="pkg-price">$325</div>
+        <div class="pkg-delivery">72-hour delivery</div>
+        <ul class="pkg-list">
+          <li>Decedent Search Summary</li>
+          <li>Property Connection</li>
+          <li>Death &amp; Probate Indicators</li>
+          <li>Heir Candidate List</li>
+          <li>Contactability Assessment</li>
+          <li>Source Trace Panel</li>
+        </ul>
+        <a href="/#order?package=probate_heirship" class="pkg-btn">Purchase This Tier</a>
+      </div>
+
+      <!-- Tier 04 — Asset Network -->
+      <div class="pkg-card">
+        <div>
+          <div class="pkg-tier">Tier 04 &nbsp;&mdash;&nbsp; Asset Network</div>
+          <div class="pkg-name">Asset &amp; Property Network Report</div>
+        </div>
+        <div class="pkg-price">$399</div>
+        <div class="pkg-delivery">72-hour delivery</div>
+        <ul class="pkg-list">
+          <li>Owner Normalization</li>
+          <li>Property Portfolio Discovery</li>
+          <li>Ownership Structure</li>
+          <li>Entity Investigation</li>
+          <li>Geographic Distribution</li>
+          <li>Source Trace Panel</li>
+        </ul>
+        <a href="/#order?package=asset_network" class="pkg-btn">Purchase This Tier</a>
+      </div>
+
+      <!-- Tier 05 — Comprehensive (featured) -->
+      <div class="pkg-card featured">
+        <div class="pkg-flag">Most Complete</div>
+        <div>
+          <div class="pkg-tier">Tier 05 &nbsp;&mdash;&nbsp; Comprehensive</div>
+          <div class="pkg-name">Comprehensive Investigative Report</div>
+        </div>
+        <div class="pkg-price">$549</div>
+        <div class="pkg-delivery">96-hour delivery</div>
+        <ul class="pkg-list">
+          <li>Executive Summary</li>
+          <li>Full Property Snapshot</li>
+          <li>Ownership &amp; Encumbrance</li>
+          <li>Probate &amp; Heir Findings</li>
+          <li>Asset Network</li>
+          <li>Cross-Source Discrepancy Analysis</li>
+          <li>Confidence Matrix</li>
+          <li>Recommended Next Steps</li>
+          <li>Source Trace Panel</li>
+        </ul>
+        <a href="/#order?package=comprehensive" class="pkg-btn pkg-btn-gold">Purchase This Tier</a>
+      </div>
+
+      <!-- Tier 06 — Custom -->
+      <div class="pkg-card">
+        <div>
+          <div class="pkg-tier">Tier 06 &nbsp;&mdash;&nbsp; Custom</div>
+          <div class="pkg-name">Custom Research</div>
+        </div>
+        <div class="pkg-price-alt">Contact for pricing</div>
+        <div class="pkg-delivery">Negotiated timeline</div>
+        <ul class="pkg-list">
+          <li>Bespoke scope defined with your team</li>
+          <li>Dedicated analyst support</li>
+          <li>White-label report format available</li>
+          <li>Volume &amp; retainer discounts</li>
+          <li>SLA-backed delivery windows</li>
+          <li>Custom data connectors on request</li>
+        </ul>
+        <a href="/contact-sales.html" class="pkg-btn">Contact Sales</a>
+      </div>
+
+    </div>
+
+    <div class="policy-note" style="margin-top:24px;">
+      <span class="policy-note-bar"></span>
+      <span><strong style="color:var(--text-2);">Service Policy —</strong> No refunds after research begins. If findings are incomplete due to source unavailability, we run a redo pass on the same scope at no charge. <a href="/refund-policy.html" style="color:var(--gold-dim);text-decoration:none;">Full policy.</a></span>
+    </div>
+  </section>
+
+  <!-- Source comparison table -->
+  <section class="section-block" style="padding-top:0;">
+    <div class="section-header" style="margin-bottom:32px;">
+      <span class="eyebrow">Coverage Matrix</span>
+      <h3 style="font-family:var(--serif);font-size:clamp(22px,3vw,36px);color:var(--white);letter-spacing:-0.01em;margin-top:8px;">What each tier searches</h3>
+      <p style="color:var(--text-2);font-size:14px;max-width:480px;">Every source query is logged with timestamp and result status. Unavailable sources are documented, never silently omitted.</p>
+    </div>
+    <div class="compare-wrap">
+      <table class="ctable">
+        <thead>
+          <tr>
+            <th>Data Source</th>
+            <th>Standard</th>
+            <th>Own. &amp; Enc.</th>
+            <th>Probate</th>
+            <th>Asset Net.</th>
+            <th>Comprehensive</th>
+            <th>Custom</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>County CAD (Appraisal District)</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>County Deed &amp; Instrument Index</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-partial">Partial</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Texas Secretary of State (SOS)</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Lien &amp; Encumbrance Records</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-no">—</td>
+            <td class="c-partial">Partial</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>TX Courts Probate Index</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Death Records / SSDI</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Obituary Index</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>People &amp; Relative Search</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Multi-Property Portfolio Discovery</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Corporate &amp; Entity Filings</td>
+            <td class="c-no">—</td>
+            <td class="c-partial">Partial</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Cross-Source Discrepancy Analysis</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Confidence Matrix</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Recommended Next Steps</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-no">—</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+          <tr>
+            <td>Source Trace Panel</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+            <td class="c-yes">&#10003;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section">
+    <div class="section-block">
+      <div class="section-header">
+        <span class="eyebrow">Package FAQ</span>
+        <h3 style="font-family:var(--serif);font-size:clamp(22px,3vw,36px);color:var(--white);letter-spacing:-0.01em;margin-top:8px;">Questions about the tiers</h3>
+      </div>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h4>Can I upgrade after placing an order?</h4>
+          <p>Yes. If you need a broader scope after receiving your initial report, contact us within 7 days. We will apply your original payment as credit toward the higher tier and issue a differential invoice for the balance.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Which tier is best for probate attorneys?</h4>
+          <p>The Probate &amp; Heirship Investigation Report (Tier 03) is purpose-built for estate proceedings — it focuses on decedent identification, property connection, death indicators, and heir candidate discovery with contactability scoring.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Does the delivery window include weekends?</h4>
+          <p>Delivery windows are calendar days, not business days. Our automated research engine operates continuously. Delays may occur for complex subjects or county portal outages, which are documented in your report.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What if I need coverage in multiple counties?</h4>
+          <p>Most tiers can search across multiple counties. If your case spans many jurisdictions, the Custom Research tier is designed for multi-county and multi-state investigations with a bespoke scope.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Are reports admissible as legal evidence?</h4>
+          <p>TraceWorks reports are investigative research tools, not certified legal documents. They are intended to support legal professionals in identifying leads, sources, and findings for further verification and formal proceedings.</p>
+        </div>
+        <div class="faq-item">
+          <h4>How is the Comprehensive tier different from buying Tiers 1–4?</h4>
+          <p>The Comprehensive tier runs all sources in a unified investigation, applies cross-source discrepancy analysis to resolve conflicts between findings, produces a confidence matrix, and delivers strategic next-step recommendations — none of which appear in individual tier reports.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h2>Trace<span>Works™</span></h2>
+        <p>Automated public-record investigative reports for legal professionals. Texas-based property, ownership, probate, and entity research.</p>
+      </div>
+      <nav class="footer-nav">
+        <a href="/terms.html">Terms of Service</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/refund-policy.html">No-Refund Policy</a>
+        <a href="/enterprise.html">Enterprise</a>
+        <a href="/contact-sales.html">Contact Sales</a>
+      </nav>
+    </div>
+    <p class="footer-copy">
+      © 2025 TraceWorks™. All rights reserved. Lawful investigative research services for licensed professionals only. Not a consumer reporting agency under FCRA.
+    </p>
+  </footer>
+
+</body>
+</html>
