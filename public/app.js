@@ -56,8 +56,8 @@ function buildCard(pkg, index) {
     if (packageInput) packageInput.value = pkg.id;
     if (statusEl) statusEl.textContent = `${pkg.name} selected — complete the form below.`;
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    track('package_selected', pkg.id);
-  }
+    await track('package_selected', pkg.id);
+  });
 
   detailsButton.addEventListener('click', async () => {
     openPackageModal(pkg);

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCheckoutPayload, validateCheckoutPayload } from '../netlify/functions/_lib/validation.js';
-import { hitRateLimit } from '../netlify/functions/_lib/rate-limit.js';
-import { jsonWithRequestId } from '../netlify/functions/_lib/http.js';
-import { getBusinessEmail } from '../netlify/functions/_lib/business.js';
-import { createStatusToken } from '../netlify/functions/_lib/status-token.js';
+import { normalizeCheckoutPayload, validateCheckoutPayload } from './netlify/functions/_lib/validation.js';
+import { hitRateLimit } from './netlify/functions/_lib/rate-limit.js';
+import { jsonWithRequestId } from './netlify/functions/_lib/http.js';
+import { getBusinessEmail } from './netlify/functions/_lib/business.js';
+import { createStatusToken } from './netlify/functions/_lib/status-token.js';
 
 test('validation normalizes website and validates URL', () => {
   const payload = normalizeCheckoutPayload({

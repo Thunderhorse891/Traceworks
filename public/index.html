@@ -330,19 +330,68 @@
       </div>
     </section>
 
-    <!-- ─ Footer ──────────────────────────────────────────────────── -->
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <div class="footer-brand">
-          <h2>Trace<span>Works™</span></h2>
-          <p>Automated public-record investigative reports for legal professionals. Texas-based property, ownership, probate, and entity research.</p>
-        </div>
-        <nav class="footer-nav">
-          <a href="/terms.html">Terms of Service</a>
-          <a href="/privacy.html">Privacy Policy</a>
-          <a href="/refund-policy.html">No-Refund Policy</a>
-          <a href="/report-tiers.html">Sample Reports</a>
-          <a href="/launch-readiness.html">Launch Checklist</a>
+        <form id="checkoutForm">
+          <fieldset>
+            <legend>Subject / property info</legend>
+            <label>Selected Package<input id="packageId" name="packageId" readonly required /></label>
+            <label>Subject Name / Entity<input name="companyName" required /></label>
+            <label>Known Website / Profile<input name="website" placeholder="https://..." /></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Requester info</legend>
+            <label>Your Name<input name="customerName" required /></label>
+            <label>Email<input name="customerEmail" type="email" required /></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Case purpose</legend>
+            <label>Case Objective<textarea name="goals" rows="4" placeholder="Service, title chain review, probate research, contact verification, etc."></textarea></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Compliance confirmation</legend>
+            <label class="checkbox"><input type="checkbox" name="legalConsent" required /> I confirm lawful-use and authorization requirements.</label>
+            <label class="checkbox"><input type="checkbox" name="tosConsent" required /> I accept Terms and service limitations.</label>
+          </fieldset>
+
+          <button type="submit">Continue to Secure Checkout</button>
+          <p id="status" class="status"></p>
+        </form>
+      </section>
+
+      <section class="faq-block" id="faq">
+        <h3>FAQ</h3>
+        <details><summary>What’s included?</summary><p>Configured source queries, evidence appendix, report sections, and gap disclosures.</p></details>
+        <details><summary>What’s not included?</summary><p>No legal title opinion, no legal heir adjudication, and no legal advice.</p></details>
+        <details><summary>Turnaround</summary><p>Most requests deliver same-day to 24h depending on source availability.</p></details>
+        <details><summary>Disclaimers</summary><p>Reports are investigative outputs from accessible sources and may require manual validation.</p></details>
+      </section>
+
+      <section class="sales card">
+        <h3>Request Enterprise Call</h3>
+        <p>Running volume for a law firm, process network, or investigative team? Ask about account-level workflows.</p>
+        <form id="salesForm">
+          <label>Full Name<input name="name" required /></label>
+          <label>Work Email<input name="email" type="email" required /></label>
+          <label>Company<input name="company" required /></label>
+          <label>Website<input name="website" placeholder="https://" /></label>
+          <label>Monthly Cases<input name="monthlyCases" required /></label>
+          <label>Budget Range<input name="budget" /></label>
+          <label>Notes<textarea name="message" rows="3"></textarea></label>
+          <button type="submit">Request Enterprise Call</button>
+        </form>
+        <p id="salesStatus" class="status"></p>
+      </section>
+
+      <footer class="footer">
+        <p>© <span id="year"></span> TraceWorks™</p>
+        <nav>
+          <a href="/terms.html">Terms</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/refund-policy.html">Refund Policy</a>
+          <a href="/console.html">Intelligence Console</a>
+          <a href="/launch-readiness.html">Launch readiness</a>
         </nav>
       </div>
       <p class="footer-copy">

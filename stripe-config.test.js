@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clientPackages } from '../public/packages.js';
+import { clientPackages } from './public/packages.js';
 
 test('client packages include valid Stripe payment links', () => {
   assert.equal(clientPackages.length, 4);

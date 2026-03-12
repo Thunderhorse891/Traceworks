@@ -1,40 +1,82 @@
-# Never commit real keys. Use environment variables in production.
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-OWNER_EMAIL=traceworks.tx@outlook.com
-EMAIL_FROM=traceworks.tx@outlook.com
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=smtp-user
-SMTP_PASS=smtp-pass
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm, readFile, access } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-# Paid fulfillment strict mode (default true). If true and required source config is missing, orders fail loudly.
-PAID_FULFILLMENT_STRICT=true
-REPORT_ARTIFACT_ROOT=.data/reports
+test('processPaidOrder runs paid workflow, creates artifact, and records delivery', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'tw-paid-'));
+  process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
+  process.env.REPORT_ARTIFACT_ROOT = join(dir, 'artifacts');
+  process.env.PAID_FULFILLMENT_STRICT = 'false';
 
-# Real source modules configuration (required in strict mode)
-APPRAISAL_API_URL=https://example.com/appraisal
-TAX_COLLECTOR_API_URL=https://example.com/tax
-PARCEL_GIS_API_URL=https://example.com/gis
-COUNTY_CLERK_API_URL=https://example.com/clerk
-GRANTOR_GRANTEE_API_URL=https://example.com/grantor-grantee
-MORTGAGE_INDEX_API_URL=https://example.com/mortgage
-OBITUARY_API_URL=https://example.com/obituary
-PROBATE_API_URL=https://example.com/probate
-PEOPLE_ASSOC_API_URL=https://example.com/people-association
-PEOPLE_ASSOC_LICENSED=false
-DEFAULT_COUNTY=
-DEFAULT_STATE=
+  const store = await import(`./netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  const { processPaidOrder } = await import(`./netlify/functions/_lib/fulfillment.js?ts=${Date.now()}`);
 
-# JSON configuration override for config-driven public-record adapters.
-# If blank, TraceWorks uses built-in Texas-first source pack (Harris/Travis/Dallas/Bexar/Tarrant + TX SOS/OpenCorporates/SEC EDGAR).
-# Example shape: {"countyProperty":[...],"countyRecorder":[...],"probateIndex":[...],"entitySearch":[...]}
-PUBLIC_RECORD_SOURCE_CONFIG=
+  const orderId = 'TW-E2E-1';
+  await store.upsertOrder(orderId, {
+    order_id: orderId,
+    caseRef: orderId,
+    status: 'queued',
+    purchased_tier: 'STANDARD_REPORT',
+    packageId: 'locate',
+    packageName: 'Skip Trace & Locate',
+    customerName: 'Law Office',
+    customerEmail: 'client@example.com',
+    subjectName: 'Jordan Mercer',
+    website: 'https://example.org',
+    goals: 'Locate for service'
+  });
 
-TRACEWORKS_STORE_PATH=.data/traceworks-store.json
-ADMIN_API_KEY=change-me
-QUEUE_MAX_PER_RUN=5
-QUEUE_CRON_SECRET=change-me-cron-secret
-QUEUE_LAG_ALERT_MS=900000
-STATUS_TOKEN_SECRET=change-me-long-random
-IMMEDIATE_FULFILLMENT_TIMEOUT_MS=3500
+  let emailAttempted = false;
+  const tierRunner = async () => ({
+    orderId,
+    tier: 'standard',
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    inputs: { subjectName: 'Jordan Mercer' },
+    overallStatus: 'complete',
+    sources: [
+      {
+        sourceId: 'county_record',
+        sourceLabel: 'County Record Source',
+        title: 'County record hit',
+        sourceUrl: 'https://county.example/record',
+        queryUsed: '{"q":"jordan"}',
+        queriedAt: new Date().toISOString(),
+        status: 'found',
+        url: 'https://county.example/record',
+        sourceType: 'county-records',
+        confidence: 'likely',
+        provider: 'robin',
+        domain: 'county.example',
+        data: { ownerName: 'Jordan Mercer' }
+      }
+    ]
+  });
+
+  await processPaidOrder(orderId, {
+    ownerEmail: 'owner@example.com',
+    deps: {
+      tierRunner,
+      sendReportEmails: async () => {
+        emailAttempted = true;
+      }
+    }
+  });
+
+  const updated = await store.getOrder(orderId);
+  assert.equal(updated.status, 'completed');
+  assert.equal(updated.email_delivery_status, 'sent');
+  assert.ok(updated.artifact_url_or_path);
+  assert.equal(emailAttempted, true);
+  await access(updated.artifact_url_or_path);
+  await access(join(dir, 'artifacts', orderId, 'report.pdf'));
+
+  const evidencePath = join(dir, 'artifacts', orderId, 'workflow-results.json');
+  const evidence = JSON.parse(await readFile(evidencePath, 'utf8'));
+  assert.equal(Array.isArray(evidence.sources), true);
+  assert.equal(evidence.sources[0].provider, 'robin');
+
+  await rm(dir, { recursive: true, force: true });
+});

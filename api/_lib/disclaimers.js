@@ -35,7 +35,7 @@ THIS REPORT IS NOT:
 • A substitute for a licensed title company abstract or attorney opinion
 
 This report can only show what is visible in publicly accessible filing indexes.
-It NEVER asserts "clear title." Gaps, breaks, and unavailable index periods are
+It NEVER asserts lien-free or unencumbered status. Gaps, breaks, and unavailable index periods are
 explicitly noted and are not resolved by inference.
 
 No section of this report should be used for legal or transactional decisions
