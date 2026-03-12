@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node -e \"console.log('Use: npx -y vercel@latest dev')\"",
     "check": "node --test && npm run lint:js",
     "lint:js": "node scripts/check-syntax.mjs",
     "test": "node --test"
@@ -17,6 +16,6 @@
   },
   "devDependencies": {
     "vercel": "^37.0.0"
-  }
+  },
+  "packageManager": "npm@11.11.0"
 }
-
