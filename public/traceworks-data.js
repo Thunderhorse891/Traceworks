@@ -1,50 +1,57 @@
-// Mock intelligence workspace data model (replace with API-backed graph persistence).
+// Analyst console data model (replace with API-backed persistence).
+// Package IDs must match api/_lib/packages.js exactly.
 export const graph = {
   cases: [
     {
-      id: 'TW-24019',
-      package: 'full_intelligence',
-      subject: 'Jordan Mercer',
-      property: '100 Main St, Houston TX',
+      id: 'TW-26031-A4K9',
+      packageId: 'comprehensive',
+      subject: 'Jordan R. Mercer',
+      county: 'Harris',
+      state: 'TX',
       payment: 'paid',
-      workflow: 'running',
-      confidence: 'medium',
-      entities: 14,
-      sources: 23,
-      redFlags: 2,
-      evidenceCompleteness: 0.79,
+      workflow: 'processing',
+      confidence: 'likely',
+      sourcesTotal: 6,
+      sourcesFound: 4,
+      sourcesUnavailable: 1,
+      partialReasons: ['Harris County deed index unavailable'],
     },
     {
-      id: 'TW-24018',
-      package: 'ownership_liens',
+      id: 'TW-26030-B7M2',
+      packageId: 'ownership_encumbrance',
       subject: 'Mercer Holdings LLC',
-      property: '321 Bayou Rd, Harris TX',
+      county: 'Harris',
+      state: 'TX',
       payment: 'paid',
       workflow: 'analyst_review',
-      confidence: 'high',
-      entities: 10,
-      sources: 17,
-      redFlags: 1,
-      evidenceCompleteness: 0.93,
+      confidence: 'confirmed',
+      sourcesTotal: 5,
+      sourcesFound: 5,
+      sourcesUnavailable: 0,
+      partialReasons: [],
     },
   ],
   relationships: [
-    { type: 'OWNS', from: 'person:jordan-mercer', to: 'property:100-main', confidence: 'likely', source: 'county-deeds' },
+    { type: 'OWNS', from: 'person:jordan-mercer', to: 'property:100-main', confidence: 'likely', source: 'hcad' },
     { type: 'REGISTERED_AT', from: 'business:mercer-holdings-llc', to: 'address:321-bayou', confidence: 'confirmed', source: 'tx-sos' },
-    { type: 'RELATED_TO', from: 'person:jordan-mercer', to: 'probate:pc-2024-991', confidence: 'possible', source: 'probate-index' },
+    { type: 'RELATED_TO', from: 'person:jordan-mercer', to: 'probate:pc-2024-991', confidence: 'possible', source: 'tx-courts' },
   ],
 };
 
+// Package definitions — must match api/_lib/packages.js IDs and amounts
 export const workflowDefinitions = [
-  { id: 'title_snapshot', package: '$29 Title Snapshot', steps: 7, sla: 'same day' },
-  { id: 'ownership_liens', package: '$79 Ownership + Liens', steps: 10, sla: 'same day–24h' },
-  { id: 'heir_search', package: '$149 Heir Search', steps: 11, sla: '24h' },
-  { id: 'full_intelligence', package: '$299 Full Intelligence Report', steps: 16, sla: '24h–48h' },
+  { id: 'standard',              name: 'Skip Trace & Locate',          amount: 9900,  deliveryHours: 24,  steps: 5,  sla: 'Same day' },
+  { id: 'ownership_encumbrance', name: 'Property & Title Research',     amount: 24900, deliveryHours: 48,  steps: 7,  sla: 'Same day–24h' },
+  { id: 'probate_heirship',      name: 'Heir & Beneficiary Locate',     amount: 32500, deliveryHours: 72,  steps: 9,  sla: '24h' },
+  { id: 'asset_network',         name: 'Asset Network',                 amount: 39900, deliveryHours: 72,  steps: 11, sla: '24h–48h' },
+  { id: 'comprehensive',         name: 'Comprehensive Locate + Assets', amount: 54900, deliveryHours: 96,  steps: 14, sla: '24h–48h' },
 ];
 
 export const sourceRegistry = [
-  { id: 'county-deeds', category: 'deed_indexes', health: 'healthy', freshness: '6h', coverage: 'Harris/Travis/Bexar/Tarrant' },
-  { id: 'probate-index', category: 'probate_filings', health: 'degraded', freshness: '18h', coverage: 'TX counties' },
-  { id: 'tx-sos', category: 'corporate_registry', health: 'healthy', freshness: '4h', coverage: 'Texas SOS' },
-  { id: 'court-dockets', category: 'court_dockets', health: 'healthy', freshness: '2h', coverage: 'county + district' },
+  { id: 'county-cad',    category: 'appraisal_district',  health: 'healthy',  freshness: '4h',  coverage: 'Harris / Travis / Bexar / Tarrant / Dallas' },
+  { id: 'tx-sos',        category: 'corporate_registry',  health: 'healthy',  freshness: '6h',  coverage: 'Texas statewide' },
+  { id: 'tx-courts',     category: 'court_dockets',       health: 'healthy',  freshness: '2h',  coverage: 'County + district courts' },
+  { id: 'deed-index',    category: 'deed_instruments',    health: 'degraded', freshness: 'N/A', coverage: 'Requires browser auth per county' },
+  { id: 'people-search', category: 'public_people_data',  health: 'healthy',  freshness: '12h', coverage: 'National (TruePeopleSearch / FastPeopleSearch)' },
+  { id: 'obit-index',    category: 'obituary_index',      health: 'healthy',  freshness: '24h', coverage: 'Legacy.com / Tributes.com' },
 ];

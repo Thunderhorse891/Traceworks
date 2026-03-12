@@ -150,7 +150,7 @@ function buildSourceTracePanel(sources) {
   return `
     <section class="source-trace-panel">
       <h2>SOURCE TRACE PANEL</h2>
-      <p class="trace-note">Every source queried in this investigation — exact query, timestamp, and result. This table proves the work was done.</p>
+      <p class="trace-note">All sources queried in this matter — query used, timestamp, and result status. Sources not reached are documented, not omitted.</p>
       <table class="trace-table">
         <thead><tr><th>Source</th><th>Query Used</th><th>Timestamp</th><th>Status</th><th>Result Summary</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -223,8 +223,8 @@ export function reportToHtml(workflowResults) {
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#07090f;color:#dce4f8;font-family:'Inter',Arial,sans-serif;font-size:14px;line-height:1.6}
     .wrap{max-width:1100px;margin:24px auto;background:#0d1422;border:1px solid #1e2d4a;border-radius:16px;overflow:hidden}
-    .hero{padding:32px 36px;background:linear-gradient(135deg,#060c1a 0%,#0f1e38 60%,#1a2a0a 100%);border-bottom:2px solid #c9a84c}
-    .hero h1{font-size:28px;font-family:Georgia,serif;color:#f4f7ff;letter-spacing:1px}
+    .hero{padding:32px 36px;background:#060c1a;border-bottom:1px solid #1e2d4a}
+    .hero h1{font-size:24px;font-family:'Inter',system-ui,Arial,sans-serif;color:#f4f7ff;letter-spacing:.1px;font-weight:600}
     .hero .brand{color:#c9a84c;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
     .hero-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:20px}
     .pill{background:#101a2e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px}
@@ -238,7 +238,7 @@ export function reportToHtml(workflowResults) {
     .partial-banner{background:#2e1a0a;border:1px solid #d97706;color:#d97706;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px}
     .fail-banner{background:#2e0a0a;border:1px solid #e53e3e;color:#e53e3e;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px}
     .report-section{background:#101a2e;border:1px solid #1e2d4a;border-radius:10px;padding:18px 20px;margin-bottom:16px}
-    .report-section h3{font-size:16px;color:#c9a84c;font-family:Georgia,serif;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .report-section h3{font-size:14px;color:#d4bc78;font-family:'Inter',system-ui,Arial,sans-serif;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .report-section.not-found{border-color:#1e2d1e;background:#0d1a0d}
     .report-section.unavailable{border-color:#2e2a10;background:#1a1608}
     .report-section.error{border-color:#2e1010;background:#1a0808}
@@ -272,7 +272,7 @@ export function reportToHtml(workflowResults) {
     .json-block{font-size:11px;color:#7b8db0;background:#060c1a;padding:10px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto}
     /* Source Trace Panel */
     .source-trace-panel{margin-top:32px;padding:24px 0;border-top:2px solid #c9a84c}
-    .source-trace-panel h2{color:#c9a84c;font-size:18px;font-family:Georgia,serif;letter-spacing:1px;margin-bottom:6px}
+    .source-trace-panel h2{color:#c9a84c;font-size:11px;font-family:'Inter',system-ui,Arial,sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
     .trace-note{font-size:12px;color:#556b8a;margin-bottom:14px;font-style:italic}
     .trace-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
     .trace-table th{background:#060c1a;color:#c9a84c;padding:8px 10px;text-align:left;border-bottom:1px solid #1e2d4a;font-weight:600}
@@ -286,16 +286,16 @@ export function reportToHtml(workflowResults) {
     .trace-summary{font-size:12px;color:#7b8db0;margin-top:10px}
     .trace-summary strong{color:#c9a84c}
     /* Disclaimer */
-    .disclaimer{margin-top:28px;padding:20px;background:#060c1a;border:1px solid #1e2d4a;border-radius:8px;color:#556b8a;font-size:11px;line-height:1.8;white-space:pre-wrap;font-family:monospace}
-    .disclaimer-title{color:#c9a84c;font-size:12px;font-weight:700;margin-bottom:10px;letter-spacing:1px}
+    .disclaimer{margin-top:28px;padding:20px;background:#060c1a;border:1px solid #1e2d4a;border-radius:6px;color:#4a5e7a;font-size:11px;line-height:1.8}
+    .disclaimer-title{color:#c9a84c;font-size:10px;font-weight:700;margin-bottom:10px;letter-spacing:1.5px;text-transform:uppercase}
     /* Sections header */
-    .sections-header{font-size:18px;color:#c9a84c;font-family:Georgia,serif;margin:24px 0 14px;padding-bottom:6px;border-bottom:1px solid #1e2d4a}
+    .sections-header{font-size:10px;color:#c9a84c;font-family:'Inter',system-ui,Arial,sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #1e2d4a}
   </style>
 </head>
 <body>
 <article class="wrap">
   <header class="hero">
-    <div class="brand">TraceWorks™ Investigative Report</div>
+    <div class="brand">TraceWorks™ Research Report</div>
     <h1>${esc(pkg.name || tier)}</h1>
     <div class="hero-meta">
       <div class="pill"><div class="label">Order ID</div><div class="value">${esc(orderId)}</div></div>
@@ -312,7 +312,7 @@ export function reportToHtml(workflowResults) {
     ${partialNote}
     ${failNote}
     ${inputs?.goals ? `<div class="report-section"><h3>Investigation Objective</h3><p style="color:#b8c8e0;margin-top:6px">${esc(inputs.goals)}</p></div>` : ''}
-    <h2 class="sections-header">Investigation Findings</h2>
+    <h2 class="sections-header">Source Findings</h2>
     ${sections}
     ${heirTable}
     ${tracePanel}
