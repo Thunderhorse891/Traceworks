@@ -12,7 +12,8 @@ function renderDashboard() {
   const k = document.getElementById('kpis');
   if (!k) return;
   const queued = graph.cases.filter((c) => c.workflow !== 'completed').length;
-  const rev = graph.cases.reduce((a, c) => a + ({ full_intelligence: 299, ownership_liens: 79 }[c.package] || 29), 0);
+  const packageAmounts = { standard: 99, ownership_encumbrance: 249, probate_heirship: 325, asset_network: 399, comprehensive: 549 };
+  const rev = graph.cases.reduce((a, c) => a + (packageAmounts[c.packageId] || 0), 0);
   k.innerHTML = [
     ['Active Cases', graph.cases.length],
     ['Queued Jobs', queued],
@@ -22,7 +23,7 @@ function renderDashboard() {
 
   const recent = document.getElementById('recent-cases');
   if (recent) {
-    recent.innerHTML = graph.cases.map((c) => `<tr><td>${c.id}</td><td>${c.subject}</td><td><span class="tw-chip ${chipClass(c.workflow)}">${c.workflow}</span></td><td>${c.sources}</td><td>${c.confidence}</td></tr>`).join('');
+    recent.innerHTML = graph.cases.map((c) => `<tr><td>${c.id}</td><td>${c.subject}</td><td><span class="tw-chip ${chipClass(c.workflow)}">${c.workflow}</span></td><td>${c.sourcesFound}/${c.sourcesTotal}</td><td>${c.confidence}</td></tr>`).join('');
   }
 
   const src = document.getElementById('source-health');
@@ -36,9 +37,9 @@ function renderCases() {
   if (!target) return;
   target.innerHTML = graph.cases.map((c) => `
     <tr>
-      <td>${c.id}</td><td>${c.subject}</td><td>${c.package}</td>
+      <td>${c.id}</td><td>${c.subject}</td><td>${c.packageId}</td>
       <td><span class="tw-chip ${chipClass(c.workflow)}">${c.workflow}</span></td>
-      <td>${c.entities}</td><td>${c.sources}</td><td>${Math.round(c.evidenceCompleteness * 100)}%</td>
+      <td>${c.county}, ${c.state}</td><td>${c.sourcesFound}/${c.sourcesTotal}</td><td>${c.confidence}</td>
     </tr>`).join('');
 
   document.querySelectorAll('[data-tab]').forEach((btn) => {
@@ -54,7 +55,7 @@ function renderCases() {
 function renderWorkflows() {
   const t = document.getElementById('workflow-defs');
   if (!t) return;
-  t.innerHTML = workflowDefinitions.map((w) => `<tr><td>${w.id}</td><td>${w.package}</td><td>${w.steps}</td><td>${w.sla}</td></tr>`).join('');
+  t.innerHTML = workflowDefinitions.map((w) => `<tr><td>${w.id}</td><td>${w.name}</td><td>$${(w.amount/100).toFixed(0)}</td><td>${w.steps}</td><td>${w.sla}</td></tr>`).join('');
 }
 
 function renderSources() {
