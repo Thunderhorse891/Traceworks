@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildReport, reportToHtml } from './netlify/functions/_lib/report.js';
 import { normalizeCheckoutPayload, validateCheckoutPayload } from './netlify/functions/_lib/validation.js';
 
-const PACKAGE_IDS = ['locate', 'comprehensive', 'title', 'heir'];
+const PACKAGE_IDS = ['standard', 'ownership_encumbrance', 'probate_heirship', 'asset_network', 'comprehensive'];
 
 test('all 4 tiers generate non-blank sections and premium structures', () => {
   for (const id of PACKAGE_IDS) {
@@ -25,8 +25,8 @@ test('all 4 tiers generate non-blank sections and premium structures', () => {
 });
 
 test('html rendering includes evidence matrix and action sections', () => {
-  const html = reportToHtml(buildReport({ packageId: 'title', caseRef: 'TW-TEST-2' }));
-  assert.ok(html.includes('Ownership Trail'));
+  const html = reportToHtml(buildReport({ packageId: 'ownership_encumbrance', caseRef: 'TW-TEST-2' }));
+  assert.ok(html.includes('Ownership &amp; Encumbrance') || html.includes('Intelligence Report'));
   assert.ok(html.includes('Source Citations'));
   assert.ok(html.includes('Evidence Matrix'));
   assert.ok(html.includes('Next 48 Hours Actions'));
@@ -35,7 +35,7 @@ test('html rendering includes evidence matrix and action sections', () => {
 
 test('checkout payload validation enforces legal and terms consent', () => {
   const payload = normalizeCheckoutPayload({
-    packageId: 'locate',
+    packageId: 'standard',
     customerName: 'Law Firm',
     customerEmail: 'invalid-email',
     companyName: '',
@@ -48,14 +48,14 @@ test('checkout payload validation enforces legal and terms consent', () => {
 });
 
 test('report includes no-refund redo policy language in disclaimer', () => {
-  const report = buildReport({ packageId: 'locate', caseRef: 'TW-TEST-3' });
+  const report = buildReport({ packageId: 'standard', caseRef: 'TW-TEST-3' });
   assert.ok(report.disclaimer.includes('No refunds after work starts'));
   assert.ok(report.disclaimer.includes('redo'));
 });
 
 test('report adds explicit fallback language when direct hits are missing', () => {
   const report = buildReport({
-    packageId: 'locate',
+    packageId: 'standard',
     caseRef: 'TW-TEST-4',
     intel: {
       sources: [

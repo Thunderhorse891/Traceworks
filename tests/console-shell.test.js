@@ -16,7 +16,7 @@ const requiredPages = [
 test('intelligence console multipage shell exists', () => {
   for (const page of requiredPages) {
     const html = readFileSync(page, 'utf8');
-    assert.ok(html.includes('Traceworks Console'));
+    assert.ok(html.includes('tw-shell'), `Expected tw-shell class in ${page}`);
   }
 });
 

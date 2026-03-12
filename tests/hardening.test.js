@@ -8,10 +8,11 @@ import { createStatusToken } from '../netlify/functions/_lib/status-token.js';
 
 test('validation normalizes website and validates URL', () => {
   const payload = normalizeCheckoutPayload({
-    packageId: 'locate',
+    packageId: 'standard',
     customerName: 'Law Office',
     customerEmail: 'x@y.com',
     companyName: 'John Doe',
+    county: 'Harris',
     website: 'example.com',
     goals: 'Locate',
     legalConsent: 'true',
