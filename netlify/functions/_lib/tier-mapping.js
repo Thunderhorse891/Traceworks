@@ -1,33 +1,36 @@
+/**
+ * Maps canonical package IDs to internal workflow tier constants.
+ * Package IDs are defined in packages.js — do not hard-code them elsewhere.
+ */
+
 export const REPORT_TIER = {
-  STANDARD_REPORT: 'STANDARD_REPORT',
+  STANDARD_REPORT:       'STANDARD_REPORT',
   TITLE_PROPERTY_REPORT: 'TITLE_PROPERTY_REPORT',
-  HEIR_LOCATION_REPORT: 'HEIR_LOCATION_REPORT',
-  COMPREHENSIVE_REPORT: 'COMPREHENSIVE_REPORT'
+  HEIR_LOCATION_REPORT:  'HEIR_LOCATION_REPORT',
+  ASSET_NETWORK_REPORT:  'ASSET_NETWORK_REPORT',
+  COMPREHENSIVE_REPORT:  'COMPREHENSIVE_REPORT',
+  CUSTOM:                'CUSTOM',
 };
 
 const PACKAGE_TO_TIER = {
-  locate: REPORT_TIER.STANDARD_REPORT,
-  title: REPORT_TIER.TITLE_PROPERTY_REPORT,
-  heir: REPORT_TIER.HEIR_LOCATION_REPORT,
-  comprehensive: REPORT_TIER.COMPREHENSIVE_REPORT
+  standard:              REPORT_TIER.STANDARD_REPORT,
+  ownership_encumbrance: REPORT_TIER.TITLE_PROPERTY_REPORT,
+  probate_heirship:      REPORT_TIER.HEIR_LOCATION_REPORT,
+  asset_network:         REPORT_TIER.ASSET_NETWORK_REPORT,
+  comprehensive:         REPORT_TIER.COMPREHENSIVE_REPORT,
+  custom:                REPORT_TIER.CUSTOM,
 };
 
-const PRICE_TO_TIER = {
-  'price_standard_report': REPORT_TIER.STANDARD_REPORT,
-  'price_title_property_report': REPORT_TIER.TITLE_PROPERTY_REPORT,
-  'price_heir_location_report': REPORT_TIER.HEIR_LOCATION_REPORT,
-  'price_comprehensive_report': REPORT_TIER.COMPREHENSIVE_REPORT
-};
-
-export function resolvePurchasedTier({ packageId, stripePriceId, stripeProductId }) {
+export function resolvePurchasedTier({ packageId, stripePriceId, stripeProductId } = {}) {
   if (packageId && PACKAGE_TO_TIER[packageId]) return PACKAGE_TO_TIER[packageId];
-  if (stripePriceId && PRICE_TO_TIER[stripePriceId]) return PRICE_TO_TIER[stripePriceId];
 
-  const byProduct = String(stripeProductId || '').toLowerCase();
-  if (byProduct.includes('standard')) return REPORT_TIER.STANDARD_REPORT;
-  if (byProduct.includes('title')) return REPORT_TIER.TITLE_PROPERTY_REPORT;
-  if (byProduct.includes('heir')) return REPORT_TIER.HEIR_LOCATION_REPORT;
-  if (byProduct.includes('comprehensive')) return REPORT_TIER.COMPREHENSIVE_REPORT;
+  // Fallback: infer from Stripe metadata labels (for webhook path)
+  const label = String(stripePriceId || stripeProductId || '').toLowerCase();
+  if (label.includes('standard'))                                        return REPORT_TIER.STANDARD_REPORT;
+  if (label.includes('ownership') || label.includes('encumbrance') || label.includes('title')) return REPORT_TIER.TITLE_PROPERTY_REPORT;
+  if (label.includes('probate') || label.includes('heir'))               return REPORT_TIER.HEIR_LOCATION_REPORT;
+  if (label.includes('asset') || label.includes('network'))             return REPORT_TIER.ASSET_NETWORK_REPORT;
+  if (label.includes('comprehensive'))                                   return REPORT_TIER.COMPREHENSIVE_REPORT;
 
-  throw new Error('Unable to map purchased tier from Stripe metadata/line-items.');
+  throw new Error(`Unable to map purchased tier: packageId=${packageId}, stripePriceId=${stripePriceId}, stripeProductId=${stripeProductId}`);
 }

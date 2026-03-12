@@ -133,10 +133,32 @@ export async function runComprehensiveReport(order, ctx = {}) {
   };
 }
 
+export async function runAssetNetworkReport(order, ctx = {}) {
+  requireConfiguredSources(['APPRAISAL_API_URL', 'COUNTY_CLERK_API_URL', 'GRANTOR_GRANTEE_API_URL']);
+  const county = order.county || process.env.DEFAULT_COUNTY || '';
+  const state = order.state || process.env.DEFAULT_STATE || '';
+  const query = order.subjectName || order.website || order.goals || '';
+
+  const publicRecords = await gatherPublicRecordIntel(
+    { packageKey: 'asset_network', input: { address: order.website || '', ownerName: order.subjectName || '', county, state } },
+    { fetchImpl: ctx.fetchImpl }
+  );
+
+  const s1 = await appraisalDistrictScraper({ county, state, query, fetchImpl: ctx.fetchImpl });
+  const parcelId = s1?.data?.parcelId || s1?.data?.apn || '';
+  const s2 = await grantorGranteeIndexScraper({ county, state, ownerName: order.subjectName, parcelId, fetchImpl: ctx.fetchImpl });
+  const s3 = await parcelGisLookup({ county, state, query, fetchImpl: ctx.fetchImpl });
+  const s4 = await publicPeopleAssociationLookup({ name: query, lastKnownAddress: order.website || '', fetchImpl: ctx.fetchImpl });
+
+  return mkWorkflow(order, 'asset_network', [...publicRecords.sources, s1, s2, s3, s4], { startedAt: ctx.startedAt, publicRecords });
+}
+
 export function tierRunnerFor(purchasedTier) {
-  if (purchasedTier === REPORT_TIER.STANDARD_REPORT) return runStandardReport;
+  if (purchasedTier === REPORT_TIER.STANDARD_REPORT)       return runStandardReport;
   if (purchasedTier === REPORT_TIER.TITLE_PROPERTY_REPORT) return runTitlePropertyReport;
-  if (purchasedTier === REPORT_TIER.HEIR_LOCATION_REPORT) return runHeirLocationReport;
-  if (purchasedTier === REPORT_TIER.COMPREHENSIVE_REPORT) return runComprehensiveReport;
+  if (purchasedTier === REPORT_TIER.HEIR_LOCATION_REPORT)  return runHeirLocationReport;
+  if (purchasedTier === REPORT_TIER.ASSET_NETWORK_REPORT)  return runAssetNetworkReport;
+  if (purchasedTier === REPORT_TIER.COMPREHENSIVE_REPORT)  return runComprehensiveReport;
+  if (purchasedTier === REPORT_TIER.CUSTOM)                return runStandardReport; // Custom uses analyst-guided standard baseline
   throw new Error(`No workflow handler configured for purchased tier: ${purchasedTier}`);
 }
