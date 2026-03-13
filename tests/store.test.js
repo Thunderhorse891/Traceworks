@@ -69,3 +69,22 @@ test('store can claim a due job by caseRef without claiming unrelated jobs', asy
 
   await rm(dir, { recursive: true, force: true });
 });
+
+test('isDurableConfigured returns false when TRACEWORKS_DURABLE_STORE is unset', async () => {
+  const prior = process.env.TRACEWORKS_DURABLE_STORE;
+  delete process.env.TRACEWORKS_DURABLE_STORE;
+  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  assert.equal(store.isDurableConfigured(), false);
+  if (prior !== undefined) process.env.TRACEWORKS_DURABLE_STORE = prior;
+});
+
+test('isDurableConfigured returns true only when TRACEWORKS_DURABLE_STORE=1', async () => {
+  const prior = process.env.TRACEWORKS_DURABLE_STORE;
+  process.env.TRACEWORKS_DURABLE_STORE = '1';
+  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  assert.equal(store.isDurableConfigured(), true);
+  process.env.TRACEWORKS_DURABLE_STORE = 'true';
+  // Must be exactly '1', not 'true'
+  assert.equal(store.isDurableConfigured(), false);
+  if (prior !== undefined) process.env.TRACEWORKS_DURABLE_STORE = prior; else delete process.env.TRACEWORKS_DURABLE_STORE;
+});

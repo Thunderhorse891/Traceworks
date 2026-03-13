@@ -4,6 +4,22 @@ import { dirname } from 'node:path';
 const STORE_PATH = process.env.TRACEWORKS_STORE_PATH || '.data/traceworks-store.json';
 const EMPTY = { orders: {}, processedWebhookEvents: [], analytics: [], deadLetters: [], jobs: [], auditLogs: [] };
 
+/**
+ * Returns true only when the operator has explicitly confirmed durable
+ * persistence by setting TRACEWORKS_DURABLE_STORE=1.
+ *
+ * The file-based store is ephemeral on Netlify serverless — each function
+ * container may have a fresh filesystem. Without durable storage, order
+ * records, webhook deduplication state, and job queue entries can be lost
+ * between invocations, making live paid traffic unsafe.
+ *
+ * Operators MUST set this flag only after mounting a persistent volume at
+ * TRACEWORKS_STORE_PATH or migrating to an external durable database.
+ */
+export function isDurableConfigured() {
+  return process.env.TRACEWORKS_DURABLE_STORE === '1';
+}
+
 async function loadStore() {
   try {
     const raw = await readFile(STORE_PATH, 'utf8');

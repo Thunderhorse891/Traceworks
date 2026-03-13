@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { getPackage } from './_lib/packages.js';
 import { normalizeCheckoutPayload, validateCheckoutPayload } from './_lib/validation.js';
-import { upsertOrder } from './_lib/store.js';
+import { isDurableConfigured, upsertOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { createStatusToken } from './_lib/status-token.js';
@@ -16,6 +16,13 @@ function makeCaseRef() {
 export default async (event) => {
   try {
     if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
+
+    if (!isDurableConfigured()) {
+      return jsonWithRequestId(event, 503, {
+        error: 'Checkout is disabled: durable persistence is not configured. Set TRACEWORKS_DURABLE_STORE=1 after mounting a persistent store.',
+        code: 'PERSISTENCE_NOT_CONFIGURED'
+      });
+    }
 
     const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
     const limit = hitRateLimit({ key: `checkout:${ip}`, windowMs: 60_000, max: 20 });

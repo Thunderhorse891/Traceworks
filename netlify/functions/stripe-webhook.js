@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { enqueueJob, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
+import { enqueueJob, isDurableConfigured, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { processOneFulfillmentJob } from './_lib/process-one-job.js';
@@ -38,6 +38,17 @@ export default async (event) => {
     stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookConfig.secret, 300);
   } catch (err) {
     return jsonWithRequestId(event, 400, { error: `Webhook Error: ${err.message}` });
+  }
+
+  // Gate: reject verified Stripe events when durable persistence is not
+  // configured. Returning 503 causes Stripe to retry for up to 72 hours,
+  // so events are not silently dropped if the operator fixes persistence
+  // before the retry window closes.
+  if (!isDurableConfigured()) {
+    return jsonWithRequestId(event, 503, {
+      error: 'Webhook processing disabled: durable persistence is not configured. Set TRACEWORKS_DURABLE_STORE=1.',
+      code: 'PERSISTENCE_NOT_CONFIGURED'
+    });
   }
 
   if (await isProcessedWebhookEvent(stripeEvent.id)) return jsonWithRequestId(event, 200, { ok: true, duplicate: true });
