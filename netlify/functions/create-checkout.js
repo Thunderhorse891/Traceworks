@@ -32,7 +32,7 @@ export default async (event) => {
     const errors = validateCheckoutPayload(payload);
     if (errors.length) return jsonWithRequestId(event, 400, { error: errors[0], errors });
 
-    const { packageId, customerName, customerEmail, companyName, website, goals } = payload;
+    const { packageId, customerName, customerEmail, companyName, county, state, website, goals } = payload;
     const pkg = getPackage(packageId);
     if (!pkg) return jsonWithRequestId(event, 400, { error: 'Invalid package selected.' });
 
@@ -50,9 +50,11 @@ export default async (event) => {
       customerName,
       customerEmail,
       subjectName: companyName,
+      county,
+      state,
       website,
       goals,
-      input_criteria: { companyName, website, goals },
+      input_criteria: { companyName, county, state, website, goals },
       stripe_checkout_session_id: null,
       stripe_payment_intent_id: null,
       artifact_url_or_path: null,
@@ -71,7 +73,7 @@ export default async (event) => {
       mode: 'payment',
       customer_email: customerEmail,
       line_items: [{ price_data: { currency: pkg.currency, product_data: { name: pkg.name }, unit_amount: pkg.amount }, quantity: 1 }],
-      metadata: { caseRef, packageId, packageName: pkg.name, customerName, customerEmail, companyName, website, goals, legalConsent: 'true', tosConsent: 'true' },
+      metadata: { caseRef, packageId, packageName: pkg.name, customerName, customerEmail, companyName, county, state, website, goals, legalConsent: 'true', tosConsent: 'true' },
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}&case_ref=${caseRef}${statusToken ? `&status_token=${encodeURIComponent(statusToken)}` : `&email=${encodeURIComponent(customerEmail)}`}`,
       cancel_url: `${base}/cancel.html`
     });

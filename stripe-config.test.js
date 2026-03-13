@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { clientPackages } from './public/packages.js';
 
 test('client packages include valid Stripe payment links', () => {
-  assert.equal(clientPackages.length, 4);
+  assert.equal(clientPackages.length, 5);
   for (const pkg of clientPackages) {
     assert.ok(pkg.id);
     assert.ok(pkg.name);

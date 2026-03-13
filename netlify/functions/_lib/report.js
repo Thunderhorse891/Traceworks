@@ -3,43 +3,62 @@ import { getPackage } from "./packages.js";
 const FALLBACK = "No directly verifiable hit was returned for this element in the current run. Traceworks inserted a conservative, court-safe next step so the report remains actionable.";
 
 const TIER_BLUEPRINT = {
-  locate: {
-    dossierName: "Locate Dossier",
+  standard: {
+    dossierName: "Standard Property Snapshot",
     sections: [
-      "Subject Identity Snapshot",
-      "Current Address Probability Grid",
-      "Contact Surface and Phone Trails",
-      "Service-of-Process Recommendations"
+      "County Appraisal District Lookup",
+      "Tax Collector / Assessment Record",
+      "Parcel GIS Lookup",
+      "Source Trace Panel"
+    ]
+  },
+  ownership_encumbrance: {
+    dossierName: "Ownership & Encumbrance Intelligence Report",
+    sections: [
+      "County Appraisal District Lookup",
+      "County Clerk Deed Index",
+      "Grantor-Grantee Index",
+      "Mortgage / Trust Deed Index",
+      "Chain-of-Title Continuity Analysis"
+    ]
+  },
+  probate_heirship: {
+    dossierName: "Probate & Heirship Investigation Report",
+    sections: [
+      "Obituary Index Cross-Reference",
+      "Probate Case Index Lookup",
+      "People Association Lookup",
+      "Heir Candidate Matrix"
+    ]
+  },
+  asset_network: {
+    dossierName: "Asset & Property Network Report",
+    sections: [
+      "County Appraisal District Lookup",
+      "Tax Collector / Assessment Record",
+      "Parcel GIS Lookup",
+      "County Clerk Deed Index",
+      "Grantor-Grantee Index",
+      "Chain-of-Title Continuity Analysis"
     ]
   },
   comprehensive: {
-    dossierName: "Comprehensive Locate + Asset Dossier",
+    dossierName: "Comprehensive Investigative Report",
     sections: [
-      "Subject Identity Snapshot",
-      "Address + Contact Consolidation",
-      "Asset and Property Exposure",
-      "Employment / Business Link Analysis",
-      "Collection Strategy Recommendations"
-    ]
-  },
-  title: {
-    dossierName: "Property & Title Intelligence Dossier",
-    sections: [
-      "Parcel/Subject Snapshot",
-      "Ownership Trail — Who/What/When/Why/How",
-      "Lien & Encumbrance Review",
-      "Lease / Operator / Royalty Clarity",
-      "Title Risk and Curative Actions"
-    ]
-  },
-  heir: {
-    dossierName: "Heir & Beneficiary Intelligence Dossier",
-    sections: [
-      "Decedent/Family Context Snapshot",
+      "County Appraisal District Lookup",
+      "Tax Collector / Assessment Record",
+      "County Clerk Deed Index",
+      "Grantor-Grantee Index",
+      "Mortgage / Trust Deed Index",
+      "Chain-of-Title Continuity Analysis",
+      "Obituary Index Cross-Reference",
+      "Probate Case Index Lookup",
+      "People Association Lookup",
       "Heir Candidate Matrix",
-      "Probate and Filing Signals",
-      "Contactability & Verification Priority",
-      "Court-Ready Next Actions"
+      "Cross-Source Discrepancy Analysis",
+      "Confidence Matrix",
+      "Recommended Next Steps",
+      "Source Trace Panel"
     ]
   }
 };
@@ -122,7 +141,7 @@ export function buildReport({ packageId, customerName, customerEmail, companyNam
   const pkg = getPackage(packageId);
   if (!pkg) throw new Error(`Unknown package: ${packageId}`);
 
-  const blueprint = TIER_BLUEPRINT[pkg.id] ?? TIER_BLUEPRINT.locate;
+  const blueprint = TIER_BLUEPRINT[pkg.id] ?? TIER_BLUEPRINT.standard;
   const subject = nonBlank(companyName, "Client subject");
   const objective = nonBlank(goals, "Case objective not supplied; report generated with legal OSINT standard assumptions.");
   const sources = intel?.sources?.length

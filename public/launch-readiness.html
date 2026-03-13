@@ -156,6 +156,16 @@
             <span style="font-size:12px; color:var(--text-3);">STRIPE_SECRET_KEY has <code style="font-family:var(--mono)">mk_</code> prefix. Standard Stripe live secret keys start with <code style="font-family:var(--mono)">sk_live_</code>. Log into Stripe Dashboard → Developers → API Keys and confirm the correct key is set in Vercel environment variables.</span>
           </div>
         </div>
+        <div class="checklist-item">
+          <span class="checklist-item-dot"></span>
+          <div>
+            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">GitHub push readiness</strong>
+            <span style="font-size:12px; color:var(--text-3);">Confirm repository remote is configured before deploying:
+              <code style="font-family:var(--mono); font-size:11px; color:var(--text-3);">git remote add origin https://github.com/youraccount/traceworks.git</code>
+              — then push to trigger Netlify/Vercel auto-deploy. Verify CI passes before pointing DNS.
+            </span>
+          </div>
+        </div>
       </div>
 
       <div style="margin-top:32px; display:flex; gap:14px; flex-wrap:wrap;">

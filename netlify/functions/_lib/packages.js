@@ -1,56 +1,82 @@
+// Canonical package definitions — single source of truth.
+// IDs must match public/packages.js clientPackages, tier-mapping.js,
+// and the Stripe product/price IDs configured in the Stripe Dashboard.
 export const PACKAGES = {
-  locate: {
-    id: "locate",
-    name: "Skip Trace & Locate",
-    amount: 7500,
-    currency: "usd",
+  standard: {
+    id: 'standard',
+    name: 'Standard Property Snapshot',
+    amount: 9900,
+    currency: 'usd',
     deliveryHours: 24,
     sections: [
-      "Identity and Address Verification",
-      "Phone and Contact Surface",
-      "Public Records Cross-Reference",
-      "Risk Flags and Service Notes"
+      'County Appraisal District Lookup',
+      'Tax Collector / Assessment Record',
+      'Parcel GIS Lookup'
+    ]
+  },
+  ownership_encumbrance: {
+    id: 'ownership_encumbrance',
+    name: 'Ownership & Encumbrance Intelligence Report',
+    amount: 24900,
+    currency: 'usd',
+    deliveryHours: 48,
+    sections: [
+      'County Appraisal District Lookup',
+      'County Clerk Deed Index',
+      'Grantor-Grantee Index',
+      'Mortgage / Trust Deed Index',
+      'Chain-of-Title Continuity Analysis'
+    ]
+  },
+  probate_heirship: {
+    id: 'probate_heirship',
+    name: 'Probate & Heirship Investigation Report',
+    amount: 32500,
+    currency: 'usd',
+    deliveryHours: 72,
+    sections: [
+      'Obituary Index',
+      'Probate Case Index',
+      'Licensed People Association Lookup',
+      'Heir Candidate Scoring'
+    ]
+  },
+  asset_network: {
+    id: 'asset_network',
+    name: 'Asset & Property Network Report',
+    amount: 39900,
+    currency: 'usd',
+    deliveryHours: 72,
+    sections: [
+      'County Appraisal District Lookup',
+      'Tax Collector / Assessment Record',
+      'Parcel GIS Lookup',
+      'County Clerk Deed Index',
+      'Grantor-Grantee Index',
+      'Chain-of-Title Continuity Analysis'
     ]
   },
   comprehensive: {
-    id: "comprehensive",
-    name: "Comprehensive Locate + Assets",
-    amount: 15000,
-    currency: "usd",
-    deliveryHours: 48,
+    id: 'comprehensive',
+    name: 'Comprehensive Investigative Report',
+    amount: 54900,
+    currency: 'usd',
+    deliveryHours: 96,
     sections: [
-      "Identity and Address Verification",
-      "Asset and Property Search",
-      "Employment and Business Signals",
-      "Social and Alias Cross-Reference",
-      "Action Plan for Legal Follow-up"
-    ]
-  },
-  title: {
-    id: "title",
-    name: "Property & Title Research",
-    amount: 20000,
-    currency: "usd",
-    deliveryHours: 48,
-    sections: [
-      "Chain of Title Timeline",
-      "Lien and Encumbrance Review",
-      "Quitclaim and Transfer Pattern Review",
-      "Mineral and Water Rights Notes",
-      "County Filing Summary"
-    ]
-  },
-  heir: {
-    id: "heir",
-    name: "Heir & Beneficiary Locate",
-    amount: 10000,
-    currency: "usd",
-    deliveryHours: 72,
-    sections: [
-      "Kinship and Household Mapping",
-      "Obituary and Probate Cross-Reference",
-      "Beneficiary Lead Prioritization",
-      "Contactability Assessment"
+      'County Appraisal District Lookup',
+      'Tax Collector / Assessment Record',
+      'Parcel GIS Lookup',
+      'County Clerk Deed Index',
+      'Grantor-Grantee Index',
+      'Mortgage / Trust Deed Index',
+      'Chain-of-Title Continuity Analysis',
+      'Obituary Index',
+      'Probate Case Index',
+      'Licensed People Association Lookup',
+      'Heir Candidate Scoring',
+      'Cross-Source Discrepancy Analysis',
+      'Confidence Matrix',
+      'Recommended Next Steps'
     ]
   }
 };
@@ -58,3 +84,5 @@ export const PACKAGES = {
 export function getPackage(packageId) {
   return PACKAGES[packageId] ?? null;
 }
+
+export const VALID_PACKAGE_IDS = Object.keys(PACKAGES);
