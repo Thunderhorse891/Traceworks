@@ -13,12 +13,17 @@ export const REPORT_TIER = {
 };
 
 const PACKAGE_TO_TIER = {
+  // Canonical backend package IDs (used by create-checkout API)
   standard:              REPORT_TIER.STANDARD_REPORT,
   ownership_encumbrance: REPORT_TIER.TITLE_PROPERTY_REPORT,
   probate_heirship:      REPORT_TIER.HEIR_LOCATION_REPORT,
   asset_network:         REPORT_TIER.ASSET_NETWORK_REPORT,
   comprehensive:         REPORT_TIER.COMPREHENSIVE_REPORT,
   custom:                REPORT_TIER.CUSTOM,
+  // Frontend payment-link package IDs — must stay in sync with public/packages.js
+  locate:                REPORT_TIER.STANDARD_REPORT,
+  title:                 REPORT_TIER.TITLE_PROPERTY_REPORT,
+  heir:                  REPORT_TIER.HEIR_LOCATION_REPORT,
 };
 
 export function resolvePurchasedTier({ packageId, stripePriceId, stripeProductId } = {}) {

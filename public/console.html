@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TraceWorks™ — Matter Queue</title>
+  <title>Traceworks Console — Matter Queue</title>
   <link rel="stylesheet" href="/traceworks-shell.css" />
 </head>
 <body class="tw-shell-body" data-page="dashboard">
@@ -15,6 +15,9 @@
     </aside>
     <main class="tw-main">
       <section class="tw-top"><h1>Matter Queue</h1></section>
+      <div style="background:#1a0a00;border:1px solid #5c3000;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#e0a060;">
+        <strong>DEMO DATA</strong> — This dashboard renders static sample data from <code>traceworks-data.js</code>. Replace with live <code>/api/admin-orders</code> and <code>/api/admin-metrics</code> calls before launch.
+      </div>
       <section id="kpis" class="tw-kpis"></section>
       <section class="tw-grid-2">
         <article class="tw-card"><h2 class="tw-section-title">Active Matters</h2><table class="tw-table"><thead><tr><th>Case Ref</th><th>Subject</th><th>Status</th><th>Sources</th><th>Confidence</th></tr></thead><tbody id="recent-cases"></tbody></table></article>

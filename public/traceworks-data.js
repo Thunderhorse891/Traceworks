@@ -1,5 +1,19 @@
-// Analyst console data model (replace with API-backed persistence).
-// Package IDs must match api/_lib/packages.js exactly.
+/**
+ * DEMO-ONLY DATA — NOT PRODUCTION
+ *
+ * This file contains static sample data used to scaffold the console shell UI.
+ * It is NOT backed by real orders, real connectors, or real revenue.
+ *
+ * Before going live:
+ *  - Replace `graph.cases` with a live fetch from /api/admin-orders
+ *  - Replace `sourceRegistry` health with a live fetch from /api/health
+ *  - Replace `workflowDefinitions` amounts with imports from netlify/functions/_lib/packages.js
+ *
+ * Any surface that displays this data to an operator must be clearly labelled DEMO.
+ * Do not present these numbers as real KPIs.
+ */
+
+// Package IDs must match netlify/functions/_lib/packages.js exactly.
 export const graph = {
   cases: [
     {

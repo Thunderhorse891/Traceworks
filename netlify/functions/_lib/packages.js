@@ -106,6 +106,61 @@ export const PACKAGES = {
     workflowTier: 'CUSTOM',
     sections: [],
   },
+
+  // ── Frontend payment-link package IDs ──────────────────────────────
+  // These match the IDs in public/packages.js and the Stripe Payment Links.
+  // They map to the same workflow tiers as their canonical equivalents above.
+  // Prices reflect what the Stripe Payment Links are configured to charge.
+  locate: {
+    id: 'locate',
+    name: 'Skip Trace & Locate',
+    tagline: 'Current address, phones, and public-record cross-reference.',
+    amount: 7500,
+    currency: 'usd',
+    deliveryHours: 24,
+    sla: 'Same day',
+    workflowTier: 'STANDARD_REPORT',
+    sections: [
+      'Subject Identity Snapshot',
+      'Current Address Probability Grid',
+      'Contact Surface and Phone Trails',
+      'Service-of-Process Recommendations',
+    ],
+  },
+  title: {
+    id: 'title',
+    name: 'Property & Title Research',
+    tagline: 'Deed/index intelligence, lien signals, and curative planning.',
+    amount: 20000,
+    currency: 'usd',
+    deliveryHours: 48,
+    sla: 'Same day – 24h',
+    workflowTier: 'TITLE_PROPERTY_REPORT',
+    sections: [
+      'Parcel/Subject Snapshot',
+      'Ownership Trail — Who/What/When/Why/How',
+      'Lien & Encumbrance Review',
+      'Lease / Operator / Royalty Clarity',
+      'Title Risk and Curative Actions',
+    ],
+  },
+  heir: {
+    id: 'heir',
+    name: 'Heir & Beneficiary Locate',
+    tagline: 'Probate support and heir contact sequencing.',
+    amount: 10000,
+    currency: 'usd',
+    deliveryHours: 48,
+    sla: 'Same day – 24h',
+    workflowTier: 'HEIR_LOCATION_REPORT',
+    sections: [
+      'Decedent/Family Context Snapshot',
+      'Heir Candidate Matrix',
+      'Probate and Filing Signals',
+      'Contactability & Verification Priority',
+      'Court-Ready Next Actions',
+    ],
+  },
 };
 
 export const VALID_PACKAGE_IDS = new Set(Object.keys(PACKAGES));

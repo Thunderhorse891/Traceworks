@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DISCLAIMERS } from '../api/_lib/disclaimers.js';
-import { makeWorkflowResults, scanForForbiddenPhrases } from '../api/_lib/schema.js';
+import { DISCLAIMERS, scanForForbiddenPhrases } from '../netlify/functions/_lib/disclaimers.js';
+import { makeWorkflowResults } from '../netlify/functions/_lib/schema.js';
 
 test('ownership disclaimer avoids forbidden clear-title phrasing', () => {
   const text = DISCLAIMERS.ownership_encumbrance;
