@@ -3,82 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TraceWorks™ — Matters</title>
+  <title>Traceworks Console • Matters</title>
   <link rel="stylesheet" href="/traceworks-shell.css" />
 </head>
 <body class="tw-shell-body" data-page="cases">
   <div class="tw-shell">
     <aside class="tw-nav">
-      <div class="tw-logo">Trace<span>Works</span></div>
-      <a href="/console.html">Dashboard</a><a class="active" href="/cases.html">Matters</a><a href="/search.html">Search</a><a href="/reports.html">Reports</a>
-      <a href="/sources.html">Sources</a><a href="/workflows.html">Workflows</a><a href="/billing.html">Billing</a><a href="/admin.html">Admin</a>
+      <div class="tw-logo">Trace<span>works</span> Console</div>
+      <a href="/console.html">Dashboard</a>
+      <a class="active" href="/cases.html">Matters</a>
+      <a href="/search.html">Search</a>
+      <a href="/reports.html">Reports</a>
+      <a href="/sources.html">Sources</a>
+      <a href="/workflows.html">Workflows</a>
+      <a href="/billing.html">Billing</a>
+      <a href="/admin.html">Admin</a>
     </aside>
     <main class="tw-main">
       <section class="tw-top">
         <h1>Matters</h1>
-        <div class="tw-actions">
-          <button>Rerun workflow</button>
-          <button>Export report</button>
-          <button>Flag for analyst review</button>
-        </div>
+        <div class="tw-chip ok">live orders</div>
       </section>
+
+      <div id="auth-banner"></div>
+
       <section class="tw-case-layout">
         <article class="tw-card">
           <h2 class="tw-section-title">Matter Registry</h2>
           <table class="tw-table">
-            <thead><tr><th>Case Ref</th><th>Subject</th><th>Package</th><th>Status</th><th>County</th><th>Sources</th><th>Confidence</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Case Ref</th>
+                <th>Subject</th>
+                <th>Package</th>
+                <th>Status</th>
+                <th>Location</th>
+                <th>Customer</th>
+                <th>Created</th>
+              </tr>
+            </thead>
             <tbody id="case-table-body"></tbody>
           </table>
         </article>
-        <article class="tw-card">
-          <h2 class="tw-section-title">Matter Detail — TW-26031-A4K9</h2>
-          <p class="tw-label">Package: Comprehensive &nbsp;·&nbsp; Payment: Paid &nbsp;·&nbsp; Confidence: Likely</p>
-          <div class="tw-tabs">
-            <button class="active" data-tab="pane-overview">Overview</button>
-            <button data-tab="pane-timeline">Timeline</button>
-            <button data-tab="pane-sources">Sources</button>
-            <button data-tab="pane-limitations">Limitations</button>
-            <button data-tab="pane-deliverables">Deliverables</button>
-          </div>
-          <div class="tw-pane active" id="pane-overview">
-            <p>Harris County deed index unavailable — instrument history not confirmed. HCAD and TX SOS returned confirmed findings. Address candidates rated Likely based on CAD and people-search cross-reference. Partial report — analyst review recommended before delivery.</p>
-          </div>
-          <div class="tw-pane" id="pane-timeline">
-            <ul>
-              <li>12:01 — Queued after payment confirmation</li>
-              <li>12:03 — HCAD query complete (Found)</li>
-              <li>12:04 — TX SOS query complete (Found)</li>
-              <li>12:05 — Harris County deed index (Unavailable — browser auth required)</li>
-              <li>12:06 — TruePeopleSearch query complete (Found)</li>
-              <li>12:07 — Partial result flag set — analyst review required</li>
-            </ul>
-          </div>
-          <div class="tw-pane" id="pane-sources">
-            <ul>
-              <li>HCAD — Found (confirmed)</li>
-              <li>TX SOS — Found (confirmed)</li>
-              <li>Harris County Deed Index — Unavailable (manual review required)</li>
-              <li>TruePeopleSearch — Found (likely)</li>
-              <li>FastPeopleSearch — Partial (possible)</li>
-            </ul>
-          </div>
-          <div class="tw-pane" id="pane-limitations">
-            <ul>
-              <li>Deed instrument history not confirmed — deed index unavailable</li>
-              <li>Address confidence is Likely, not Confirmed</li>
-              <li>FastPeopleSearch returned partial data (no phones)</li>
-            </ul>
-          </div>
-          <div class="tw-pane" id="pane-deliverables">
-            <ul>
-              <li>Report draft — pending analyst review</li>
-              <li>Source trace panel included</li>
-            </ul>
-          </div>
-        </article>
+
+        <article id="case-detail" class="tw-card"></article>
       </section>
     </main>
   </div>
+
   <script type="module" src="/traceworks-shell.js"></script>
 </body>
 </html>
