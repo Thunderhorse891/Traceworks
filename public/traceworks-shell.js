@@ -12,14 +12,13 @@ function renderDashboard() {
   const k = document.getElementById('kpis');
   if (!k) return;
   const queued = graph.cases.filter((c) => c.workflow !== 'completed').length;
-  const packageAmounts = { standard: 99, ownership_encumbrance: 249, probate_heirship: 325, asset_network: 399, comprehensive: 549 };
-  const rev = graph.cases.reduce((a, c) => a + (packageAmounts[c.packageId] || 0), 0);
+  // Revenue must not be computed from static demo data — load from /api/admin-metrics instead.
   k.innerHTML = [
-    ['Active Cases', graph.cases.length],
-    ['Queued Jobs', queued],
-    ['Source Connectors', sourceRegistry.length],
-    ['Revenue (30d)', `$${rev}`],
-  ].map(([label, value]) => `<article class="tw-card"><div class="tw-label">${label}</div><div class="tw-value">${value}</div></article>`).join('');
+    ['Active Cases (demo)', graph.cases.length],
+    ['Queued Jobs (demo)', queued],
+    ['Source Connectors (demo)', sourceRegistry.length],
+    ['Revenue (30d)', '— load from /api/admin-metrics'],
+  ].map(([label, value]) => `<article class="tw-card"><div class="tw-label">${label}</div><div class="tw-value" style="font-size:${String(value).startsWith('—') ? '13px' : ''}">${value}</div></article>`).join('');
 
   const recent = document.getElementById('recent-cases');
   if (recent) {
