@@ -1,5 +1,6 @@
-// Pay links: replace REPLACE_* with your real Stripe Payment Links from the Dashboard.
-// Tier IDs must match api/_lib/packages.js exactly.
+// Package IDs and prices here MUST match netlify/functions/_lib/packages.js exactly.
+// Stripe Payment Links in payLink must be configured to charge the same amount as the
+// corresponding package's `amount` field (in cents) in the backend canonical model.
 export const clientPackages = [
   {
     id: 'locate',

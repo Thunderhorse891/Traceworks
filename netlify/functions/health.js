@@ -11,10 +11,16 @@ export default async (event) => {
   const missing = required.filter((k) => !process.env[k]);
   const metrics = await getMetrics();
 
+  const warnings = [];
+  if (!process.env.TRACEWORKS_STORE_PATH) {
+    warnings.push('TRACEWORKS_STORE_PATH is not set — using default .data/traceworks-store.json which is ephemeral on Netlify serverless. Orders will not survive function restarts. Set TRACEWORKS_STORE_PATH to a persistent volume path or migrate to an external database.');
+  }
+
   return jsonWithRequestId(event, 200, {
     ok: missing.length === 0,
     service: 'traceworks',
     envMissing: missing,
+    warnings,
     metrics,
     startedAt,
     now: new Date().toISOString(),
