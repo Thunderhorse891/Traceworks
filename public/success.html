@@ -268,8 +268,20 @@
             <span class="case-field-value" id="fieldPackage">—</span>
           </div>
           <div class="case-field">
+            <span class="case-field-label">Primary Subject</span>
+            <span class="case-field-value" id="fieldSubject">—</span>
+          </div>
+          <div class="case-field">
+            <span class="case-field-label">Jurisdiction</span>
+            <span class="case-field-value" id="fieldJurisdiction">—</span>
+          </div>
+          <div class="case-field">
             <span class="case-field-label">Status</span>
             <span class="case-field-value" id="fieldStatus">—</span>
+          </div>
+          <div class="case-field">
+            <span class="case-field-label">Purchase Email</span>
+            <span class="case-field-value" id="fieldConfirmation">—</span>
           </div>
           <div class="case-field">
             <span class="case-field-label">Queued</span>
@@ -346,7 +358,10 @@
       const statusPill    = document.getElementById('statusPill');
       const fieldCaseRef  = document.getElementById('fieldCaseRef');
       const fieldPackage  = document.getElementById('fieldPackage');
+      const fieldSubject  = document.getElementById('fieldSubject');
+      const fieldJurisdiction = document.getElementById('fieldJurisdiction');
       const fieldStatus   = document.getElementById('fieldStatus');
+      const fieldConfirmation = document.getElementById('fieldConfirmation');
       const fieldQueued   = document.getElementById('fieldQueued');
       const fieldAttempts = document.getElementById('fieldAttempts');
       const fieldCompleted= document.getElementById('fieldCompleted');
@@ -414,7 +429,15 @@
       function renderOrder(data) {
         fieldCaseRef.textContent  = data.caseRef || '—';
         fieldPackage.textContent  = data.packageName || data.packageId || '—';
+        fieldSubject.textContent  = data.subjectName || '—';
+        fieldJurisdiction.textContent = [data.county, data.state].filter(Boolean).join(', ') || '—';
         fieldStatus.textContent   = (data.status || '—').replace(/_/g, ' ');
+        fieldConfirmation.textContent =
+          data.payment_confirmation_email_status === 'sent'
+            ? 'Sent'
+            : data.payment_confirmation_email_status === 'failed'
+              ? 'Needs resend'
+              : 'Pending';
         fieldQueued.textContent   = fmt(data.queuedAt || data.createdAt);
         fieldAttempts.textContent = data.fulfillmentAttempts ?? '—';
 
@@ -422,9 +445,10 @@
         if (data.completedAt) {
           fieldCompleted.textContent = fmt(data.completedAt);
         }
-        rowError.style.display = data.lastError ? '' : 'none';
-        if (data.lastError) {
-          fieldError.textContent = data.lastError;
+        const errorText = data.lastError || data.failure_reason || '';
+        rowError.style.display = errorText ? '' : 'none';
+        if (errorText) {
+          fieldError.textContent = errorText;
         }
 
         setPill(data.status);

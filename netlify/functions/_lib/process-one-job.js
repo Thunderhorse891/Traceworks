@@ -2,7 +2,7 @@ import { claimJobByCaseRef, claimNextJob, completeJob, failJob, incrementFulfill
 import { processFulfillmentJob } from './fulfillment.js';
 import { ORDER_STATUS } from './order-status.js';
 
-export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, caseRef: requestedCaseRef = null }) {
+export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, caseRef: requestedCaseRef = null, deps = {} }) {
   const job = requestedCaseRef ? await claimJobByCaseRef('fulfillment', requestedCaseRef) : await claimNextJob('fulfillment');
   if (!job) return { ok: true, message: 'no_jobs' };
 
@@ -17,8 +17,13 @@ export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, ca
   });
 
   try {
-    const { report } = await processFulfillmentJob(job, { ownerEmail });
-    await upsertOrder(caseRef, { status: ORDER_STATUS.COMPLETED, completedAt: new Date().toISOString(), lastError: null, retryAt: null });
+    const runFulfillment = deps.processFulfillmentJobImpl || processFulfillmentJob;
+    await runFulfillment(job, { ownerEmail });
+    await upsertOrder(caseRef, {
+      lastProcessedAt: new Date().toISOString(),
+      lastError: null,
+      retryAt: null
+    });
     await completeJob(job.id);
     return { ok: true, jobId: job.id, caseRef };
   } catch (err) {

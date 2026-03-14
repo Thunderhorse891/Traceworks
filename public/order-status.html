@@ -83,8 +83,20 @@
             <div id="resPackage" style="font-size:14px;color:var(--text-2);"></div>
           </div>
           <div>
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Primary Subject</div>
+            <div id="resSubject" style="font-size:14px;color:var(--text-2);"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Jurisdiction</div>
+            <div id="resJurisdiction" style="font-size:14px;color:var(--text-2);"></div>
+          </div>
+          <div>
             <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Submitted</div>
             <div id="resCreated" style="font-size:14px;color:var(--text-2);"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Purchase Email</div>
+            <div id="resConfirmation" style="font-size:14px;color:var(--text-2);"></div>
           </div>
           <div id="completedRow" style="display:none;">
             <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Completed</div>
@@ -179,8 +191,16 @@
     function renderOrder(data) {
       document.getElementById('resCaseRef').textContent = data.caseRef || '';
       document.getElementById('resBadge').innerHTML = statusBadgeHtml(data.status || 'unknown');
-      document.getElementById('resPackage').textContent = data.packageId || data.tier || '—';
+      document.getElementById('resPackage').textContent = data.packageName || data.packageId || data.tier || '—';
+      document.getElementById('resSubject').textContent = data.subjectName || '—';
+      document.getElementById('resJurisdiction').textContent = [data.county, data.state].filter(Boolean).join(', ') || '—';
       document.getElementById('resCreated').textContent = data.createdAt ? new Date(data.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+      document.getElementById('resConfirmation').textContent =
+        data.payment_confirmation_email_status === 'sent'
+          ? 'Sent'
+          : data.payment_confirmation_email_status === 'failed'
+            ? 'Needs resend'
+            : 'Pending';
 
       document.getElementById('completedRow').style.display = data.completedAt ? '' : 'none';
       if (data.completedAt) {
@@ -201,8 +221,12 @@
         document.getElementById('resNote').textContent = 'Payment was canceled before the order entered production.';
       } else if (data.status === 'refunded') {
         document.getElementById('resNote').textContent = 'This order has been refunded.';
+      } else if (data.retryAt) {
+        document.getElementById('resNote').textContent = `The workflow hit a temporary issue and is queued to retry around ${new Date(data.retryAt).toLocaleString()}.`;
       } else {
-        document.getElementById('resNote').textContent = '';
+        document.getElementById('resNote').textContent = data.payment_confirmation_email_status === 'sent'
+          ? 'Payment confirmation email was sent successfully. Research is progressing through the queue.'
+          : '';
       }
 
       syncReportActions(data);
@@ -236,7 +260,9 @@
 
     async function fetchOrder() {
       try {
-        const params = new URLSearchParams({ caseRef: currentCaseRef, email: currentEmail });
+        const params = new URLSearchParams({ caseRef: currentCaseRef });
+        if (currentStatusToken) params.set('status_token', currentStatusToken);
+        else params.set('email', currentEmail);
         const res = await fetch(`/api/get-order?${params}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);

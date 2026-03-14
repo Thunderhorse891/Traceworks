@@ -39,6 +39,12 @@ export default async (event) => {
     stripe_payment_intent_id: order.stripe_payment_intent_id || null,
     packageId: order.packageId,
     packageName: order.packageName,
+    customerName: order.customerName || null,
+    subjectName: order.subjectName || order.input_criteria?.subjectName || null,
+    subjectType: order.subjectType || order.input_criteria?.subjectType || null,
+    county: order.county || order.input_criteria?.county || null,
+    state: order.state || order.input_criteria?.state || null,
+    payment_confirmation_email_status: order.payment_confirmation_email_status || null,
     artifact_url_or_path: order.artifact_url_or_path || null,
     started_at: order.started_at || order.startedAt || null,
     completed_at: order.completed_at || order.completedAt || null,
@@ -53,6 +59,8 @@ export default async (event) => {
     lastAttemptAt: order.lastAttemptAt || null,
     retryAt: order.retryAt || null,
     lastError: order.lastError || null,
-    fulfillmentAttempts: order.fulfillmentAttempts || 0
+    lastProcessedAt: order.lastProcessedAt || null,
+    fulfillmentAttempts: order.fulfillmentAttempts || 0,
+    input_criteria: order.input_criteria || null
   });
 };

@@ -30,6 +30,9 @@ test('client packages include valid Stripe payment links', () => {
 test('homepage includes enterprise sales form', () => {
   const html = readFileSync('public/index.html', 'utf8');
   assert.ok(html.includes('salesForm'), 'homepage must include enterprise sales form');
+  assert.ok(html.includes('name="requestedFindings"'));
+  assert.ok(html.includes('name="lastKnownAddress"'));
+  assert.ok(html.includes('id="packageModal"'));
 });
 
 test('homepage keeps customer navigation on real production pages', () => {
@@ -45,4 +48,10 @@ test('retired sample preview page is explicit', () => {
   const html = readFileSync('public/report-tiers.html', 'utf8');
   assert.ok(html.includes('Sample previews were retired.'));
   assert.ok(html.includes('authenticated case links'));
+});
+
+test('order status tracker supports signed polling links', () => {
+  const html = readFileSync('public/order-status.html', 'utf8');
+  assert.ok(html.includes("params.set('status_token', currentStatusToken)"));
+  assert.ok(html.includes('payment_confirmation_email_status'));
 });
