@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { getPackage } from './_lib/packages.js';
-import { normalizeCheckoutPayload, validateCheckoutPayload } from './_lib/validation.js';
+import { buildInputCriteria, normalizeCheckoutPayload, validateCheckoutPayload } from './_lib/validation.js';
 import { upsertOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
@@ -32,9 +32,10 @@ export default async (event) => {
     const errors = validateCheckoutPayload(payload);
     if (errors.length) return jsonWithRequestId(event, 400, { error: errors[0], errors });
 
-    const { packageId, customerName, customerEmail, companyName, county, state, website, goals } = payload;
+    const { packageId, customerName, customerEmail, subjectName, county, state, goals } = payload;
     const pkg = getPackage(packageId);
     if (!pkg) return jsonWithRequestId(event, 400, { error: 'Invalid package selected.' });
+    const inputCriteria = buildInputCriteria(payload);
 
     const stripeConfig = validateStripeSecretKey(process.env.STRIPE_SECRET_KEY);
     if (!stripeConfig.ok) return jsonWithRequestId(event, 500, { error: stripeConfig.message });
@@ -51,12 +52,22 @@ export default async (event) => {
       purchased_tier: purchasedTier,
       customerName,
       customerEmail,
-      subjectName: companyName,
+      subjectName,
+      subjectType: inputCriteria.subjectType,
       county,
       state,
-      website,
+      lastKnownAddress: inputCriteria.lastKnownAddress,
+      websiteProfile: inputCriteria.websiteProfile,
+      website: inputCriteria.websiteProfile,
+      parcelId: inputCriteria.parcelId,
+      alternateNames: inputCriteria.alternateNames,
+      dateOfBirth: inputCriteria.dateOfBirth,
+      deathYear: inputCriteria.deathYear,
+      subjectPhone: inputCriteria.subjectPhone,
+      subjectEmail: inputCriteria.subjectEmail,
+      requestedFindings: inputCriteria.requestedFindings,
       goals,
-      input_criteria: { companyName, county, state, website, goals },
+      input_criteria: inputCriteria,
       stripe_checkout_session_id: null,
       stripe_payment_intent_id: null,
       artifact_url_or_path: null,
@@ -75,7 +86,17 @@ export default async (event) => {
       mode: 'payment',
       customer_email: customerEmail,
       line_items: [{ price_data: { currency: pkg.currency, product_data: { name: pkg.name }, unit_amount: pkg.amount }, quantity: 1 }],
-      metadata: { caseRef, packageId, packageName: pkg.name, customerName, customerEmail, companyName, county, state, website, goals, legalConsent: 'true', tosConsent: 'true' },
+      metadata: {
+        caseRef,
+        packageId,
+        packageName: pkg.name,
+        customerName,
+        customerEmail,
+        subjectName,
+        subjectType: inputCriteria.subjectType,
+        county,
+        state,
+      },
       success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}&case_ref=${caseRef}${statusToken ? `&status_token=${encodeURIComponent(statusToken)}` : `&email=${encodeURIComponent(customerEmail)}`}`,
       cancel_url: `${base}/cancel.html`
     });

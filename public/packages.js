@@ -5,6 +5,7 @@ export const clientPackages = [
     id: 'standard',
     name: 'Standard Property Snapshot',
     price: '$99',
+    deliveryHours: 24,
     bestFor: 'Quick property ownership lookup and parcel verification',
     turnaround: 'Typical delivery: same day',
     payLink: 'https://buy.stripe.com/8x2aEXgLPbEKcxke4lenS01',
@@ -20,12 +21,26 @@ export const clientPackages = [
       'County CAD owner of record with parcel ID and legal description',
       'Tax assessment status and last-known assessment value',
       'Parcel GIS result with any known address discrepancies'
-    ]
+    ],
+    workflowScope: [
+      'County property data',
+      'Tax collector lookup',
+      'Parcel GIS verification'
+    ],
+    intake: {
+      defaultSubjectType: 'property',
+      guidance:
+        'Best results come from a property address or parcel ID. Owner name still helps when parcel data is incomplete.',
+      requiredSignals: ['Subject or property name', 'County'],
+      recommendedSignals: ['Last known address', 'Parcel / APN ID', 'Profile or listing URL'],
+      fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'websiteProfile', 'requestedFindings']
+    }
   },
   {
     id: 'ownership_encumbrance',
     name: 'Ownership & Encumbrance Intelligence Report',
     price: '$249',
+    deliveryHours: 48,
     featured: true,
     bestFor: 'Deed research, title due diligence, and lien identification',
     turnaround: 'Typical delivery: same day to 24h',
@@ -42,12 +57,27 @@ export const clientPackages = [
       'Instrument history with volume/page references and recording dates',
       'Grantor-grantee index entries with party names',
       'Chain continuity assessment with any flagged gaps or conflicts'
-    ]
+    ],
+    workflowScope: [
+      'Property ownership confirmation',
+      'Recorder index search',
+      'Grantor-grantee chain review',
+      'Mortgage / trust deed lookup'
+    ],
+    intake: {
+      defaultSubjectType: 'property',
+      guidance:
+        'Use this when you need deed history or encumbrance signals. Address, parcel ID, and alternate owner names materially improve continuity checks.',
+      requiredSignals: ['Subject or property name', 'County'],
+      recommendedSignals: ['Last known address', 'Parcel / APN ID', 'Alternate owner / entity names'],
+      fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'alternateNames', 'websiteProfile', 'requestedFindings']
+    }
   },
   {
     id: 'probate_heirship',
     name: 'Probate & Heirship Investigation Report',
     price: '$325',
+    deliveryHours: 72,
     bestFor: 'Heir locate, probate support, and beneficiary identification',
     turnaround: 'Typical delivery: 24h',
     payLink: 'https://buy.stripe.com/9B628rgLP7ou2WK6BTenS03',
@@ -63,12 +93,27 @@ export const clientPackages = [
       'Obituary cross-reference with death year and location signals',
       'Probate case index result with case number and status if found',
       'Heir candidate matrix with confidence labels and contact leads'
-    ]
+    ],
+    workflowScope: [
+      'Decedent obituary sweep',
+      'Probate case index lookup',
+      'People association search',
+      'Heir confidence scoring'
+    ],
+    intake: {
+      defaultSubjectType: 'estate',
+      guidance:
+        'For probate matters, decedent name plus one extra identifier like death year, date of birth, address, or relative alias improves match quality and reduces false positives.',
+      requiredSignals: ['Decedent name', 'County'],
+      recommendedSignals: ['Death year', 'Date of birth', 'Last known address', 'Aliases / relative names'],
+      fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'alternateNames', 'dateOfBirth', 'deathYear', 'subjectPhone', 'subjectEmail', 'requestedFindings']
+    }
   },
   {
     id: 'asset_network',
     name: 'Asset & Property Network Report',
     price: '$399',
+    deliveryHours: 72,
     bestFor: 'Asset tracing, enforcement strategy, and collections support',
     turnaround: 'Typical delivery: 24h to 48h',
     payLink: 'https://buy.stripe.com/aFadR953724a9l8aS9enS04',
@@ -84,12 +129,27 @@ export const clientPackages = [
       'Multi-parcel ownership network from CAD and GIS sources',
       'Deed and grantor-grantee cross-reference for known parcels',
       'Chain continuity flags and documented source limitations'
-    ]
+    ],
+    workflowScope: [
+      'Property discovery',
+      'Recorder cross-reference',
+      'Portfolio expansion by owner / entity',
+      'Chain continuity review'
+    ],
+    intake: {
+      defaultSubjectType: 'entity',
+      guidance:
+        'This tier performs best when you provide the primary owner or entity plus any known parcel, address, alias, or business registration trail.',
+      requiredSignals: ['Subject name or entity', 'County'],
+      recommendedSignals: ['Last known address', 'Parcel / APN ID', 'Alternate names', 'Profile or company URL'],
+      fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'alternateNames', 'websiteProfile', 'subjectPhone', 'subjectEmail', 'requestedFindings']
+    }
   },
   {
     id: 'comprehensive',
     name: 'Comprehensive Investigative Report',
     price: '$549',
+    deliveryHours: 96,
     bestFor: 'Full-scope legal investigation: property, deed, and heir research combined',
     turnaround: 'Typical delivery: 24h to 48h',
     payLink: 'https://buy.stripe.com/aFadR953724a9l8aS9enS04',
@@ -105,6 +165,20 @@ export const clientPackages = [
       'All property, deed, and heir sections with full source trace',
       'Cross-source conflict flags where owner data disagrees',
       'Confidence matrix and analyst-oriented next steps'
-    ]
+    ],
+    workflowScope: [
+      'Property + recorder + probate combined',
+      'Cross-source discrepancy review',
+      'Confidence matrix',
+      'Next-step recommendations'
+    ],
+    intake: {
+      defaultSubjectType: 'mixed',
+      guidance:
+        'Use comprehensive intake detail here. The engine will prioritize the strongest identifiers first, then expand outward across property, entity, and probate branches.',
+      requiredSignals: ['Primary subject name', 'County'],
+      recommendedSignals: ['Address', 'Parcel / APN ID', 'Aliases', 'Date of birth or death year', 'Phone or email'],
+      fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'alternateNames', 'dateOfBirth', 'deathYear', 'subjectPhone', 'subjectEmail', 'websiteProfile', 'requestedFindings']
+    }
   }
 ];

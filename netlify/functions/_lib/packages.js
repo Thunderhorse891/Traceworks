@@ -86,3 +86,4 @@ export function getPackage(packageId) {
 }
 
 export const VALID_PACKAGE_IDS = Object.keys(PACKAGES);
+export const PACKAGE_LIST = Object.values(PACKAGES);

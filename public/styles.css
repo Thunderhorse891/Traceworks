@@ -1038,6 +1038,44 @@ button:disabled {
 
 form { display: grid; gap: 14px; position: relative; z-index: 1; }
 
+.selected-package-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-gold);
+  background:
+    linear-gradient(135deg, rgba(212,168,39,0.08), rgba(59,130,246,0.05)),
+    var(--bg-surface);
+}
+
+.selected-package-summary h4 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.selected-package-summary p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.selected-package-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(212,168,39,0.28);
+  background: rgba(212,168,39,0.10);
+  color: var(--gold-800);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 fieldset {
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-lg);
@@ -1064,6 +1102,13 @@ label {
 }
 
 label:last-child { margin-bottom: 0; }
+
+.field-help {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
 
 input,
 textarea,
@@ -1457,6 +1502,20 @@ code {
   padding: 24px;
 }
 
+.package-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.package-modal-panel {
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-faint);
+  background: rgba(6,12,20,0.65);
+}
+
 .package-modal-close {
   position: absolute;
   top: 12px;
@@ -1528,6 +1587,13 @@ code {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
+}
+
+.package-modal-guidance {
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .package-modal-actions a {
@@ -1821,6 +1887,10 @@ code {
   .package-modal-actions a {
     width: 100%;
     justify-content: center;
+  }
+
+  .package-modal-grid {
+    grid-template-columns: 1fr;
   }
 
   .top-links a { font-size: 13px; }

@@ -1,19 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCheckoutPayload, validateCheckoutPayload } from '../netlify/functions/_lib/validation.js';
+import {
+  buildInputCriteria,
+  normalizeCheckoutPayload,
+  resolveInvestigationInput,
+  validateCheckoutPayload
+} from '../netlify/functions/_lib/validation.js';
 import { hitRateLimit } from '../netlify/functions/_lib/rate-limit.js';
 import { jsonWithRequestId } from '../netlify/functions/_lib/http.js';
 import { getBusinessEmail } from '../netlify/functions/_lib/business.js';
 import { createStatusToken } from '../netlify/functions/_lib/status-token.js';
 
-test('validation normalizes website and validates URL', () => {
+test('validation normalizes profile URL and validates URL', () => {
   const payload = normalizeCheckoutPayload({
     packageId: 'standard',
     customerName: 'Law Office',
     customerEmail: 'x@y.com',
     companyName: 'John Doe',
     county: 'Harris',
-    website: 'example.com',
+    websiteProfile: 'example.com',
     goals: 'Locate',
     legalConsent: 'true',
     tosConsent: 'true'
@@ -21,8 +26,66 @@ test('validation normalizes website and validates URL', () => {
   assert.equal(payload.website, 'https://example.com');
   assert.equal(validateCheckoutPayload(payload).length, 0);
 
-  const bad = normalizeCheckoutPayload({ ...payload, website: '://bad url' });
+  const bad = normalizeCheckoutPayload({ ...payload, websiteProfile: '://bad url' });
   assert.ok(validateCheckoutPayload(bad).some((e) => e.includes('URL is invalid')));
+});
+
+test('probate intake requires a secondary identifier for precision', () => {
+  const payload = normalizeCheckoutPayload({
+    packageId: 'probate_heirship',
+    customerName: 'Law Office',
+    customerEmail: 'x@y.com',
+    subjectName: 'Jane Doe',
+    county: 'Harris',
+    legalConsent: 'true',
+    tosConsent: 'true'
+  });
+
+  assert.ok(validateCheckoutPayload(payload).some((e) => e.includes('additional identifier')));
+});
+
+test('input criteria preserves structured investigation seeds', () => {
+  const payload = normalizeCheckoutPayload({
+    packageId: 'asset_network',
+    customerName: 'Law Office',
+    customerEmail: 'x@y.com',
+    subjectName: 'Mercer Holdings LLC',
+    subjectType: 'entity',
+    county: 'Harris',
+    state: 'tx',
+    lastKnownAddress: '100 Main St, Houston, TX',
+    parcelId: 'P-100',
+    alternateNames: 'Mercer Holdings, Mercer Family Trust',
+    subjectPhone: '(555) 111-2222',
+    requestedFindings: 'Find related parcels, verify recorder hits',
+    goals: 'Collections enforcement',
+    legalConsent: 'true',
+    tosConsent: 'true'
+  });
+
+  const criteria = buildInputCriteria(payload);
+  assert.deepEqual(criteria.alternateNames, ['Mercer Holdings', 'Mercer Family Trust']);
+  assert.equal(criteria.subjectType, 'entity');
+  assert.ok(criteria.searchSeeds.includes('P-100'));
+  assert.ok(criteria.searchSeeds.includes('100 Main St, Houston, TX'));
+});
+
+test('resolveInvestigationInput merges legacy order fields without losing structure', () => {
+  const criteria = resolveInvestigationInput({
+    subjectName: 'Jordan Mercer',
+    county: 'Harris',
+    state: 'TX',
+    website: 'https://example.org/profile',
+    input_criteria: {
+      lastKnownAddress: '123 Main St',
+      alternateNames: ['J. Mercer'],
+      requestedFindings: 'Locate related parcels'
+    }
+  });
+
+  assert.equal(criteria.subjectName, 'Jordan Mercer');
+  assert.equal(criteria.lastKnownAddress, '123 Main St');
+  assert.ok(criteria.alternateNames.includes('J. Mercer'));
 });
 
 test('rate limiter limits after threshold', () => {

@@ -120,6 +120,39 @@
       <div class="packages-grid" id="packages-grid"></div>
     </section>
 
+    <dialog id="packageModal" class="package-modal" aria-labelledby="packageModalName">
+      <div class="package-modal-content">
+        <button type="button" class="package-modal-close" id="packageModalClose" aria-label="Close package details">×</button>
+        <p class="label" id="packageModalLabel">PACKAGE</p>
+        <h3 id="packageModalName">Package Details</h3>
+        <p class="price" id="packageModalPrice">$0</p>
+        <p class="pkg-meta" id="packageModalSummary"></p>
+        <div class="package-modal-grid">
+          <section class="package-modal-panel">
+            <h4>Included Findings</h4>
+            <ul id="packageModalIncluded"></ul>
+          </section>
+          <section class="package-modal-panel">
+            <h4>Workflow Scope</h4>
+            <ul id="packageModalWorkflow"></ul>
+          </section>
+          <section class="package-modal-panel">
+            <h4>Required Intake Signals</h4>
+            <ul id="packageModalRequired"></ul>
+          </section>
+          <section class="package-modal-panel">
+            <h4>Recommended Identifiers</h4>
+            <ul id="packageModalRecommended"></ul>
+          </section>
+        </div>
+        <p class="package-modal-guidance" id="packageModalGuidance"></p>
+        <div class="package-modal-actions">
+          <button type="button" class="btn-primary" id="packageModalSelect">Start Secure Intake</button>
+          <a href="/packages.html">Compare all tiers</a>
+        </div>
+      </div>
+    </dialog>
+
     <div class="policy-note">
       <span class="policy-note-bar"></span>
       <span><strong style="color:var(--text-2)">Service Policy —</strong> No refunds after research begins. If findings are incomplete due to source unavailability, we run a redo pass on the same scope at no charge.</span>
@@ -186,12 +219,21 @@
             </div>
             <div class="form-body">
               <form id="checkoutForm">
+                <div class="selected-package-summary" id="selectedPackageSummary" hidden>
+                  <div>
+                    <p class="label">Selected Package</p>
+                    <h4 id="selectedPackageName">Choose a tier above</h4>
+                  </div>
+                  <div class="selected-package-pill" id="selectedPackageTurnaround">Awaiting selection</div>
+                  <p id="selectedPackageGuidance"></p>
+                </div>
 
                 <div class="field-group">
                   <span class="field-group-label">Service Selection</span>
                   <label>Selected Package
                     <input id="packageId" name="packageId" readonly required placeholder="Select a tier above" />
                   </label>
+                  <p class="field-help" id="packageSelectionHelp">Start with a package above to unlock the recommended intake fields for that workflow.</p>
                 </div>
 
                 <div class="field-group">
@@ -206,7 +248,16 @@
 
                 <div class="field-group">
                   <span class="field-group-label">Subject &amp; Location</span>
-                  <label>Subject Name or Entity
+                  <label>Subject Type
+                    <select name="subjectType" id="subjectType">
+                      <option value="property">Property / parcel</option>
+                      <option value="person">Person</option>
+                      <option value="entity">Business / LLC / trust</option>
+                      <option value="estate">Estate / decedent</option>
+                      <option value="mixed">Mixed / unknown</option>
+                    </select>
+                  </label>
+                  <label>Primary Subject Name
                     <input name="subjectName" required placeholder="Individual name or LLC / Trust / Corp" />
                   </label>
                   <div class="form-row">
@@ -217,15 +268,50 @@
                       <input name="state" value="TX" maxlength="2" />
                     </label>
                   </div>
-                  <label>Known Address or Profile <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                    <input name="website" placeholder="123 Main St, Austin TX or https://..." />
+                  <label data-intake-field="lastKnownAddress">Last Known Address <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                    <input name="lastKnownAddress" placeholder="123 Main St, Austin, TX 78701" />
+                  </label>
+                  <div class="form-row">
+                    <label data-intake-field="parcelId">Parcel / APN ID <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                      <input name="parcelId" placeholder="Parcel, APN, account, or tax ID" />
+                    </label>
+                    <label data-intake-field="websiteProfile">Profile or Listing URL <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                      <input name="websiteProfile" placeholder="https://county-portal.example or public profile URL" />
+                    </label>
+                  </div>
+                  <label data-intake-field="alternateNames">Aliases / Alternate Names <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                    <input name="alternateNames" placeholder="Comma-separated aliases, relatives, prior owner names, or entity variants" />
+                  </label>
+                  <div class="form-row">
+                    <label data-intake-field="dateOfBirth">Date of Birth <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                      <input type="date" name="dateOfBirth" />
+                    </label>
+                    <label data-intake-field="deathYear">Death Year <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                      <input name="deathYear" inputmode="numeric" maxlength="4" placeholder="YYYY" />
+                    </label>
+                  </div>
+                  <div class="form-row">
+                    <label data-intake-field="subjectPhone">Subject Phone <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                      <input name="subjectPhone" inputmode="tel" placeholder="Known phone number" />
+                    </label>
+                    <label data-intake-field="subjectEmail">Subject Email <span style="color:var(--text-4); font-weight:400;">(optional)</span>
+                      <input type="email" name="subjectEmail" placeholder="Known subject email" />
+                    </label>
+                  </div>
+                  <p class="field-help" id="intakeGuidance">We only search public-record and configured licensed sources. More identifiers improve match quality and reduce manual review.</p>
+                </div>
+
+                <div class="field-group">
+                  <span class="field-group-label">Requested Findings</span>
+                  <label>What do you want this report to return?
+                    <textarea name="requestedFindings" rows="3" placeholder="Examples: verify current owner, identify deed chain, locate probate filing, list likely heirs, find related parcels, check for entity records."></textarea>
                   </label>
                 </div>
 
                 <div class="field-group">
                   <span class="field-group-label">Case Objective</span>
                   <label>Describe the outcome you need
-                    <textarea name="goals" rows="3" placeholder="e.g. Identify deed history and current lienholders for probate proceeding in Harris County."></textarea>
+                    <textarea name="goals" rows="3" placeholder="e.g. Need deed history and current lienholder signals for a probate matter in Harris County; deliver source-trace-backed report suitable for attorney review."></textarea>
                   </label>
                 </div>
 
@@ -339,7 +425,6 @@
           <a href="/packages.html">Packages</a>
           <a href="/order-status.html">Track Order</a>
         </nav>
-      </div>
       <p class="footer-copy">
         © TraceWorks™. Lawful investigative research services for licensed professionals only. Not a consumer reporting agency under FCRA. Reports are for informational purposes only and do not constitute legal opinions, title guarantees, or certified findings.
       </p>

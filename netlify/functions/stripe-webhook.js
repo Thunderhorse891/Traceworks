@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { enqueueJob, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
+import { enqueueJob, getOrder, isProcessedWebhookEvent, markProcessedWebhookEvent, upsertOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { processOneFulfillmentJob } from './_lib/process-one-job.js';
@@ -8,6 +8,10 @@ import { validateStripeSecretKey, validateStripeWebhookSecret } from './_lib/str
 import { ORDER_STATUS } from './_lib/order-status.js';
 import { resolvePurchasedTier } from './_lib/tier-mapping.js';
 import { recordAuditEvent } from './_lib/store.js';
+import { buildInputCriteria, normalizeCheckoutPayload } from './_lib/validation.js';
+import { getPackage } from './_lib/packages.js';
+import { createStatusToken } from './_lib/status-token.js';
+import { sendOrderConfirmationEmail } from './_lib/email.js';
 
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
@@ -72,6 +76,7 @@ export default async (event) => {
   const session = stripeEvent.data.object;
   const metadata = session.metadata || {};
   const caseRef = metadata.caseRef || `TW-${session.id}`;
+  const existingOrder = await getOrder(caseRef);
 
   let stripePriceId = null;
   let stripeProductId = null;
@@ -89,6 +94,29 @@ export default async (event) => {
     stripePriceId,
     stripeProductId
   });
+  const normalized = normalizeCheckoutPayload({
+    packageId: metadata.packageId || existingOrder?.packageId || '',
+    customerName: metadata.customerName || existingOrder?.customerName || '',
+    customerEmail: metadata.customerEmail || existingOrder?.customerEmail || session.customer_details?.email || '',
+    subjectName: metadata.subjectName || existingOrder?.subjectName || existingOrder?.input_criteria?.subjectName || '',
+    subjectType: metadata.subjectType || existingOrder?.subjectType || existingOrder?.input_criteria?.subjectType || '',
+    county: metadata.county || existingOrder?.county || existingOrder?.input_criteria?.county || '',
+    state: metadata.state || existingOrder?.state || existingOrder?.input_criteria?.state || 'TX',
+    lastKnownAddress: existingOrder?.lastKnownAddress || existingOrder?.input_criteria?.lastKnownAddress || '',
+    websiteProfile: existingOrder?.websiteProfile || existingOrder?.input_criteria?.websiteProfile || existingOrder?.website || existingOrder?.input_criteria?.website || '',
+    parcelId: existingOrder?.parcelId || existingOrder?.input_criteria?.parcelId || '',
+    alternateNames: existingOrder?.alternateNames || existingOrder?.input_criteria?.alternateNames || [],
+    dateOfBirth: existingOrder?.dateOfBirth || existingOrder?.input_criteria?.dateOfBirth || '',
+    deathYear: existingOrder?.deathYear || existingOrder?.input_criteria?.deathYear || '',
+    subjectPhone: existingOrder?.subjectPhone || existingOrder?.input_criteria?.subjectPhone || '',
+    subjectEmail: existingOrder?.subjectEmail || existingOrder?.input_criteria?.subjectEmail || '',
+    requestedFindings: existingOrder?.requestedFindings || existingOrder?.input_criteria?.requestedFindings || '',
+    goals: existingOrder?.goals || existingOrder?.input_criteria?.goals || '',
+    legalConsent: true,
+    tosConsent: true
+  });
+  const inputCriteria = buildInputCriteria(normalized);
+  const pkg = getPackage(metadata.packageId || existingOrder?.packageId || '');
 
   await recordAuditEvent({ event: 'payment_verified', caseRef, stripeEventId: stripeEvent.id, stripeSessionId: session.id, purchasedTier });
 
@@ -103,14 +131,24 @@ export default async (event) => {
     amountTotal,
     currency: session.currency || null,
     purchased_tier: purchasedTier,
-    customerName: metadata.customerName,
-    customerEmail: metadata.customerEmail || session.customer_details?.email,
-    subjectName: metadata.companyName,
-    county: metadata.county || '',
-    state: metadata.state || 'TX',
-    website: metadata.website,
-    goals: metadata.goals,
-    input_criteria: { companyName: metadata.companyName, county: metadata.county || '', state: metadata.state || 'TX', website: metadata.website, goals: metadata.goals },
+    customerName: metadata.customerName || existingOrder?.customerName,
+    customerEmail: metadata.customerEmail || session.customer_details?.email || existingOrder?.customerEmail,
+    subjectName: inputCriteria.subjectName,
+    subjectType: inputCriteria.subjectType,
+    county: inputCriteria.county || '',
+    state: inputCriteria.state || 'TX',
+    lastKnownAddress: inputCriteria.lastKnownAddress,
+    websiteProfile: inputCriteria.websiteProfile,
+    website: inputCriteria.websiteProfile,
+    parcelId: inputCriteria.parcelId,
+    alternateNames: inputCriteria.alternateNames,
+    dateOfBirth: inputCriteria.dateOfBirth,
+    deathYear: inputCriteria.deathYear,
+    subjectPhone: inputCriteria.subjectPhone,
+    subjectEmail: inputCriteria.subjectEmail,
+    requestedFindings: inputCriteria.requestedFindings,
+    goals: inputCriteria.goals,
+    input_criteria: inputCriteria,
     queuedAt: new Date().toISOString(),
     started_at: null,
     completed_at: null,
@@ -121,6 +159,31 @@ export default async (event) => {
 
   await upsertOrder(caseRef, { status: ORDER_STATUS.QUEUED });
 
+  const ownerEmail = getBusinessEmail();
+  const base = process.env.URL || `https://${event.headers.host}`;
+  const statusToken = createStatusToken({ caseRef, email: metadata.customerEmail || session.customer_details?.email || existingOrder?.customerEmail || '' });
+  const statusUrl = `${base}/order-status.html?caseRef=${encodeURIComponent(caseRef)}${statusToken ? `&status_token=${encodeURIComponent(statusToken)}` : ''}`;
+
+  try {
+    await sendOrderConfirmationEmail({
+      ownerEmail,
+      customerEmail: metadata.customerEmail || session.customer_details?.email || existingOrder?.customerEmail,
+      caseRef,
+      packageName: metadata.packageName || existingOrder?.packageName || pkg?.name || metadata.packageId || 'TraceWorks order',
+      subjectName: inputCriteria.subjectName,
+      county: inputCriteria.county,
+      state: inputCriteria.state,
+      deliveryHours: pkg?.deliveryHours || existingOrder?.deliveryHours || null,
+      statusUrl,
+      intakeSummary: inputCriteria.investigationBrief,
+    });
+    await upsertOrder(caseRef, { payment_confirmation_email_status: 'sent' });
+    await recordAuditEvent({ event: 'payment_confirmation_email_sent', caseRef });
+  } catch (error) {
+    await upsertOrder(caseRef, { payment_confirmation_email_status: 'failed' });
+    await recordAuditEvent({ event: 'payment_confirmation_email_failed', caseRef, error: String(error?.message || error) });
+  }
+
   await enqueueJob({
     type: 'fulfillment',
     payload: {
@@ -128,11 +191,12 @@ export default async (event) => {
       orderId: caseRef,
       purchasedTier,
       packageId: metadata.packageId,
-      customerName: metadata.customerName,
-      customerEmail: metadata.customerEmail || session.customer_details?.email,
-      companyName: metadata.companyName,
-      website: metadata.website,
-      goals: metadata.goals
+      customerName: metadata.customerName || existingOrder?.customerName,
+      customerEmail: metadata.customerEmail || session.customer_details?.email || existingOrder?.customerEmail,
+      subjectName: inputCriteria.subjectName,
+      county: inputCriteria.county,
+      state: inputCriteria.state,
+      searchSeeds: inputCriteria.searchSeeds
     }
   });
 
@@ -142,7 +206,7 @@ export default async (event) => {
   const immediateMs = Math.max(500, Number(process.env.IMMEDIATE_FULFILLMENT_TIMEOUT_MS || 3500));
   try {
     await Promise.race([
-      processOneFulfillmentJob({ ownerEmail: getBusinessEmail(), maxAttempts: 5, caseRef }),
+      processOneFulfillmentJob({ ownerEmail, maxAttempts: 5, caseRef }),
       new Promise((_, reject) => setTimeout(() => reject(new Error('immediate processing timeout')), immediateMs))
     ]);
     await recordAuditEvent({ event: 'immediate_fulfillment_attempt_finished', caseRef });
