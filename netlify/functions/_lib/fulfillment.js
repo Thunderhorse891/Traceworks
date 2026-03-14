@@ -60,7 +60,7 @@ export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) 
       throw new Error(message);
     }
 
-    const completedStatus = workflow.overallStatus === 'partial' ? ORDER_STATUS.COMPLETED : ORDER_STATUS.COMPLETED;
+    const completedStatus = workflow.overallStatus === 'partial' ? ORDER_STATUS.MANUAL_REVIEW : ORDER_STATUS.COMPLETED;
     await upsertOrder(orderId, {
       status: completedStatus,
       artifact_url_or_path: publicArtifactHint(artifacts.htmlPath),

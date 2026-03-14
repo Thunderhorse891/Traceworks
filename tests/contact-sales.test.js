@@ -13,3 +13,9 @@ test('netlify routes contact-sales API endpoint', async () => {
   const toml = await readFile('netlify.toml', 'utf8');
   assert.ok(toml.includes('/api/contact-sales'));
 });
+
+test('netlify schedules queue worker', async () => {
+  const toml = await readFile('netlify.toml', 'utf8');
+  assert.ok(toml.includes('process-queue-cron'));
+  assert.ok(toml.includes('*/2 * * * *'));
+});

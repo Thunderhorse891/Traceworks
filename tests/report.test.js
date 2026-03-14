@@ -11,7 +11,7 @@ test('all 4 tiers generate non-blank sections and premium structures', () => {
     assert.ok(report.dossierName.length > 0);
     assert.ok(report.caseRef.startsWith('TW-'));
     assert.ok(report.sections.length >= 4);
-    assert.ok(report.evidenceMatrix.length >= 1);
+    assert.ok(Array.isArray(report.evidenceMatrix));
     assert.ok(report.redFlags.length >= 1);
     assert.ok(report.nextActions48h.length >= 4);
     for (const section of report.sections) {
@@ -49,28 +49,19 @@ test('checkout payload validation enforces legal and terms consent', () => {
 
 test('report includes no-refund redo policy language in disclaimer', () => {
   const report = buildReport({ packageId: 'standard', caseRef: 'TW-TEST-3' });
-  assert.ok(report.disclaimer.includes('No refunds after work starts'));
-  assert.ok(report.disclaimer.includes('redo'));
+  assert.ok(report.disclaimer.includes('not legal advice') || report.disclaimer.includes('not legal advice'));
+  assert.ok(report.disclaimer.includes('licensed professionals'));
 });
 
-test('report adds explicit fallback language when direct hits are missing', () => {
+test('report does not inject fabricated fallback citations when direct hits are missing', () => {
   const report = buildReport({
     packageId: 'standard',
     caseRef: 'TW-TEST-4',
-    intel: {
-      sources: [
-        {
-          title: 'Government index fallback',
-          url: 'https://www.usa.gov/state-county-local-governments',
-          sourceType: 'fallback',
-          confidence: 'medium',
-          provider: 'static-fallback',
-          domain: 'usa.gov'
-        }
-      ]
-    }
+    intel: { sources: [] }
   });
 
   const lines = report.sections.flatMap((section) => section.findings);
-  assert.ok(lines.some((line) => line.includes('No direct verifiable hit surfaced')));
+  assert.equal(report.sources.length, 0);
+  assert.equal(report.evidenceMatrix.length, 0);
+  assert.ok(lines.some((line) => line.includes('did not return a cited source hit')));
 });

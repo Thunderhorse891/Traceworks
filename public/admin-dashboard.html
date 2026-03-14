@@ -147,7 +147,18 @@
     }
 
     function statusBadge(status) {
-      const labels = { queued:'Queued', processing:'Processing', completed:'Completed', failed:'Failed', retrying:'Retrying', checkout_created:'Checkout', draft:'Draft' };
+      const labels = {
+        pending_payment:'Payment Pending',
+        paid:'Payment Confirmed',
+        queued:'Queued',
+        running:'Research Running',
+        completed:'Completed',
+        manual_review:'Manual Review',
+        failed:'Failed',
+        delivery_failed:'Delivery Failed',
+        refunded:'Refunded',
+        canceled:'Canceled'
+      };
       return `<span class="status-badge s-${status}">${labels[status] || status}</span>`;
     }
 
@@ -171,7 +182,7 @@
         const [metricsRes, ordersRes, healthRes] = await Promise.all([
           fetch('/api/admin-metrics', { headers }),
           fetch('/api/admin-orders?limit=50', { headers }),
-          fetch('/api/health'),
+          fetch('/api/health', { headers }),
         ]);
 
         if (metricsRes.status === 401 || ordersRes.status === 401) { logout(); return; }

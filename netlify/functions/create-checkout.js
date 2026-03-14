@@ -46,6 +46,8 @@ export default async (event) => {
       status: ORDER_STATUS.PENDING_PAYMENT,
       packageId,
       packageName: pkg.name,
+      amountTotal: pkg.amount,
+      currency: pkg.currency,
       purchased_tier: purchasedTier,
       customerName,
       customerEmail,
@@ -79,7 +81,9 @@ export default async (event) => {
     });
 
     await upsertOrder(caseRef, {
-      stripe_checkout_session_id: session.id
+      stripe_checkout_session_id: session.id,
+      amountTotal: pkg.amount,
+      currency: pkg.currency
     });
 
     return jsonWithRequestId(event, 200, { checkoutUrl: session.url, caseRef, statusTokenIssued: Boolean(statusToken) });

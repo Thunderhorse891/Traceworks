@@ -5,12 +5,10 @@ import { readFileSync } from 'node:fs';
 const requiredPages = [
   'public/console.html',
   'public/cases.html',
-  'public/search.html',
   'public/reports.html',
   'public/sources.html',
   'public/workflows.html',
   'public/billing.html',
-  'public/admin.html',
 ];
 
 test('intelligence console multipage shell exists', () => {
@@ -20,7 +18,16 @@ test('intelligence console multipage shell exists', () => {
   }
 });
 
-test('homepage links to intelligence console', () => {
-  const html = readFileSync('public/index.html', 'utf8');
-  assert.ok(html.includes('/console.html'));
+test('operator shell navigation only advertises live-backed pages', () => {
+  const html = readFileSync('public/console.html', 'utf8');
+  assert.equal(html.includes('/search.html'), false);
+  assert.equal(html.includes('/admin.html'), false);
+  assert.ok(html.includes('/admin-dashboard.html'));
+});
+
+test('retired operator mock pages are explicit', () => {
+  const searchHtml = readFileSync('public/search.html', 'utf8');
+  const adminHtml = readFileSync('public/admin.html', 'utf8');
+  assert.ok(searchHtml.includes('Unified Search Removed'));
+  assert.ok(adminHtml.includes('Static Admin Shell Removed'));
 });

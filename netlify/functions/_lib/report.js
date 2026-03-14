@@ -1,7 +1,5 @@
 import { getPackage } from "./packages.js";
 
-const FALLBACK = "No directly verifiable hit was returned for this element in the current run. Traceworks inserted a conservative, court-safe next step so the report remains actionable.";
-
 const TIER_BLUEPRINT = {
   standard: {
     dossierName: "Standard Property Snapshot",
@@ -63,10 +61,10 @@ const TIER_BLUEPRINT = {
   }
 };
 
-function nonBlank(value, fallback = FALLBACK) {
+function nonBlank(value, fallback = "") {
   if (value === null || value === undefined) return fallback;
   if (typeof value === "string" && value.trim().length === 0) return fallback;
-  if (Array.isArray(value) && value.length === 0) return [fallback];
+  if (Array.isArray(value) && value.length === 0) return Array.isArray(fallback) ? fallback : [];
   return value;
 }
 
@@ -80,6 +78,7 @@ function escapeHtml(value) {
 }
 
 function confidenceFromSources(sources) {
+  if (sources.length === 0) return "Unverified";
   if (sources.length >= 8) return "High";
   if (sources.length >= 4) return "Medium";
   return "Guarded";
@@ -88,11 +87,11 @@ function confidenceFromSources(sources) {
 function buildOwnershipTrail(sources, subject) {
   return sources.slice(0, 5).map((source, index) => ({
     idx: index + 1,
-    who: index === 0 ? `${subject} (Baseline)` : `Related party ${index}`,
-    what: index === 0 ? "Initial public-record baseline" : "Transfer / filing / relationship signal",
-    when: index === 0 ? "Historical baseline" : "Date requires clerk-level verification",
+    who: subject,
+    what: "Cited source lead returned in this run",
+    when: "Direct source pull required for date certainty",
     how: source.title,
-    why: `Corroborated from ${source.sourceType}`
+    why: `Observed via ${source.provider || "provider"} (${source.sourceType})`
   }));
 }
 
@@ -103,36 +102,48 @@ function buildEvidenceMatrix(sources) {
     strength: source.confidence,
     domain: source.domain || "unknown",
     provider: source.provider || "provider",
-    recommendedFollowUp: "Capture certified copy or timestamped screenshot for filing packet."
+    recommendedFollowUp: "Capture the first-party source or screenshot before relying on this lead."
   }));
 }
 
 function buildRedFlags(report) {
   const flags = [];
+  if (report.coverage.totalSources === 0) {
+    flags.push("No cited OSINT sources were returned in this run. Treat every section as unverified until manual follow-up is completed.");
+  }
   if (report.coverage.providersWithHits <= 1) {
-    flags.push("Low provider diversity: consider manual county clerk and PACER-equivalent checks.");
+    flags.push("Low provider diversity: corroborate with direct county, court, or registry pulls.");
   }
-  if (report.coverage.distinctDomains <= 2) {
-    flags.push("Low domain diversity: corroborate with at least one government and one court source.");
+  if (report.coverage.distinctDomains <= 2 && report.coverage.totalSources > 0) {
+    flags.push("Low domain diversity: corroborate with at least one government and one court or registry source.");
   }
-  if (report.sources.some((s) => s.confidence === "low")) {
-    flags.push("Low-confidence sources present: do not rely without documentary verification.");
+  if (report.sources.some((source) => source.confidence === "low")) {
+    flags.push("Low-confidence sources are present and should not be treated as verified without documentary follow-up.");
   }
   if (flags.length === 0) {
-    flags.push("No major data-quality red flags detected in this run.");
+    flags.push("No major data-quality red flags detected in the cited source set.");
   }
   return flags;
 }
 
 function buildNextActions(report) {
+  if (report.coverage.totalSources === 0) {
+    return [
+      "No cited OSINT hits returned. Start with direct county property, recorder, probate, or entity searches for the requested scope.",
+      "Capture first-party source URLs or screenshots before generating any outward-facing deliverable.",
+      "Do not treat uncovered sections as cleared; they remain unverified.",
+      "Require human analyst review before legal or operational use."
+    ];
+  }
+
   const escalation = report.confidence === "Guarded"
-    ? "Escalation rule: confidence is Guarded, so add manual clerk pull + analyst verification before court submission."
+    ? "Escalation rule: confidence is Guarded, so add manual clerk pull and analyst verification before court submission."
     : `Escalation rule: if confidence is ${report.confidence}, require human analyst review before court submission.`;
 
   return [
-    `Within 24h: verify top ${Math.min(report.sources.length, 3)} citations with direct record pulls.`,
-    "Within 48h: prepare affidavit-ready source appendix with hash/timestamp capture.",
-    "Before filing/service: confirm identity and address matches against official county records.",
+    `Within 24h: verify top ${Math.min(report.sources.length, 3)} citations with direct first-party source pulls.`,
+    "Within 48h: prepare a source appendix with timestamps or screenshots for the strongest leads.",
+    "Before filing or outreach: confirm identity and address matches against official county or court records.",
     escalation
   ];
 }
@@ -143,29 +154,34 @@ export function buildReport({ packageId, customerName, customerEmail, companyNam
 
   const blueprint = TIER_BLUEPRINT[pkg.id] ?? TIER_BLUEPRINT.standard;
   const subject = nonBlank(companyName, "Client subject");
-  const objective = nonBlank(goals, "Case objective not supplied; report generated with legal OSINT standard assumptions.");
-  const sources = intel?.sources?.length
-    ? intel.sources
-    : [{ title: "Public records index", url: "https://www.usa.gov/state-county-local-governments", sourceType: "fallback", confidence: "medium", domain: "usa.gov" }];
+  const objective = nonBlank(goals, "Case objective not supplied; report generated against the requested scope only.");
+  const sources = Array.isArray(intel?.sources) ? intel.sources.filter(Boolean) : [];
 
   const coverage = intel?.coverage || {
     totalSources: sources.length,
-    distinctDomains: new Set(sources.map((s) => s.domain || "unknown")).size,
-    providersWithHits: 1
+    distinctDomains: new Set(sources.map((source) => source.domain || "unknown")).size,
+    providersWithHits: new Set(sources.map((source) => source.provider).filter(Boolean)).size
   };
 
+  const defaultProviderNote = sources.length
+    ? "Only the cited sources below were returned in this run. Uncovered sections remain unverified and require manual follow-up."
+    : "No cited OSINT sources were returned in this run. Report sections describe requested scope only and do not imply verified findings.";
+
   const sections = blueprint.sections.map((title, index) => {
-    const source = sources[index % sources.length];
-    const noDirectHit = source.provider === 'static-fallback' || source.sourceType === 'fallback';
+    const source = sources[index] || null;
     return {
       title,
-      findings: [
-        `${title} completed for ${subject}.`,
-        `Objective alignment: ${objective}`,
-        noDirectHit
-          ? `No direct verifiable hit surfaced for this element in this run. Actionable fallback path: ${source.title} (${source.url}).`
-          : `Primary corroboration: ${source.title} (${source.url}).`
-      ].map((line) => nonBlank(line))
+      findings: source
+        ? [
+            `${title} returned at least one cited lead for ${subject}.`,
+            `Objective alignment: ${objective}`,
+            `Primary corroboration: ${source.title} (${source.url}).`
+          ].map((line) => nonBlank(line))
+        : [
+            `${title} did not return a cited source hit for ${subject} in this run.`,
+            `Objective alignment: ${objective}`,
+            "Manual follow-up is required before treating this section as verified."
+          ]
     };
   });
 
@@ -181,7 +197,7 @@ export function buildReport({ packageId, customerName, customerEmail, companyNam
     subject,
     objective,
     confidence: confidenceFromSources(sources),
-    providerNote: nonBlank(intel?.providerNote, "OSINT providers returned limited responses; fallback pathways were included."),
+    providerNote: nonBlank(intel?.providerNote, defaultProviderNote),
     queryPlan: intel?.queryPlan?.length ? intel.queryPlan : [subject],
     coverage,
     sections,
@@ -189,7 +205,7 @@ export function buildReport({ packageId, customerName, customerEmail, companyNam
     evidenceMatrix: buildEvidenceMatrix(sources),
     sources,
     disclaimer:
-      "This dossier is an investigative research brief for legal/business support and is not legal advice. Verify filing decisions with licensed professionals. No refunds after work starts; one same-scope redo may be provided per policy."
+      "This dossier is an investigative research brief for legal and business support and is not legal advice. Verify filing, service, and outreach decisions with licensed professionals."
   };
 
   report.redFlags = buildRedFlags(report);
@@ -199,7 +215,7 @@ export function buildReport({ packageId, customerName, customerEmail, companyNam
 
 export function reportToText(report) {
   const lines = [
-    "Traceworks Intelligence Dossier",
+    "TraceWorks Investigative Report",
     `Dossier Type: ${report.dossierName}`,
     `Generated: ${report.generatedAt}`,
     `Case Reference: ${report.caseRef}`,
@@ -219,8 +235,12 @@ export function reportToText(report) {
   }
 
   lines.push("\nEvidence Matrix");
-  for (const e of report.evidenceMatrix) {
-    lines.push(`- #${e.idx} ${e.signal} | ${e.strength} | ${e.domain} | ${e.provider} | ${e.recommendedFollowUp}`);
+  if (!report.evidenceMatrix.length) {
+    lines.push("- No cited sources were returned in this run.");
+  } else {
+    for (const evidence of report.evidenceMatrix) {
+      lines.push(`- #${evidence.idx} ${evidence.signal} | ${evidence.strength} | ${evidence.domain} | ${evidence.provider} | ${evidence.recommendedFollowUp}`);
+    }
   }
 
   lines.push("\nRed Flags & Gaps");
@@ -230,12 +250,20 @@ export function reportToText(report) {
   for (const action of report.nextActions48h) lines.push(`- ${action}`);
 
   lines.push("\nOwnership Trail");
-  for (const row of report.ownershipTrail) {
-    lines.push(`- #${row.idx} | ${row.who} | ${row.what} | ${row.when} | ${row.how} | ${row.why}`);
+  if (!report.ownershipTrail.length) {
+    lines.push("- No ownership-trail citations were returned in this run.");
+  } else {
+    for (const row of report.ownershipTrail) {
+      lines.push(`- #${row.idx} | ${row.who} | ${row.what} | ${row.when} | ${row.how} | ${row.why}`);
+    }
   }
 
   lines.push("\nSource Citations");
-  for (const source of report.sources) lines.push(`- ${source.title} | ${source.url} | ${source.sourceType} | ${source.confidence}`);
+  if (!report.sources.length) {
+    lines.push("- No cited sources were returned in this run.");
+  } else {
+    for (const source of report.sources) lines.push(`- ${source.title} | ${source.url} | ${source.sourceType} | ${source.confidence}`);
+  }
 
   lines.push("\nDisclaimer");
   lines.push(report.providerNote);
@@ -245,7 +273,7 @@ export function reportToText(report) {
 
 export function reportToHtml(report) {
   const findings = report.sections
-    .map((section) => `<section class="card"><h3>${escapeHtml(section.title)}</h3><ul>${section.findings.map((f) => `<li>${escapeHtml(nonBlank(f))}</li>`).join("")}</ul></section>`)
+    .map((section) => `<section class="card"><h3>${escapeHtml(section.title)}</h3><ul>${section.findings.map((finding) => `<li>${escapeHtml(nonBlank(finding))}</li>`).join("")}</ul></section>`)
     .join("");
 
   const trailRows = report.ownershipTrail
@@ -253,17 +281,17 @@ export function reportToHtml(report) {
     .join("");
 
   const evidenceRows = report.evidenceMatrix
-    .map((e) => `<tr><td>${e.idx}</td><td>${escapeHtml(e.signal)}</td><td>${escapeHtml(e.strength)}</td><td>${escapeHtml(e.domain)}</td><td>${escapeHtml(e.provider)}</td><td>${escapeHtml(e.recommendedFollowUp)}</td></tr>`)
+    .map((evidence) => `<tr><td>${evidence.idx}</td><td>${escapeHtml(evidence.signal)}</td><td>${escapeHtml(evidence.strength)}</td><td>${escapeHtml(evidence.domain)}</td><td>${escapeHtml(evidence.provider)}</td><td>${escapeHtml(evidence.recommendedFollowUp)}</td></tr>`)
     .join("");
 
   const citationRows = report.sources
-    .map((s, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(s.title)}</td><td><a href="${escapeHtml(s.url)}">${escapeHtml(s.url)}</a></td><td>${escapeHtml(s.sourceType)}</td><td>${escapeHtml(s.confidence)}</td></tr>`)
+    .map((source, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(source.title)}</td><td><a href="${escapeHtml(source.url)}">${escapeHtml(source.url)}</a></td><td>${escapeHtml(source.sourceType)}</td><td>${escapeHtml(source.confidence)}</td></tr>`)
     .join("");
 
-  const redFlags = report.redFlags.map((f) => `<li>${escapeHtml(f)}</li>`).join("");
-  const nextActions = report.nextActions48h.map((a) => `<li>${escapeHtml(a)}</li>`).join("");
+  const redFlags = report.redFlags.map((flag) => `<li>${escapeHtml(flag)}</li>`).join("");
+  const nextActions = report.nextActions48h.map((action) => `<li>${escapeHtml(action)}</li>`).join("");
 
-  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Traceworks Dossier</title>
+  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>TraceWorks Investigative Report</title>
   <style>
     body{margin:0;background:#060b16;color:#dce4f8;font-family:Inter,Arial,sans-serif}
     .wrap{max-width:1040px;margin:22px auto;background:#0f1729;border:1px solid #2b3552;border-radius:14px;overflow:hidden}
@@ -278,19 +306,20 @@ export function reportToHtml(report) {
     table{width:100%;border-collapse:collapse;background:#10192e;border:1px solid #334268;margin-bottom:14px}
     th,td{padding:10px;border-bottom:1px solid #273353;text-align:left;font-size:13px;vertical-align:top}th{color:#f6d273}
     a{color:#9ac1ff}
+    .empty{padding:12px;border:1px solid #334268;border-radius:10px;background:#10192e;color:#9bacd1}
     .disclaimer{margin-top:14px;color:#9bacd1;font-size:12px}
   </style></head><body>
-  <article class="wrap"><header class="hero"><h1>${escapeHtml(report.dossierName)}</h1><p class="sub">Traceworks Intelligence Dossier — premium legal OSINT reporting format.</p>
+  <article class="wrap"><header class="hero"><h1>${escapeHtml(report.dossierName)}</h1><p class="sub">TraceWorks investigative report based only on the cited sources returned in this run.</p>
   <div class="meta"><div class="pill"><strong>Case Ref:</strong> ${escapeHtml(report.caseRef)}</div><div class="pill"><strong>Client:</strong> ${escapeHtml(report.customerName)}</div><div class="pill"><strong>Subject:</strong> ${escapeHtml(report.subject)}</div><div class="pill"><strong>Package:</strong> ${escapeHtml(report.package)}</div><div class="pill"><strong>Confidence:</strong> ${escapeHtml(report.confidence)}</div><div class="pill"><strong>Generated:</strong> ${escapeHtml(report.generatedAt)}</div><div class="pill"><strong>Objective:</strong> ${escapeHtml(report.objective)}</div></div></header>
   <div class="body"><section class="card"><h3>OSINT Coverage Summary</h3><ul><li>Providers with hits: ${escapeHtml(report.coverage.providersWithHits)}</li><li>Distinct domains: ${escapeHtml(report.coverage.distinctDomains)}</li><li>Total sources: ${escapeHtml(report.coverage.totalSources)}</li><li>Query plan: ${escapeHtml(report.queryPlan.join(" | "))}</li></ul></section>${findings}
   <h2>Evidence Matrix</h2>
-  <table><thead><tr><th>#</th><th>Signal</th><th>Strength</th><th>Domain</th><th>Provider</th><th>Follow-up</th></tr></thead><tbody>${evidenceRows}</tbody></table>
+  ${report.evidenceMatrix.length ? `<table><thead><tr><th>#</th><th>Signal</th><th>Strength</th><th>Domain</th><th>Provider</th><th>Follow-up</th></tr></thead><tbody>${evidenceRows}</tbody></table>` : '<div class="empty">No cited sources were returned in this run.</div>'}
   <h2>Red Flags & Gaps</h2><section class="card"><ul>${redFlags}</ul></section>
   <h2>Next 48 Hours Actions</h2><section class="card"><ul>${nextActions}</ul></section>
   <h2>Ownership Trail — Who / What / When / How / Why</h2>
-  <table><thead><tr><th>#</th><th>Who</th><th>What Happened</th><th>When</th><th>Instrument / Mechanism</th><th>Why / Context</th></tr></thead><tbody>${trailRows}</tbody></table>
+  ${report.ownershipTrail.length ? `<table><thead><tr><th>#</th><th>Who</th><th>What Happened</th><th>When</th><th>Instrument / Mechanism</th><th>Why / Context</th></tr></thead><tbody>${trailRows}</tbody></table>` : '<div class="empty">No ownership-trail citations were returned in this run.</div>'}
   <h2>Source Citations</h2>
-  <table><thead><tr><th>#</th><th>Source</th><th>URL</th><th>Type</th><th>Confidence</th></tr></thead><tbody>${citationRows}</tbody></table>
+  ${report.sources.length ? `<table><thead><tr><th>#</th><th>Source</th><th>URL</th><th>Type</th><th>Confidence</th></tr></thead><tbody>${citationRows}</tbody></table>` : '<div class="empty">No cited sources were returned in this run.</div>'}
   <p class="disclaimer">${escapeHtml(report.providerNote)}<br/>${escapeHtml(report.disclaimer)}</p></div></article>
   </body></html>`;
 }

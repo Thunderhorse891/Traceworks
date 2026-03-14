@@ -395,7 +395,8 @@ button:disabled {
 .btn-danger:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
 /* Pay/CTA links (styled as primary button) */
-.pay-link {
+.pay-link,
+.select-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -412,9 +413,12 @@ button:disabled {
   box-shadow: 0 2px 12px rgba(212,168,39,0.22);
   transition: filter var(--transition), transform var(--transition);
   margin-top: 12px;
+  border: none;
+  cursor: pointer;
 }
 
-.pay-link:hover {
+.pay-link:hover,
+.select-btn:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
   color: #120d00;
@@ -422,6 +426,9 @@ button:disabled {
 
 /* Details button variant */
 .details-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   margin-top: 10px;
   margin-bottom: 6px;
@@ -673,6 +680,20 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
 }
 
 .card {
@@ -1765,6 +1786,7 @@ code {
 @media (max-width: 980px) {
   .hero-grid,
   .cards,
+  .packages-grid,
   .trust-row {
     grid-template-columns: 1fr;
   }

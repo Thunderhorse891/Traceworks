@@ -106,17 +106,17 @@ Recommended next steps in this report are investigative workflow suggestions onl
 and do not constitute legal advice.`;
 
 export const DISCLAIMERS = {
-  standard:              STANDARD,
+  standard: STANDARD,
   ownership_encumbrance: OWNERSHIP_ENCUMBRANCE,
-  probate_heirship:      PROBATE_HEIRSHIP,
-  asset_network:         ASSET_NETWORK,
-  comprehensive:         COMPREHENSIVE,
-  custom:                STANDARD, // fallback for custom tier
+  probate_heirship: PROBATE_HEIRSHIP,
+  asset_network: ASSET_NETWORK,
+  comprehensive: COMPREHENSIVE,
+  custom: STANDARD
 };
 
-export function getDisclaimer(tier, { timestamp, orderId }) {
+export function getDisclaimer(tier, { timestamp, orderId } = {}) {
   const text = DISCLAIMERS[tier] || DISCLAIMERS.standard;
   return text
     .replace('[TIMESTAMP]', timestamp || new Date().toISOString())
-    .replace('[ORDER_ID]',  orderId   || 'N/A');
+    .replace('[ORDER_ID]', orderId || 'N/A');
 }

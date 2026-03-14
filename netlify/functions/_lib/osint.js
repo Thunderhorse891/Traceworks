@@ -1,37 +1,11 @@
 import { gatherPublicRecordIntel } from './public-records.js';
 
-const FALLBACK_NOTE = "Automated providers returned limited data in this run; report populated with conservative legal-research guidance and explicit source placeholders.";
-
 const PACKAGE_KEYWORDS = {
   locate: ["current address", "phone", "alias", "contact"],
   comprehensive: ["assets", "property", "employment", "business filings"],
   title: ["title", "deed", "lien", "operator", "royalty"],
   heir: ["probate", "heir", "beneficiary", "next of kin"]
 };
-
-const STATIC_FALLBACKS = [
-  {
-    title: "County clerk records portals directory",
-    url: "https://www.nacrcountyoffices.org/",
-    sourceType: "public-records-index",
-    confidence: "medium",
-    provider: "static-fallback"
-  },
-  {
-    title: "Secretary of State business services directory",
-    url: "https://www.nass.org/business-services/business-services-directory",
-    sourceType: "business-registry-index",
-    confidence: "medium",
-    provider: "static-fallback"
-  },
-  {
-    title: "U.S. state/county/local government index",
-    url: "https://www.usa.gov/state-county-local-governments",
-    sourceType: "government-index",
-    confidence: "medium",
-    provider: "static-fallback"
-  }
-];
 
 function domainOf(url) {
   try {
@@ -200,11 +174,30 @@ function dedupeAndRank(records) {
 }
 
 function providerHealth(results) {
-  return results.map((item) => ({
+  const providers = new Map();
+
+  for (const item of results) {
+    const current = providers.get(item.provider) || {
+      provider: item.provider,
+      ok: false,
+      hitCount: 0,
+      attempts: 0,
+      errors: []
+    };
+
+    current.ok = current.ok || item.ok;
+    current.hitCount += item.hits.length;
+    current.attempts += 1;
+    if (item.error && !current.errors.includes(item.error)) current.errors.push(item.error);
+    providers.set(item.provider, current);
+  }
+
+  return [...providers.values()].map((item) => ({
     provider: item.provider,
     ok: item.ok,
-    hitCount: item.hits.length,
-    error: item.error || null
+    hitCount: item.hitCount,
+    attempts: item.attempts,
+    error: item.errors.length ? item.errors.join("; ") : null
   }));
 }
 
@@ -246,30 +239,35 @@ export async function gatherOsint(query, opts = {}) {
   }
 
   const aggregated = dedupeAndRank(settled.flatMap((r) => r.hits));
-  const sources = aggregated.length > 0 ? aggregated : STATIC_FALLBACKS;
-
   const health = providerHealth(settled);
-  const healthyProviders = new Set(health.filter((h) => h.ok && h.hitCount > 0).map((h) => h.provider));
+  const healthyProviders = new Set(health.filter((h) => h.hitCount > 0).map((h) => h.provider));
 
   let publicRecords = null;
   if (opts.publicRecordOrder) {
     publicRecords = await gatherPublicRecordIntel(opts.publicRecordOrder, { fetchImpl, env });
   }
 
+  const providerNoteParts = [];
+  if (aggregated.length > 0) {
+    providerNoteParts.push(`Open-web OSINT returned ${aggregated.length} cited lead(s) across ${healthyProviders.size} provider(s).`);
+  } else {
+    providerNoteParts.push("No open-web OSINT providers returned sourceable hits for this query plan in this run.");
+  }
+  if (publicRecords?.evidence?.length) {
+    providerNoteParts.push(`Structured public-record connectors returned ${publicRecords.evidence.length} evidence item(s).`);
+  }
+
   return {
     query: queries[0],
     queryPlan: queries,
     providerHealth: health,
-    providerNote:
-      sources.length >= 6
-        ? `Multi-provider OSINT completed (${healthyProviders.size} providers yielded hits).`
-        : FALLBACK_NOTE,
+    providerNote: providerNoteParts.join(" "),
     coverage: {
-      totalSources: sources.length,
-      distinctDomains: new Set(sources.map((s) => s.domain || domainOf(s.url))).size,
+      totalSources: aggregated.length,
+      distinctDomains: new Set(aggregated.map((s) => s.domain || domainOf(s.url))).size,
       providersWithHits: healthyProviders.size
     },
-    sources,
+    sources: aggregated,
     evidence: publicRecords?.evidence || [],
     publicRecords
   };

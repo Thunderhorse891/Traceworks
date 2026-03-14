@@ -1,5 +1,5 @@
 // Cache version — increment CACHE_VER on each deploy to bust stale assets
-const CACHE_VER = 2;
+const CACHE_VER = 3;
 const CACHE_NAME = `traceworks-v${CACHE_VER}`;
 
 // Shell assets that get cached on install — app shell only, never API data
@@ -8,12 +8,15 @@ const SHELL_ASSETS = [
   '/index.html',
   '/styles.css',
   '/app.js',
+  '/pwa.js',
   '/packages.js',
+  '/packages.html',
+  '/dashboard.html',
+  '/order-status.html',
   '/offline.html',
   '/manifest.json',
   '/success.html',
   '/cancel.html',
-  '/report-tiers.html',
   '/terms.html',
   '/privacy.html',
   '/refund-policy.html',

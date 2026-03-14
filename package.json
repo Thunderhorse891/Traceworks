@@ -9,13 +9,9 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@vercel/kv": "^2.0.0",
     "cheerio": "^1.0.0",
     "nodemailer": "^6.9.15",
     "stripe": "^16.12.0"
-  },
-  "devDependencies": {
-    "vercel": "^37.0.0"
   },
   "packageManager": "npm@11.11.0"
 }

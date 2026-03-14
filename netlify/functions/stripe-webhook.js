@@ -75,11 +75,13 @@ export default async (event) => {
 
   let stripePriceId = null;
   let stripeProductId = null;
+  let amountTotal = null;
   try {
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
     const first = lineItems?.data?.[0];
     stripePriceId = first?.price?.id || null;
     stripeProductId = first?.price?.product || null;
+    amountTotal = first?.amount_total || first?.price?.unit_amount || null;
   } catch {}
 
   const purchasedTier = resolvePurchasedTier({
@@ -98,6 +100,8 @@ export default async (event) => {
     stripe_payment_intent_id: session.payment_intent || null,
     packageId: metadata.packageId,
     packageName: metadata.packageName,
+    amountTotal,
+    currency: session.currency || null,
     purchased_tier: purchasedTier,
     customerName: metadata.customerName,
     customerEmail: metadata.customerEmail || session.customer_details?.email,

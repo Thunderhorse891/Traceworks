@@ -63,3 +63,14 @@ test('gatherOsint uses robin provider when configured', async () => {
   assert.ok(result.sources.some((s) => s.provider === 'robin'));
   assert.ok(result.providerHealth.some((p) => p.provider === 'robin'));
 });
+
+test('gatherOsint keeps zero-hit runs empty instead of injecting fallback sources', async () => {
+  const result = await gatherOsint('no results expected', {
+    packageId: 'locate',
+    fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({}) })
+  });
+
+  assert.equal(result.sources.length, 0);
+  assert.equal(result.coverage.totalSources, 0);
+  assert.ok(result.providerNote.includes('No open-web OSINT providers returned sourceable hits'));
+});

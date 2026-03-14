@@ -75,15 +75,15 @@
         <div class="checklist-item">
           <span class="checklist-item-dot"></span>
           <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Vercel KV Storage Connected</strong>
-            <span style="font-size:12px; color:var(--text-3);">KV_REST_API_URL, KV_REST_API_TOKEN — create a KV database in Vercel Dashboard → Storage → KV and link it to this project. Required for order storage, queue, and analytics.</span>
+            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">REST KV Storage Connected</strong>
+            <span style="font-size:12px; color:var(--text-3);">Set <code style="font-family:var(--mono)">UPSTASH_REDIS_REST_URL</code> and <code style="font-family:var(--mono)">UPSTASH_REDIS_REST_TOKEN</code> in Netlify for production order storage, queue state, and report artifacts. Legacy <code style="font-family:var(--mono)">KV_REST_API_*</code> aliases still work during migration.</span>
           </div>
         </div>
         <div class="checklist-item">
           <span class="checklist-item-dot warn"></span>
           <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Stripe Payment Links — REPLACE_ Placeholders</strong>
-            <span style="font-size:12px; color:var(--text-3);">public/packages.js contains REPLACE_* placeholder URLs. Create Stripe Payment Links in the Dashboard at the prices: $99, $249, $325, $399, $549 and update the payLink fields. The /api/create-checkout path works without them — payment links are an alternative checkout method.</span>
+            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Stripe live checkout verification</strong>
+            <span style="font-size:12px; color:var(--text-3);">TraceWorks now creates checkout sessions through <code style="font-family:var(--mono);font-size:11px;">/api/create-checkout</code>. Before go-live, confirm live products, prices, webhook secret, and redirect URLs all match the deployed domain.</span>
           </div>
         </div>
       </div>
@@ -124,8 +124,8 @@
         <div class="checklist-item">
           <span class="checklist-item-dot"></span>
           <div>
-            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Vercel Cron Job Active</strong>
-            <span style="font-size:12px; color:var(--text-3);">vercel.json schedules /api/process-queue-scheduled every 2 minutes. Verify under Vercel Project → Settings → Cron Jobs after deploy.</span>
+            <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Netlify Scheduled Worker Active</strong>
+            <span style="font-size:12px; color:var(--text-3);"><code style="font-family:var(--mono)">process-queue-cron</code> runs every 2 minutes from <code style="font-family:var(--mono)">netlify.toml</code>. Verify successful runs in Netlify Function logs after deploy.</span>
           </div>
         </div>
         <div class="checklist-item">
@@ -153,7 +153,7 @@
           <span class="checklist-item-dot warn"></span>
           <div>
             <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">Stripe Key Format — Verify Before Launch</strong>
-            <span style="font-size:12px; color:var(--text-3);">STRIPE_SECRET_KEY has <code style="font-family:var(--mono)">mk_</code> prefix. Standard Stripe live secret keys start with <code style="font-family:var(--mono)">sk_live_</code>. Log into Stripe Dashboard → Developers → API Keys and confirm the correct key is set in Vercel environment variables.</span>
+            <span style="font-size:12px; color:var(--text-3);">STRIPE_SECRET_KEY has <code style="font-family:var(--mono)">mk_</code> prefix. Standard Stripe live secret keys start with <code style="font-family:var(--mono)">sk_live_</code>. Log into Stripe Dashboard → Developers → API Keys and confirm the correct key is set in Netlify environment variables.</span>
           </div>
         </div>
         <div class="checklist-item">
@@ -162,7 +162,7 @@
             <strong style="display:block; font-size:13px; color:var(--text-1); margin-bottom:3px;">GitHub push readiness</strong>
             <span style="font-size:12px; color:var(--text-3);">Confirm repository remote is configured before deploying:
               <code style="font-family:var(--mono); font-size:11px; color:var(--text-3);">git remote add origin https://github.com/youraccount/traceworks.git</code>
-              — then push to trigger Netlify/Vercel auto-deploy. Verify CI passes before pointing DNS.
+              — then push to trigger Netlify auto-deploy. Verify CI passes before pointing DNS.
             </span>
           </div>
         </div>
@@ -214,14 +214,23 @@
           }
 
           const missing = Array.isArray(data.envMissing) ? data.envMissing : [];
+          const isPublic = data.visibility === 'public';
 
-          if (missing.length === 0) {
+          missingEl.innerHTML = '';
+          metricsGrid.innerHTML = '';
+          metricsGrid.style.display = 'none';
+
+          if (isPublic) {
+            setStatus(data.ok ? 'ok' : 'warn', data.ok ? 'Public OK' : 'Public Limited');
+            healthSummary.textContent = data.ok
+              ? 'Public health check passed. Detailed environment diagnostics are hidden without admin authorization.'
+              : 'Public health check is available, but detailed missing-variable diagnostics are hidden without admin authorization.';
+          } else if (missing.length === 0) {
             setStatus('ok', 'All Clear');
             healthSummary.textContent = 'All required environment variables detected. System appears ready.';
           } else {
             setStatus('error', missing.length + ' Missing');
             healthSummary.textContent = missing.length + ' required environment variable' + (missing.length > 1 ? 's' : '') + ' not set:';
-            missingEl.innerHTML = '';
             for (const name of missing) {
               const li = document.createElement('li');
               li.textContent = name;
@@ -233,10 +242,9 @@
           if (dotStripe) dotStripe.className = 'checklist-item-dot ' + (missingSet.has('STRIPE_SECRET_KEY') || missingSet.has('STRIPE_WEBHOOK_SECRET') ? 'error' : 'ok');
           if (dotSmtp)   dotSmtp.className   = 'checklist-item-dot ' + (missingSet.has('SMTP_HOST') || missingSet.has('SMTP_USER') || missingSet.has('SMTP_PASS') ? 'error' : 'ok');
 
-          if (data.metrics) {
+          if (!isPublic && data.metrics) {
             metricsGrid.style.display = 'grid';
             const m = data.metrics;
-            metricsGrid.innerHTML = '';
             metricsGrid.appendChild(metricCard('Total Orders',   m.ordersTotal ?? '—'));
             metricsGrid.appendChild(metricCard('Queue Depth',    m.queueDepth  ?? '—'));
             metricsGrid.appendChild(metricCard('Completed',      m.byStatus?.completed  ?? '—'));
@@ -247,7 +255,7 @@
 
         } catch {
           setStatus('warn', 'Unreachable');
-          healthSummary.textContent = 'Cannot reach /api/health. Expected in preview mode without vercel dev running.';
+          healthSummary.textContent = 'Cannot reach /api/health. Confirm the local API server or deployed functions are running before using this checklist.';
         }
       }
 

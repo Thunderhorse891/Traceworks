@@ -1,25 +1,9 @@
 import { clientPackages } from './packages.js';
 
-const cards = document.getElementById('packageCards');
-const heirCards = document.getElementById('heirPackageCards');
+const packagesGrid = document.getElementById('packages-grid');
 const packageInput = document.getElementById('packageId');
 const statusEl = document.getElementById('status');
-const packageModal = document.getElementById('packageModal');
-const modalCloseButton = document.getElementById('packageModalClose');
-const modalSelectButton = document.getElementById('modalSelectPackage');
-
-const modalFields = {
-  label: document.getElementById('modalPackageLabel'),
-  title: document.getElementById('modalPackageTitle'),
-  price: document.getElementById('modalPackagePrice'),
-  summary: document.getElementById('modalPackageSummary'),
-  includes: document.getElementById('modalPackageIncludes'),
-  previewLink: document.getElementById('modalReportPreview')
-};
-
-let activePackage = null;
-
-const packagesGrid = document.getElementById('packages-grid');
+const salesStatus = document.getElementById('salesStatus');
 
 async function track(type, detail = '') {
   try {
@@ -31,89 +15,65 @@ async function track(type, detail = '') {
   } catch {}
 }
 
-function buildCard(pkg, index) {
+function selectedCard() {
+  return document.querySelector('[data-package-id].selected');
+}
+
+async function selectPackage(pkg, { shouldScroll = true, source = 'grid' } = {}) {
+  document.querySelectorAll('[data-package-id]').forEach((card) => card.classList.remove('selected'));
+  const card = document.querySelector(`[data-package-id="${pkg.id}"]`);
+  card?.classList.add('selected');
+
+  if (packageInput) packageInput.value = pkg.id;
+  if (statusEl) statusEl.textContent = `${pkg.name} selected. Complete the secure intake form below.`;
+
+  if (shouldScroll) {
+    document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  await track(source === 'prefill' ? 'package_prefilled' : 'package_selected', pkg.id);
+}
+
+function buildCard(pkg) {
   const el = document.createElement('article');
   el.className = 'card';
+  el.dataset.packageId = pkg.id;
   el.innerHTML = `
-    <p class="label">${pkg.id.toUpperCase()}</p>
+    <p class="label">${pkg.id.replaceAll('_', ' ').toUpperCase()}</p>
     ${pkg.featured ? '<p class="feature-badge">Most Selected</p>' : ''}
     <h4>${pkg.name}</h4>
     <p class="price">${pkg.price}</p>
     <p class="pkg-meta"><strong>Best for:</strong> ${pkg.bestFor || 'Legal locate intelligence workflows'}</p>
+    <p class="pkg-meta">${pkg.summary || ''}</p>
     <p class="pkg-turnaround">${pkg.turnaround || 'Typical delivery: same day to 24h'}</p>
-    <ul>${pkg.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
-    <button type="button" class="details-btn">View Package Details</button>
-    <button type="button" class="select-btn">Select Package</button>
-    <a class="pay-link" href="${pkg.payLink}" target="_blank" rel="noopener">Open Stripe Payment Link →</a>
+    <ul>${pkg.bullets.map((item) => `<li>${item}</li>`).join('')}</ul>
+    <div class="card-actions">
+      <button type="button" class="select-btn">Select Package</button>
+    </div>
   `;
 
-  const detailsButton = el.querySelector('.details-btn');
-  const selectButton = el.querySelector('.select-btn');
-
-  selectButton.addEventListener('click', async () => {
-    document.querySelectorAll('.card').forEach((c) => c.classList.remove('selected'));
-    el.classList.add('selected');
-    if (packageInput) packageInput.value = pkg.id;
-    if (statusEl) statusEl.textContent = `${pkg.name} selected — complete the form below.`;
-    document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    await track('package_selected', pkg.id);
+  el.querySelector('.select-btn')?.addEventListener('click', async () => {
+    await selectPackage(pkg, { source: 'grid' });
   });
 
-  detailsButton.addEventListener('click', async () => {
-    openPackageModal(pkg);
-    await track('package_details_opened', pkg.id);
-  });
-
-  el.querySelector('.pay-link').addEventListener('click', async () => {
-    packageInput.value = pkg.id;
-    await track('payment_link_clicked', pkg.id);
-  });
-
-if (pkg.id === 'heir' && heirCards) heirCards.appendChild(el);
-  else cards.appendChild(el);
+  return el;
 }
 
-function openPackageModal(pkg) {
-  if (!packageModal) return;
-  activePackage = pkg;
-  modalFields.label.textContent = pkg.id.toUpperCase();
-  modalFields.title.textContent = pkg.name;
-  modalFields.price.textContent = pkg.price;
-  modalFields.summary.textContent = pkg.summary || 'Detailed package scope is shown below.';
-  modalFields.includes.innerHTML = (pkg.previewIncludes || pkg.bullets || []).map((item) => `<li>${item}</li>`).join('');
-  modalFields.previewLink.href = pkg.reportPreviewPath || '/report-tiers.html';
-  modalFields.previewLink.textContent = `Open ${pkg.name} sample report`;
-  packageModal.showModal();
+function renderPackages() {
+  if (!packagesGrid) return;
+  packagesGrid.innerHTML = '';
+  for (const pkg of clientPackages) {
+    packagesGrid.appendChild(buildCard(pkg));
+  }
 }
-
-function closePackageModal() {
-  if (packageModal?.open) packageModal.close();
-}
-
-modalCloseButton?.addEventListener('click', closePackageModal);
-
-packageModal?.addEventListener('click', (event) => {
-  if (event.target === packageModal) closePackageModal();
-});
-
-modalSelectButton?.addEventListener('click', async () => {
-  if (!activePackage) return;
-  const selectedCard = [...document.querySelectorAll('.card')].find((card) => card.querySelector('.label')?.textContent === activePackage.id.toUpperCase());
-  document.querySelectorAll('.card').forEach((c) => c.classList.remove('selected'));
-  selectedCard?.classList.add('selected');
-  packageInput.value = activePackage.id;
-  statusEl.textContent = `${activePackage.name} selected from package details. Continue to secure intake checkout.`;
-  closePackageModal();
-  await track('package_selected_from_modal', activePackage.id);
-});
 
 function checked(form, name) {
   return form.querySelector(`[name="${name}"]`)?.checked === true;
 }
 
-document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
+document.getElementById('checkoutForm')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.target;
 
   if (!packageInput?.value) {
     if (statusEl) statusEl.textContent = 'Please select a report tier above before checkout.';
@@ -127,14 +87,15 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
     return;
   }
 
-  if (statusEl) statusEl.textContent = 'Creating secure checkout session…';
+  if (statusEl) statusEl.textContent = 'Creating secure checkout session...';
   const payload = Object.fromEntries(new FormData(form).entries());
   payload.legalConsent = checked(form, 'legalConsent');
   payload.tosConsent = checked(form, 'tosConsent');
 
   await track('checkout_started');
 
-  let response, data;
+  let response;
+  let data;
   try {
     response = await fetch('/api/create-checkout', {
       method: 'POST',
@@ -143,7 +104,7 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
     });
     data = await response.json();
   } catch {
-    if (statusEl) statusEl.textContent = 'Network error — please check your connection and try again.';
+    if (statusEl) statusEl.textContent = 'Network error. Please check your connection and try again.';
     await track('checkout_error', 'network_failure');
     return;
   }
@@ -158,30 +119,28 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
   window.location.href = data.checkoutUrl;
 });
 
-// ── Enterprise Form ──────────────────────────────────────────────────
-const salesStatus = document.getElementById('salesStatus');
+document.getElementById('salesForm')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.target;
+  if (salesStatus) salesStatus.textContent = 'Submitting inquiry...';
 
-document.getElementById('salesForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  if (salesStatus) salesStatus.textContent = 'Submitting inquiry…';
   const payload = Object.fromEntries(new FormData(form).entries());
-
-  let res, data;
+  let response;
+  let data;
   try {
-    res = await fetch('/api/contact-sales', {
+    response = await fetch('/api/contact-sales', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    data = await res.json();
+    data = await response.json();
   } catch {
     if (salesStatus) salesStatus.textContent = 'Network error. Please try again.';
     await track('sales_lead_error', 'network_failure');
     return;
   }
 
-  if (!res.ok) {
+  if (!response.ok) {
     if (salesStatus) salesStatus.textContent = data.error || 'Unable to submit inquiry right now.';
     await track('sales_lead_error', data.error || 'unknown');
     return;
@@ -191,3 +150,18 @@ document.getElementById('salesForm')?.addEventListener('submit', async (e) => {
   form.reset();
   await track('sales_lead_submitted', payload.monthlyCases || '');
 });
+
+renderPackages();
+
+const requestedPackageId = new URLSearchParams(window.location.search).get('packageId');
+if (requestedPackageId) {
+  const pkg = clientPackages.find((item) => item.id === requestedPackageId);
+  if (pkg) selectPackage(pkg, { shouldScroll: false, source: 'prefill' });
+}
+
+const yearEl = document.getElementById('year');
+if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+if (selectedCard() && statusEl && !statusEl.textContent) {
+  statusEl.textContent = 'Package selected. Complete the secure intake form below.';
+}

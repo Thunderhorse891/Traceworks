@@ -16,16 +16,13 @@ test('client packages include valid Stripe payment links', () => {
     assert.ok(pkg.price.startsWith('$'));
     if (pkg.payLink !== null) assert.ok(pkg.payLink.startsWith('https://buy.stripe.com/'));
     assert.ok(Array.isArray(pkg.bullets) && pkg.bullets.length >= 3);
-    assert.ok(pkg.reportPreviewPath.startsWith('/reports/'));
     assert.ok(typeof pkg.summary === 'string' && pkg.summary.length > 20);
-    assert.ok(Array.isArray(pkg.previewIncludes) && pkg.previewIncludes.length >= 3);
+    assert.equal('reportPreviewPath' in pkg, false);
+    assert.ok(Array.isArray(pkg.includedFindings) && pkg.includedFindings.length >= 3);
   }
 
   for (const pkg of paid) {
-    assert.ok(
-      pkg.payLink.startsWith('https://buy.stripe.com/') || pkg.payLink.includes('REPLACE_'),
-      `Paid package ${pkg.id} payLink format unrecognized: ${pkg.payLink}`
-    );
+    assert.ok(pkg.payLink.startsWith('https://buy.stripe.com/'), `Paid package ${pkg.id} payLink format unrecognized: ${pkg.payLink}`);
     assert.ok(pkg.price.startsWith('$'), `Paid package ${pkg.id} price should start with $`);
   }
 });
@@ -35,12 +32,17 @@ test('homepage includes enterprise sales form', () => {
   assert.ok(html.includes('salesForm'), 'homepage must include enterprise sales form');
 });
 
-test('homepage links to launch readiness page', () => {
+test('homepage keeps customer navigation on real production pages', () => {
   const html = readFileSync('public/index.html', 'utf8');
-  assert.ok(html.includes('launch-readiness.html'), 'homepage must link to launch-readiness.html');
+  assert.ok(html.includes('/packages.html'));
+  assert.ok(html.includes('/order-status.html'));
+  assert.equal(html.includes('/report-tiers.html'), false);
+  assert.equal(html.includes('/console.html'), false);
+  assert.equal(html.includes('/launch-readiness.html'), false);
 });
 
-test('launch readiness page includes health check hook', () => {
-  const html = readFileSync('public/launch-readiness.html', 'utf8');
-  assert.ok(html.includes('/api/health'), 'launch-readiness.html must call /api/health');
+test('retired sample preview page is explicit', () => {
+  const html = readFileSync('public/report-tiers.html', 'utf8');
+  assert.ok(html.includes('Sample previews were retired.'));
+  assert.ok(html.includes('authenticated case links'));
 });

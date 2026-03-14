@@ -1,14 +1,14 @@
 import { jsonWithRequestId } from './_lib/http.js';
-import { processOneFulfillmentJob } from './_lib/process-one-job.js';
-import { getBusinessEmail } from './_lib/business.js';
-import { getMetrics, recordAuditEvent } from './_lib/store.js';
-import { sendOpsAlertEmail } from './_lib/email.js';
+import { runScheduledQueueWorker } from './_lib/process-queue-worker.js';
 
 function authorized(event) {
   const secret = process.env.QUEUE_CRON_SECRET;
-  if (!secret) return true;
-  const header = event.headers['x-queue-cron-secret'] || '';
-  return header === secret;
+  if (!secret) return { ok: false, statusCode: 500, error: 'QUEUE_CRON_SECRET is not configured.' };
+  const headers = event.headers || {};
+  const header = headers['x-queue-cron-secret'] || headers['X-Queue-Cron-Secret'] || '';
+  return header === secret
+    ? { ok: true }
+    : { ok: false, statusCode: 401, error: 'Unauthorized' };
 }
 
 export default async (event) => {
@@ -16,61 +16,11 @@ export default async (event) => {
     return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
   }
 
-  if (!authorized(event)) {
-    return jsonWithRequestId(event, 401, { error: 'Unauthorized' });
+  const auth = authorized(event);
+  if (!auth.ok) {
+    return jsonWithRequestId(event, auth.statusCode, { error: auth.error });
   }
 
-  const ownerEmail = getBusinessEmail();
-  const maxPerRun = Math.min(20, Math.max(1, Number(process.env.QUEUE_MAX_PER_RUN || 5)));
-  const queueLagAlertMs = Math.max(60_000, Number(process.env.QUEUE_LAG_ALERT_MS || 15 * 60_000));
-
-  const results = [];
-  for (let i = 0; i < maxPerRun; i++) {
-    const result = await processOneFulfillmentJob({ ownerEmail, maxAttempts: 5 });
-    if (result.message === 'no_jobs') break;
-    results.push(result);
-  }
-
-  const summary = {
-    processed: results.length,
-    succeeded: results.filter((r) => r.ok).length,
-    failed: results.filter((r) => !r.ok).length
-  };
-
-  const metrics = await getMetrics();
-  const lagging = metrics.queueOldestMs >= queueLagAlertMs;
-  const hasFailures = summary.failed > 0;
-
-  await recordAuditEvent({
-    event: 'scheduled_worker_run',
-    summary,
-    queueDepth: metrics.queueDepth,
-    queueOldestMs: metrics.queueOldestMs,
-    lagging,
-    hasFailures
-  });
-
-  if (lagging || hasFailures) {
-    await sendOpsAlertEmail({
-      ownerEmail,
-      subject: lagging ? 'Queue lag threshold exceeded' : 'Scheduled worker failures detected',
-      lines: [
-        `Processed: ${summary.processed}`,
-        `Succeeded: ${summary.succeeded}`,
-        `Failed: ${summary.failed}`,
-        `Queue depth: ${metrics.queueDepth}`,
-        `Queue oldest ms: ${metrics.queueOldestMs}`,
-        `Threshold ms: ${queueLagAlertMs}`
-      ]
-    });
-  }
-
-  return jsonWithRequestId(event, 200, {
-    ok: true,
-    ...summary,
-    queueDepth: metrics.queueDepth,
-    queueOldestMs: metrics.queueOldestMs,
-    lagging,
-    message: results.length ? 'processed' : 'no_jobs'
-  });
+  const result = await runScheduledQueueWorker();
+  return jsonWithRequestId(event, 200, result);
 };

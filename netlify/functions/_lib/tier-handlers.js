@@ -18,6 +18,12 @@ import { REPORT_TIER } from './tier-mapping.js';
 import { SOURCE_STATUS } from './workflow-results.js';
 import { gatherPublicRecordIntel } from './public-records.js';
 
+function addressHint(value) {
+  const input = String(value || '').trim();
+  if (!input) return '';
+  return /^https?:\/\//i.test(input) ? '' : input;
+}
+
 function requireConfiguredSources(keys, env = process.env) {
   const strict = String(env.PAID_FULFILLMENT_STRICT || 'true').toLowerCase() !== 'false';
   if (!strict) return;
@@ -60,9 +66,10 @@ export async function runStandardReport(order, ctx = {}) {
   requireConfiguredSources(['APPRAISAL_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL']);
   const county = order.county || order.input_criteria?.county || process.env.DEFAULT_COUNTY || '';
   const state = order.state || order.input_criteria?.state || process.env.DEFAULT_STATE || '';
-  const query = order.subjectName || order.website || order.goals || '';
+  const lastKnownAddress = addressHint(order.website);
+  const query = order.subjectName || lastKnownAddress || order.goals || '';
 
-  const publicRecords = await gatherPublicRecordIntel({ packageKey: 'standard', input: { address: order.website || '', ownerName: order.subjectName || '', county, state } }, { fetchImpl: ctx.fetchImpl });
+  const publicRecords = await gatherPublicRecordIntel({ packageKey: 'standard', input: { address: lastKnownAddress, ownerName: order.subjectName || '', county, state } }, { fetchImpl: ctx.fetchImpl });
 
   const s1 = await appraisalDistrictScraper({ county, state, query, fetchImpl: ctx.fetchImpl });
   const parcelId = s1?.data?.parcelId || s1?.data?.apn || '';
@@ -76,9 +83,10 @@ export async function runOwnershipEncumbranceReport(order, ctx = {}) {
   requireConfiguredSources(['APPRAISAL_API_URL', 'COUNTY_CLERK_API_URL', 'GRANTOR_GRANTEE_API_URL']);
   const county = order.county || order.input_criteria?.county || process.env.DEFAULT_COUNTY || '';
   const state = order.state || order.input_criteria?.state || process.env.DEFAULT_STATE || '';
-  const query = order.subjectName || order.website || order.goals || '';
+  const lastKnownAddress = addressHint(order.website);
+  const query = order.subjectName || lastKnownAddress || order.goals || '';
 
-  const publicRecords = await gatherPublicRecordIntel({ packageKey: 'title_property', input: { address: order.website || '', ownerName: order.subjectName || '', county, state, parcel: order.parcelId || '' } }, { fetchImpl: ctx.fetchImpl });
+  const publicRecords = await gatherPublicRecordIntel({ packageKey: 'title_property', input: { address: lastKnownAddress, ownerName: order.subjectName || '', county, state, parcel: order.parcelId || '' } }, { fetchImpl: ctx.fetchImpl });
 
   const s1 = await appraisalDistrictScraper({ county, state, query, fetchImpl: ctx.fetchImpl });
   const parcelId = s1?.data?.parcelId || s1?.data?.apn || '';
@@ -104,7 +112,7 @@ export async function runProbateHeirshipReport(order, ctx = {}) {
 
   const s1 = await obituaryIndexScraper({ decedentName, county, state, deathYear: order.deathYear, fetchImpl: ctx.fetchImpl });
   const s2 = await probateCaseIndexScraper({ county, state, decedentName, deathYear: order.deathYear, fetchImpl: ctx.fetchImpl });
-  const s3 = await publicPeopleAssociationLookup({ name: decedentName, lastKnownAddress: order.website || '', fetchImpl: ctx.fetchImpl });
+  const s3 = await publicPeopleAssociationLookup({ name: decedentName, lastKnownAddress: addressHint(order.website), fetchImpl: ctx.fetchImpl });
 
   const candidates = Array.isArray(s3?.data?.candidates) ? s3.data.candidates : [];
   const scoredCandidates = heirCandidateScorer(candidates);
@@ -116,9 +124,10 @@ export async function runAssetNetworkReport(order, ctx = {}) {
   requireConfiguredSources(['APPRAISAL_API_URL', 'COUNTY_CLERK_API_URL', 'GRANTOR_GRANTEE_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL']);
   const county = order.county || order.input_criteria?.county || process.env.DEFAULT_COUNTY || '';
   const state = order.state || order.input_criteria?.state || process.env.DEFAULT_STATE || '';
-  const query = order.subjectName || order.website || order.goals || '';
+  const lastKnownAddress = addressHint(order.website);
+  const query = order.subjectName || lastKnownAddress || order.goals || '';
 
-  const publicRecords = await gatherPublicRecordIntel({ packageKey: 'title_property', input: { address: order.website || '', ownerName: order.subjectName || '', county, state } }, { fetchImpl: ctx.fetchImpl });
+  const publicRecords = await gatherPublicRecordIntel({ packageKey: 'title_property', input: { address: lastKnownAddress, ownerName: order.subjectName || '', county, state } }, { fetchImpl: ctx.fetchImpl });
 
   const s1 = await appraisalDistrictScraper({ county, state, query, fetchImpl: ctx.fetchImpl });
   const parcelId = s1?.data?.parcelId || s1?.data?.apn || '';

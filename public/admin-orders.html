@@ -28,6 +28,64 @@
         return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
       }
 
+      function actionCell(order) {
+        const caseRef = order.order_id || order.caseRef || '';
+        if (!order.artifact_url_or_path || !caseRef) return '<small>pending</small>';
+        return `
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" onclick='downloadArtifact(${JSON.stringify(caseRef)}, "pdf")'>PDF</button>
+            <button type="button" onclick='downloadArtifact(${JSON.stringify(caseRef)}, "html")'>HTML</button>
+          </div>
+        `;
+      }
+
+      function filenameFromDisposition(disposition, fallback) {
+        const match = /filename="?([^";]+)"?/i.exec(disposition || '');
+        return match ? match[1] : fallback;
+      }
+
+      async function downloadArtifact(caseRef, format) {
+        const key = keyEl.value.trim();
+        if (!key) {
+          statusEl.textContent = 'Admin API key required.';
+          return;
+        }
+
+        statusEl.textContent = `Loading ${format.toUpperCase()} for ${caseRef}...`;
+
+        try {
+          const res = await fetch(`/api/order-artifact?caseRef=${encodeURIComponent(caseRef)}&format=${encodeURIComponent(format)}`, {
+            headers: { authorization: `Bearer ${key}` }
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `HTTP ${res.status}`);
+          }
+
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          if (format === 'html') {
+            window.open(url, '_blank', 'noopener');
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
+          } else {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filenameFromDisposition(res.headers.get('content-disposition'), `${caseRef}-report.${format}`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 10_000);
+          }
+
+          statusEl.textContent = `${format.toUpperCase()} ready for ${caseRef}.`;
+        } catch (error) {
+          statusEl.textContent = error.message || 'Unable to download artifact.';
+        }
+      }
+
+      window.downloadArtifact = downloadArtifact;
+
       function render(orders) {
         const head = `
           <thead><tr>
@@ -52,7 +110,7 @@
             <td><small>${esc(`${attempted}/${success}/${blocked}`)}</small></td>
             <td>${esc(o.started_at || 'n/a')}</td>
             <td>${esc(o.completed_at || 'n/a')}</td>
-            <td><small>${esc(o.artifact_url_or_path || 'n/a')}</small></td>
+            <td>${actionCell(o)}</td>
             <td>${esc(o.email_delivery_status || 'pending')}</td>
             <td><small>${esc(o.failure_reason || 'n/a')}</small></td>
             <td><details><summary>view</summary><pre style="white-space:pre-wrap;max-width:360px;">${esc(JSON.stringify(o.workflow_results || {}, null, 2))}</pre></details></td>

@@ -18,7 +18,7 @@ function money(cents) {
 function chipClass(value) {
   const v = String(value || '').toLowerCase();
   if (['paid', 'completed', 'healthy', 'ok', 'delivered'].includes(v)) return 'ok';
-  if (['retry', 'processing', 'queued', 'degraded', 'analyst_review', 'review'].includes(v)) return 'warn';
+  if (['retry', 'processing', 'queued', 'degraded', 'analyst_review', 'review', 'manual_review'].includes(v)) return 'warn';
   return 'danger';
 }
 
@@ -106,6 +106,68 @@ async function adminJson(url) {
   });
 }
 
+async function adminBlob(url) {
+  const key = readAdminKey();
+
+  if (!key) {
+    const error = new Error('Missing ADMIN_API_KEY.');
+    error.status = 401;
+    throw error;
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${key}`,
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const error = new Error(body.error || `Request failed: ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return response;
+}
+
+function filenameFromDisposition(disposition, fallback) {
+  const match = /filename="?([^";]+)"?/i.exec(disposition || '');
+  return match ? match[1] : fallback;
+}
+
+async function downloadAdminArtifact(caseRef, format) {
+  try {
+    const response = await adminBlob(`/api/order-artifact?caseRef=${encodeURIComponent(caseRef)}&format=${encodeURIComponent(format)}`);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (format === 'html') {
+      window.open(blobUrl, '_blank', 'noopener');
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filenameFromDisposition(response.headers.get('content-disposition'), `${caseRef}-report.${format}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+  } catch (error) {
+    if (error?.status === 401 || error?.status === 403) {
+      writeAdminKey('');
+      renderAuthBanner('Unauthorized. Set a valid ADMIN_API_KEY to download report artifacts.', true);
+      return;
+    }
+
+    renderAuthBanner(error?.message || 'Unable to download report artifact.', true);
+  }
+}
+
+window.traceworksDownloadArtifact = downloadAdminArtifact;
+
 function setRows(targetId, html, fallback = '<tr><td colspan="8">No data.</td></tr>') {
   const target = document.getElementById(targetId);
   if (!target) return;
@@ -166,26 +228,26 @@ function renderSourceRegistryPlaceholder() {
     'source-health',
     `
       <tr>
-        <td>registry_unavailable</td>
+        <td>not_exposed</td>
         <td>operator</td>
-        <td><span class="tw-chip warn">not implemented</span></td>
-        <td>Do not infer source health from static demo data.</td>
+        <td><span class="tw-chip warn">internal only</span></td>
+        <td>Connector health is not exposed by this deployment.</td>
       </tr>
     `,
-    '<tr><td colspan="4">No source registry endpoint exists yet.</td></tr>'
+    '<tr><td colspan="4">Connector health is not exposed by this deployment.</td></tr>'
   );
 
   setRows(
     'sources-registry',
     `
       <tr>
-        <td>registry_unavailable</td>
+        <td>not_exposed</td>
         <td>operator</td>
-        <td>manual verification</td>
-        <td><span class="tw-chip warn">not implemented</span></td>
+        <td>internal only</td>
+        <td><span class="tw-chip warn">not exposed</span></td>
       </tr>
     `,
-    '<tr><td colspan="4">No source registry endpoint exists yet.</td></tr>'
+    '<tr><td colspan="4">Source registry is not exposed by this deployment.</td></tr>'
   );
 }
 
@@ -225,7 +287,7 @@ async function renderCases() {
     detail.innerHTML = `
       <div class="tw-label">Matter detail</div>
       <p style="margin-top:10px;color:var(--muted);">
-        Static fake matter detail was removed. Use live order rows above. Add a dedicated detail endpoint before showing analyst-style drilldown here.
+        Use the live order rows above. A dedicated case-detail endpoint is still required before deeper drilldown can be shown here safely.
       </p>
     `;
   }
@@ -299,11 +361,15 @@ async function renderReports() {
 
   const html = orders
     .map((order) => {
-      const artifact =
-        order.deliveryArtifactPath ||
-        order.artifactPath ||
-        order.reportPath ||
-        'Pending / not generated';
+      const hasArtifact = Boolean(order.caseRef && order.artifact_url_or_path);
+      const artifact = hasArtifact
+        ? `
+          <div class="tw-actions">
+            <button type="button" onclick='traceworksDownloadArtifact(${JSON.stringify(String(order.caseRef || ''))}, "pdf")'>PDF</button>
+            <button type="button" onclick='traceworksDownloadArtifact(${JSON.stringify(String(order.caseRef || ''))}, "html")'>HTML</button>
+          </div>
+        `
+        : 'Pending / not generated';
 
       return `
         <tr>
@@ -311,7 +377,7 @@ async function renderReports() {
           <td>${escapeHtml(order.packageName || order.packageId || '—')}</td>
           <td>v1</td>
           <td><span class="tw-chip ${chipClass(orderStatusLabel(order))}">${escapeHtml(orderStatusLabel(order))}</span></td>
-          <td>${escapeHtml(artifact)}</td>
+          <td>${artifact}</td>
         </tr>
       `;
     })

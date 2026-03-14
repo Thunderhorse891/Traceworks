@@ -3,186 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sample Report — Property &amp; Title Research | TraceWorks</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#07090f;color:#dce4f8;font-family:'Inter',system-ui,Arial,sans-serif;font-size:14px;line-height:1.6}
-    a{color:#5d87b0}
-    .sample-notice{background:#0c140a;border-bottom:2px solid #c9a84c;padding:10px 36px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .sample-notice .tag{font-size:10px;color:#c9a84c;letter-spacing:2px;text-transform:uppercase;font-weight:700;white-space:nowrap}
-    .sample-notice .desc{font-size:12px;color:#7b8db0}
-    .sample-notice .back{margin-left:auto;font-size:12px;color:#5d87b0;text-decoration:none}
-    .sample-notice .back:hover{color:#c9a84c}
-    .wrap{max-width:1100px;margin:20px auto 40px;background:#0d1422;border:1px solid #1e2d4a;border-radius:12px;overflow:hidden}
-    .hero{padding:28px 36px;background:#060c1a;border-bottom:1px solid #1e2d4a}
-    .brand{color:#c9a84c;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-weight:600}
-    .hero h1{font-size:22px;color:#f4f7ff;letter-spacing:.2px;margin-bottom:3px;font-weight:600}
-    .hero-sub{color:#7b8db0;font-size:13px;margin-bottom:20px}
-    .hero-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}
-    .pill{background:#101a2e;border:1px solid #1e2d4a;border-radius:6px;padding:10px 14px}
-    .pill .label{color:#7b8db0;font-size:10px;text-transform:uppercase;letter-spacing:1px}
-    .pill .value{color:#f4f7ff;font-size:13px;font-weight:600;margin-top:3px}
-    .status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-    .status-badge.partial{background:#2e1a0a;color:#d97706;border:1px solid #d97706}
-    .body{padding:28px 36px}
-    .partial-banner{background:#1e1200;border:1px solid #d97706;border-left:3px solid #d97706;color:#d97706;padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px}
-    .sections-header{font-size:10px;color:#c9a84c;font-weight:700;letter-spacing:2px;margin:24px 0 12px;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #1e2d4a}
-    .report-section{background:#101a2e;border:1px solid #1e2d4a;border-radius:8px;padding:16px 20px;margin-bottom:12px}
-    .report-section h3{font-size:14px;color:#d4bc78;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .report-section.not-found{border-color:#182418;background:#0c150c}
-    .report-section.unavailable{border-color:#261e08;background:#151008}
-    .meta-line{font-size:11px;color:#4a5e7a;margin-bottom:10px}
-    .meta-line a{color:#5d87b0}
-    .status-block{color:#a0b0c8;font-size:13px;background:#0a0f1e;padding:10px 14px;border-radius:6px;border-left:3px solid #1e3050;margin-top:4px}
-    .partial-note{color:#d97706;font-size:12px;margin-bottom:8px;font-weight:500}
-    .confidence{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;text-transform:uppercase}
-    .confidence.confirmed{background:#0a2e15;color:#38a169}
-    .confidence.likely{background:#081626;color:#4299e1}
-    .confidence.possible{background:#1a1200;color:#d97706}
-    .confidence.not_found{background:#141414;color:#718096}
-    .confidence.unavailable,.confidence.manual_review{background:#1e0808;color:#e53e3e}
-    .data-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
-    .data-table th{background:#060c1a;color:#c9a84c;padding:8px 10px;text-align:left;border-bottom:1px solid #1e2d4a;font-weight:600;letter-spacing:.5px}
-    .data-table td{padding:7px 10px;border-bottom:1px solid #111e35;color:#b8c8e0;vertical-align:top}
-    .data-table tr:last-child td{border-bottom:none}
-    .source-trace-panel{margin-top:28px;padding-top:24px;border-top:1px solid #1e2d4a}
-    .source-trace-panel h2{font-size:10px;color:#c9a84c;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-    .trace-note{font-size:12px;color:#4a5e7a;margin-bottom:12px}
-    .trace-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
-    .trace-table th{background:#060c1a;color:#c9a84c;padding:8px 10px;text-align:left;border-bottom:1px solid #1e2d4a;font-weight:600;letter-spacing:.5px}
-    .trace-table td{padding:7px 10px;border-bottom:1px solid #111e35;color:#a0b0c8;vertical-align:top}
-    .trace-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase}
-    .trace-status.found{background:#0a2e15;color:#38a169}
-    .trace-status.partial{background:#1a1200;color:#d97706}
-    .trace-status.not_found{background:#141414;color:#718096}
-    .trace-status.unavailable{background:#261e08;color:#d97706}
-    .trace-summary{font-size:12px;color:#4a5e7a;margin-top:8px}
-    .trace-summary strong{color:#c9a84c}
-    .disclaimer{margin-top:24px;padding:18px 20px;background:#060c1a;border:1px solid #1e2d4a;border-radius:6px;color:#4a5e7a;font-size:11px;line-height:1.8}
-    .disclaimer-title{color:#c9a84c;font-size:10px;font-weight:700;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}
-  </style>
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Preview Retired — TraceWorks™</title>
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-
-  <div class="sample-notice">
-    <span class="tag">Sample Report</span>
-    <span class="desc">Data below is illustrative only. Parcel details, names, and values are fictional. Source URLs are real public portals.</span>
-    <a class="back" href="/">← Return to TraceWorks</a>
-  </div>
-
-  <article class="wrap">
-    <header class="hero">
-      <div class="brand">TraceWorks™ Research Report</div>
-      <h1>Property &amp; Title Research</h1>
-      <div class="hero-sub">Property ownership and encumbrance indicators from county appraisal and public registry sources. Not a title opinion. Source-traced for legal review.</div>
-      <div class="hero-meta">
-        <div class="pill"><div class="label">Case Ref</div><div class="value">TW-SAMPLE-TITLE</div></div>
-        <div class="pill"><div class="label">Parcel / APN</div><div class="value">05814-001-0430</div></div>
-        <div class="pill"><div class="label">County / State</div><div class="value">Bexar / TX</div></div>
-        <div class="pill"><div class="label">Report Status</div><div class="value"><span class="status-badge partial">Partial</span></div></div>
-        <div class="pill"><div class="label">Generated</div><div class="value">2026-03-12 11:22 UTC</div></div>
-        <div class="pill"><div class="label">Sources Run</div><div class="value">4 (1 found, 1 partial, 1 not found, 1 unavailable)</div></div>
-      </div>
-    </header>
-
-    <div class="body">
-
-      <div class="partial-banner">
-        PARTIAL REPORT — Bexar County Official Records (deed index) could not be accessed automatically. Instrument-level data including warranty deed chain, deed of trust, and recorded liens is not confirmed. The BCAD appraisal record provides a starting deed reference (Vol. 18847, Pg. 0221) for manual clerk verification.
-      </div>
-
-      <div class="sections-header">Research Objective</div>
-      <div class="report-section">
-        <p style="color:#b8c8e0">Identify current ownership, recorded instruments, and potential encumbrances on the parcel at 1847 Magnolia Creek Dr, San Antonio TX 78258 (Bexar County APN 05814-001-0430) in support of pre-acquisition due diligence.</p>
-      </div>
-
-      <div class="sections-header">Parcel Snapshot</div>
-      <div class="report-section">
-        <table class="data-table">
-          <thead><tr><th>Field</th><th>Value</th></tr></thead>
-          <tbody>
-            <tr><td>Situs Address</td><td>1847 Magnolia Creek Dr, San Antonio TX 78258</td></tr>
-            <tr><td>Parcel / APN</td><td>05814-001-0430</td></tr>
-            <tr><td>County</td><td>Bexar County, TX</td></tr>
-            <tr><td>Owner of Record</td><td>FORSYTHE ROBERT T &amp; FORSYTHE LINDA K</td></tr>
-            <tr><td>Legal Description</td><td>MAGNOLIA CREEK SUBDIVISION, BLOCK 14, LOT 30</td></tr>
-            <tr><td>Assessed Value (2024)</td><td>$389,500</td></tr>
-            <tr><td>Property Class</td><td>Residential — Single Family</td></tr>
-            <tr><td>Deed Reference (BCAD)</td><td>Vol. 18847, Pg. 0221 (Bexar County Official Records)</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="sections-header">Source Findings</div>
-
-      <!-- Bexar CAD -->
-      <div class="report-section">
-        <h3>Bexar County Appraisal District (BCAD) <span class="confidence confirmed">Confirmed</span></h3>
-        <div class="meta-line">Source: <a href="https://www.bcad.org/clientdb/" target="_blank" rel="noopener">https://www.bcad.org/clientdb/</a> &nbsp;·&nbsp; Query: <em>05814-001-0430</em> &nbsp;·&nbsp; 2026-03-12T11:22:06Z</div>
-        <p style="color:#a0b0c8;font-size:13px;margin-bottom:10px">Parcel record returned. Current ownership confirmed as Robert T. and Linda K. Forsythe as of Tax Year 2024. BCAD record includes a deed reference (Vol./Page) that provides a starting point for clerk-level instrument verification.</p>
-        <table class="data-table">
-          <thead><tr><th>Owner of Record</th><th>Situs Address</th><th>Assessed Value</th><th>Tax Year</th><th>Class</th><th>Deed Ref (BCAD)</th></tr></thead>
-          <tbody>
-            <tr><td>FORSYTHE ROBERT T &amp; FORSYTHE LINDA K</td><td>1847 Magnolia Creek Dr, San Antonio TX 78258</td><td>$389,500</td><td>2024</td><td>Residential</td><td>Vol. 18847, Pg. 0221</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- TX SOS -->
-      <div class="report-section not-found">
-        <h3>Texas Secretary of State — Business Registry <span class="confidence not_found">Not Found</span></h3>
-        <div class="meta-line">Source: <a href="https://mycpa.cpa.state.tx.us/coa/" target="_blank" rel="noopener">https://mycpa.cpa.state.tx.us/coa/</a> &nbsp;·&nbsp; Query: <em>Forsythe Robert Bexar</em> &nbsp;·&nbsp; 2026-03-12T11:22:11Z</div>
-        <div class="status-block">NOT FOUND — No entity registrations returned for "Forsythe" in Bexar County. Current ownership appears to be individual, not an entity. No LLC, trust, or corporation detected as an owner signal in this query.</div>
-      </div>
-
-      <!-- Bexar County Official Records -->
-      <div class="report-section unavailable">
-        <h3>Bexar County Official Records — Deed Index <span class="confidence manual_review">Manual Review Required</span></h3>
-        <div class="meta-line">Source: <a href="https://bexar.tx.publicsearch.us/" target="_blank" rel="noopener">https://bexar.tx.publicsearch.us/</a> &nbsp;·&nbsp; Query: <em>Forsythe / 05814-001-0430</em> &nbsp;·&nbsp; 2026-03-12T11:22:15Z</div>
-        <div class="status-block">SOURCE UNAVAILABLE — Bexar County Official Records portal requires browser-based authentication. Deed instrument history — including warranty deed chain, deeds of trust, releases, liens, and any recorded judgments — is not available in this report. Manual review required. Start with the deed reference from BCAD (Vol. 18847, Pg. 0221) to locate the most recent instrument in the chain.</div>
-      </div>
-
-      <!-- DuckDuckGo supplemental -->
-      <div class="report-section">
-        <h3>Open Web — Supplemental Search <span class="confidence possible">Possible</span></h3>
-        <div class="meta-line">Source: DuckDuckGo &nbsp;·&nbsp; Query: <em>"1847 Magnolia Creek" "Forsythe" Bexar deed</em> &nbsp;·&nbsp; 2026-03-12T11:22:18Z</div>
-        <div class="partial-note">PARTIAL RESULT — 1 public notice reference found. No deed-level data.</div>
-        <div class="status-block">One result returned referencing the property address in a Bexar County public notice context. Does not contain instrument, lien, or encumbrance data. Insufficient to confirm ownership chain or encumbrance status. Treat as background context only.</div>
-      </div>
-
-      <div class="sections-header">Limitations</div>
-      <div class="report-section unavailable">
-        <p style="color:#a0b0c8;font-size:13px;line-height:1.7">
-          <strong style="color:#d97706">Instrument history not confirmed.</strong> Bexar County deed index requires browser authentication. The full chain of title — including warranty deeds, deed of trust instruments, releases, and any recorded liens or judgments — cannot be confirmed from this report. Clerk verification at <a href="https://bexar.tx.publicsearch.us/" target="_blank" rel="noopener">bexar.tx.publicsearch.us</a> is required, starting from the BCAD deed reference.<br><br>
-          <strong style="color:#d97706">This report is not a title opinion and not a substitute for title insurance.</strong> Ownership is confirmed at the appraisal district level only. Encumbrances, title defects, and instrument-level issues require a licensed title professional to evaluate.<br><br>
-          <strong style="color:#d97706">No entity ownership detected, but trust ownership cannot be ruled out.</strong> Revocable living trusts and family trusts often appear in individual names in appraisal records but are titled differently in deed instruments. Deed-level review is required to confirm the vesting.
-        </p>
-      </div>
-
-      <div class="source-trace-panel">
-        <h2>Source Trace Panel</h2>
-        <p class="trace-note">All sources queried in this matter — query used, timestamp, and result status. Sources not reached are documented, not omitted.</p>
-        <table class="trace-table">
-          <thead><tr><th>Source</th><th>Query Used</th><th>Timestamp</th><th>Status</th><th>Result Summary</th></tr></thead>
-          <tbody>
-            <tr><td>Bexar County Appraisal District</td><td>05814-001-0430</td><td>2026-03-12T11:22:06Z</td><td><span class="trace-status found">Found</span></td><td>1 parcel record, ownership confirmed</td></tr>
-            <tr><td>TX Secretary of State</td><td>Forsythe Robert Bexar</td><td>2026-03-12T11:22:11Z</td><td><span class="trace-status not_found">Not Found</span></td><td>No entity registrations</td></tr>
-            <tr><td>Bexar County Official Records</td><td>Forsythe / 05814-001-0430</td><td>2026-03-12T11:22:15Z</td><td><span class="trace-status unavailable">Unavailable</span></td><td>Browser auth required — not accessed</td></tr>
-            <tr><td>Open Web (DuckDuckGo)</td><td>"1847 Magnolia Creek" "Forsythe" Bexar deed</td><td>2026-03-12T11:22:18Z</td><td><span class="trace-status partial">Partial</span></td><td>1 public notice reference; no deed data</td></tr>
-          </tbody>
-        </table>
-        <p class="trace-summary">SOURCES ATTEMPTED: <strong>4</strong> &nbsp;|&nbsp; FOUND: <strong>1</strong> &nbsp;|&nbsp; PARTIAL: <strong>1</strong> &nbsp;|&nbsp; NOT FOUND: <strong>1</strong> &nbsp;|&nbsp; UNAVAILABLE: <strong>1</strong></p>
-      </div>
-
-      <div class="disclaimer">
-        <div class="disclaimer-title">Scope Limitations &amp; Disclaimer</div>
-        This is a public-record research report prepared by TraceWorks. It is not a title opinion, not title insurance, and not a substitute for review by a licensed title professional. Ownership is confirmed at the appraisal district level only. Deed instrument history, recorded encumbrances, and title chain integrity require clerk-level verification and licensed title review before use in any conveyance, financing, litigation, or acquisition decision. Public-record access, completeness, and timeliness vary by jurisdiction.
-        <br><br>
-        Report generated: 2026-03-12T11:22:22Z &nbsp;|&nbsp; Order ID: TW-SAMPLE-TITLE &nbsp;|&nbsp; TraceWorks™
-      </div>
-
+  <main style="max-width:760px;margin:0 auto;padding:72px 24px 96px;">
+    <span class="eyebrow">Production Only</span>
+    <h1 style="font-family:var(--serif);font-size:clamp(30px,5vw,50px);line-height:1.05;color:var(--text-1);margin:14px 0 14px;">This sample title report was retired.</h1>
+    <p style="color:var(--text-2);font-size:16px;line-height:1.8;max-width:620px;">
+      Production TraceWorks now avoids simulated report output entirely. Live title and encumbrance results are delivered only from real case workflows.
+    </p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;">
+      <a href="/packages.html" class="btn-primary">Review Packages</a>
+      <a href="/order-status.html" class="btn-outline">Track an Order</a>
     </div>
-  </article>
-
+  </main>
 </body>
 </html>

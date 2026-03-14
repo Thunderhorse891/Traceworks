@@ -4,6 +4,7 @@ export const ORDER_STATUS = {
   QUEUED: 'queued',
   RUNNING: 'running',
   COMPLETED: 'completed',
+  MANUAL_REVIEW: 'manual_review',
   FAILED: 'failed',
   DELIVERY_FAILED: 'delivery_failed',
   REFUNDED: 'refunded',

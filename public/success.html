@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TraceWorks™ — Order Confirmed</title>
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090f" />
     <link rel="stylesheet" href="/styles.css" />
     <style>
@@ -329,10 +330,13 @@
       </div>
 
       <div class="action-row">
+        <a id="reportPdfLink" href="#" class="btn-outline" style="display:none;">Download PDF</a>
+        <a id="reportHtmlLink" href="#" class="btn-outline" target="_blank" rel="noopener" style="display:none;">Open HTML Report</a>
         <a href="/" class="btn-outline">Return to Home</a>
       </div>
     </div>
 
+    <script src="/pwa.js" type="module"></script>
     <script>
       const params      = new URLSearchParams(location.search);
       const caseRef     = params.get('case_ref');
@@ -352,8 +356,11 @@
       const stepResearch  = document.getElementById('stepResearch');
       const stepReport    = document.getElementById('stepReport');
       const stepDelivery  = document.getElementById('stepDelivery');
+      const reportPdfLink = document.getElementById('reportPdfLink');
+      const reportHtmlLink = document.getElementById('reportHtmlLink');
 
-      const TERMINAL = new Set(['completed', 'failed', 'manual_review']);
+      const TERMINAL = new Set(['completed', 'manual_review', 'failed', 'delivery_failed', 'refunded', 'canceled']);
+      const ARTIFACT_READY = new Set(['completed', 'manual_review', 'delivery_failed']);
       let pollInterval = null;
 
       function fmt(iso) {
@@ -363,11 +370,16 @@
 
       function setPill(status) {
         const map = {
+          pending_payment: 'queued',
+          paid: 'queued',
           queued:     'queued',
-          processing: 'processing',
+          running:    'processing',
           completed:  'completed',
+          manual_review: 'processing',
           failed:     'failed',
-          retrying:   'retrying',
+          delivery_failed: 'failed',
+          refunded: 'failed',
+          canceled: 'failed',
         };
         const cls = map[status] || 'default';
         statusPill.className = 'status-pill ' + cls;
@@ -382,9 +394,13 @@
           stepResearch.className = done;
           stepReport.className   = done;
           stepDelivery.className = done;
-        } else if (status === 'processing') {
+        } else if (status === 'running') {
           stepResearch.className = active;
           stepReport.className   = pend;
+          stepDelivery.className = pend;
+        } else if (status === 'manual_review' || status === 'delivery_failed') {
+          stepResearch.className = done;
+          stepReport.className   = done;
           stepDelivery.className = pend;
         } else if (status === 'failed') {
           stepResearch.className = 'timeline-step-dot';
@@ -402,17 +418,42 @@
         fieldQueued.textContent   = fmt(data.queuedAt || data.createdAt);
         fieldAttempts.textContent = data.fulfillmentAttempts ?? '—';
 
+        rowCompleted.style.display = data.completedAt ? '' : 'none';
         if (data.completedAt) {
-          rowCompleted.style.display = '';
           fieldCompleted.textContent = fmt(data.completedAt);
         }
+        rowError.style.display = data.lastError ? '' : 'none';
         if (data.lastError) {
-          rowError.style.display = '';
           fieldError.textContent = data.lastError;
         }
 
         setPill(data.status);
         updateTimeline(data.status);
+        syncReportActions(data);
+      }
+
+      function artifactUrl(caseReference, format) {
+        const query = new URLSearchParams({ caseRef: caseReference, format });
+        if (statusToken) query.set('status_token', statusToken);
+        else if (email) query.set('email', email);
+        return `/api/order-artifact?${query.toString()}`;
+      }
+
+      function syncReportActions(data) {
+        const ready = Boolean(data.caseRef && data.artifact_url_or_path && ARTIFACT_READY.has(data.status));
+
+        if (!ready) {
+          reportPdfLink.style.display = 'none';
+          reportHtmlLink.style.display = 'none';
+          reportPdfLink.removeAttribute('href');
+          reportHtmlLink.removeAttribute('href');
+          return;
+        }
+
+        reportPdfLink.href = artifactUrl(data.caseRef, 'pdf');
+        reportHtmlLink.href = artifactUrl(data.caseRef, 'html');
+        reportPdfLink.style.display = '';
+        reportHtmlLink.style.display = '';
       }
 
       async function poll() {
@@ -443,7 +484,7 @@
             fieldStatus.textContent = data.error || 'Status temporarily unavailable — your order is still processing.';
           }
         } catch {
-          statusEl.textContent = 'Status service unavailable. If you are testing locally, make sure your API routes are running and reachable.';
+          fieldStatus.textContent = 'Status service unavailable. If you are testing locally, make sure your API routes are running and reachable.';
         }
       }
 
