@@ -77,6 +77,91 @@ function buildKeyFindings(sections = []) {
     .map((section) => `${section.source.sourceLabel}: ${section.finding}`);
 }
 
+function summarizeChainAnalysis(chainAnalysis) {
+  if (!chainAnalysis) return null;
+  const items = [
+    `Continuity status: ${chainAnalysis.chainStatus || 'not_available'}`,
+    `Instrument count reviewed: ${Array.isArray(chainAnalysis.chronologicalSequence) ? chainAnalysis.chronologicalSequence.length : 0}`,
+    ...(Array.isArray(chainAnalysis.gaps) ? chainAnalysis.gaps : []),
+    ...(Array.isArray(chainAnalysis.conflictFlags) ? chainAnalysis.conflictFlags : [])
+  ].filter(Boolean);
+  if (!items.length) return null;
+  return { title: 'Chain Analysis', items };
+}
+
+function candidateLabel(candidate = {}, index = 0) {
+  return candidate.name || candidate.fullName || candidate.personName || candidate.label || `Candidate ${index + 1}`;
+}
+
+function summarizeHeirCandidates(candidates = []) {
+  if (!Array.isArray(candidates) || !candidates.length) return null;
+  const items = candidates.slice(0, 8).map((candidate, index) => {
+    const details = [];
+    if (candidate.address) details.push(`Address: ${candidate.address}`);
+    if (candidate.phone) details.push(`Phone: ${candidate.phone}`);
+    if (candidate.email) details.push(`Email: ${candidate.email}`);
+    const base = `${candidateLabel(candidate, index)} — ${candidate.label || 'unscored'} (score ${Number(candidate.score || 0)})`;
+    return details.length ? `${base}. ${details.join('. ')}.` : base;
+  });
+  return { title: 'Heir Candidate Review', items };
+}
+
+function flattenPublicRecordGaps(publicRecords, prefix = '') {
+  if (!publicRecords) return [];
+  if (Array.isArray(publicRecords.gaps)) {
+    return publicRecords.gaps.map((gap) => `${prefix}${gap}`);
+  }
+
+  return Object.entries(publicRecords)
+    .flatMap(([key, value]) => flattenPublicRecordGaps(value, `${key}: `));
+}
+
+function summarizeCoverageGaps(workflow) {
+  const items = [
+    ...flattenPublicRecordGaps(workflow.publicRecords),
+    ...(Array.isArray(workflow.partialReasons) ? workflow.partialReasons : []),
+    ...(Array.isArray(workflow.failureReasons) ? workflow.failureReasons : [])
+  ].filter(Boolean);
+
+  if (!items.length) return null;
+  return { title: 'Coverage Gaps', items: [...new Set(items)] };
+}
+
+function summarizeDiscrepancies(discrepancy) {
+  if (!discrepancy) return null;
+  const items = [
+    ...(Array.isArray(discrepancy.conflicts) ? discrepancy.conflicts : []),
+    ...(Array.isArray(discrepancy.unresolvedFlags) ? discrepancy.unresolvedFlags : [])
+  ].filter(Boolean);
+  if (!items.length) return null;
+  return { title: 'Cross-Source Discrepancies', items };
+}
+
+function summarizeConfidenceMatrix(confidenceMatrix) {
+  if (!confidenceMatrix) return null;
+  const buckets = [
+    ['Strongly supported', confidenceMatrix.stronglySupported],
+    ['Moderately supported', confidenceMatrix.moderatelySupported],
+    ['Weak or speculative', confidenceMatrix.weakOrSpeculative],
+    ['Manual validation required', confidenceMatrix.requiresManualValidation]
+  ];
+  const items = buckets
+    .map(([label, rows]) => `${label}: ${Array.isArray(rows) ? rows.length : 0}`)
+    .filter(Boolean);
+  if (!items.length) return null;
+  return { title: 'Confidence Matrix', items };
+}
+
+function buildAnalysisPanels(workflow) {
+  return [
+    summarizeChainAnalysis(workflow.chainAnalysis),
+    summarizeHeirCandidates(workflow.scoredCandidates),
+    summarizeDiscrepancies(workflow.discrepancy),
+    summarizeConfidenceMatrix(workflow.confidenceMatrix),
+    summarizeCoverageGaps(workflow)
+  ].filter(Boolean);
+}
+
 function statusHeadline(report) {
   if (report.overallStatus === 'complete') return 'Automated research completed successfully';
   if (report.overallStatus === 'partial') return 'Automated research completed with documented gaps';
@@ -100,6 +185,7 @@ export function buildDynamicReportFromWorkflow(workflow, order) {
   }));
   const sourceSummary = summarizeSources(workflow.sources || []);
   const keyFindings = buildKeyFindings(sections);
+  const analysisPanels = buildAnalysisPanels(workflow);
 
   return {
     reportType: workflow.tier,
@@ -113,6 +199,7 @@ export function buildDynamicReportFromWorkflow(workflow, order) {
     executiveSummary: statusHeadline({ overallStatus: workflow.overallStatus }),
     sourceSummary,
     keyFindings,
+    analysisPanels,
     sections,
     discrepancy: workflow.discrepancy || null,
     confidenceMatrix: workflow.confidenceMatrix || null,
@@ -125,6 +212,7 @@ export function buildDynamicReportFromWorkflow(workflow, order) {
 export function dynamicReportToText(report) {
   const sourceSummary = report.sourceSummary || summarizeSources((report.sections || []).map((section) => section.source).filter(Boolean));
   const keyFindings = Array.isArray(report.keyFindings) ? report.keyFindings : [];
+  const analysisPanels = Array.isArray(report.analysisPanels) ? report.analysisPanels : [];
   const inputRows = normalizeInputRows(report.customerInputs);
   const lines = [
     `TraceWorks ${report.reportType} Report`,
@@ -157,6 +245,15 @@ export function dynamicReportToText(report) {
     lines.push('');
   }
 
+  if (analysisPanels.length) {
+    lines.push('## Investigative Analysis');
+    for (const panel of analysisPanels) {
+      lines.push(`### ${panel.title}`);
+      for (const item of panel.items || []) lines.push(`- ${item}`);
+      lines.push('');
+    }
+  }
+
   lines.push('## Source Trace');
   for (const section of report.sections) {
     lines.push(`### ${section.title}`);
@@ -185,6 +282,7 @@ export function dynamicReportToText(report) {
 export function dynamicReportToHtml(report) {
   const sections = Array.isArray(report.sections) ? report.sections : [];
   const keyFindingsList = Array.isArray(report.keyFindings) ? report.keyFindings : [];
+  const analysisPanels = Array.isArray(report.analysisPanels) ? report.analysisPanels : [];
   const sourceSummary = report.sourceSummary || summarizeSources(sections.map((section) => section.source).filter(Boolean));
   const inputRows = normalizeInputRows(report.customerInputs)
     .map(
@@ -199,6 +297,19 @@ export function dynamicReportToHtml(report) {
 
   const keyFindings = keyFindingsList.length
     ? `<section class="card"><h2>Key Findings</h2><ul class="finding-list">${keyFindingsList.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>`
+    : '';
+
+  const analysisCards = analysisPanels.length
+    ? analysisPanels
+        .map(
+          (panel) => `
+            <section class="card">
+              <h2>${escapeHtml(panel.title)}</h2>
+              <ul class="finding-list">${(panel.items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+            </section>
+          `
+        )
+        .join('')
     : '';
 
   const sourceRows = sections
@@ -422,6 +533,7 @@ export function dynamicReportToHtml(report) {
           <div class="detail-grid">${inputRows || '<div class="detail-row"><div class="detail-label">Inputs</div><div class="detail-value">No structured intake was stored for this order.</div></div>'}</div>
         </section>
         ${keyFindings}
+        ${analysisCards}
         <section class="card">
           <h2>Source Summary</h2>
           <div class="summary-grid">

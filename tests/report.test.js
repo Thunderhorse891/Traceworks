@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildReport, reportToHtml } from '../netlify/functions/_lib/report.js';
-import { buildDynamicReportFromWorkflow, dynamicReportToText } from '../netlify/functions/_lib/dynamic-report-builder.js';
+import { buildDynamicReportFromWorkflow, dynamicReportToHtml, dynamicReportToText } from '../netlify/functions/_lib/dynamic-report-builder.js';
 import { CONFIDENCE, SOURCE_STATUS } from '../netlify/functions/_lib/workflow-results.js';
 import { normalizeCheckoutPayload, validateCheckoutPayload } from '../netlify/functions/_lib/validation.js';
 
@@ -113,4 +113,68 @@ test('dynamic report counts skipped sources separately from errors', () => {
   const text = dynamicReportToText(report);
   assert.ok(text.includes('- Skipped: 1'));
   assert.ok(text.includes('- Errors: 1'));
+});
+
+test('dynamic report surfaces workflow intelligence panels from real derived data', () => {
+  const report = buildDynamicReportFromWorkflow(
+    {
+      tier: 'comprehensive',
+      orderId: 'TW-TEST-6',
+      overallStatus: 'partial',
+      inputs: { ownerName: 'Jane Owner' },
+      partialReasons: ['county_clerk_deed_index: Source unavailable'],
+      publicRecords: {
+        standard: { gaps: ['No county property sources were in scope for the supplied identifiers or jurisdiction.'] }
+      },
+      chainAnalysis: {
+        chainStatus: 'gaps_or_conflicts',
+        chronologicalSequence: [{ instrumentNumber: '1' }, { instrumentNumber: '2' }],
+        gaps: ['Missing deed between 2021 and 2022'],
+        conflictFlags: ['Chain mismatch between instrument 1 and 2']
+      },
+      scoredCandidates: [
+        { name: 'Alex Mercer', label: 'probable', score: 9, phone: '(555) 111-2222' }
+      ],
+      discrepancy: {
+        conflicts: ['Owner name mismatches across queried sources.'],
+        unresolvedFlags: ['manual_owner_reconciliation_required']
+      },
+      confidenceMatrix: {
+        stronglySupported: [],
+        moderatelySupported: [{ sourceId: 'county_property' }],
+        weakOrSpeculative: [{ sourceId: 'probate_case_index' }],
+        requiresManualValidation: [{ sourceId: 'people_association_lookup' }]
+      },
+      sources: [
+        {
+          sourceId: 'county_property',
+          sourceLabel: 'County Property',
+          sourceUrl: 'https://example.com/property',
+          queryUsed: '{"owner":"Jane Owner"}',
+          queriedAt: new Date().toISOString(),
+          status: SOURCE_STATUS.FOUND,
+          confidence: CONFIDENCE.LIKELY,
+          errorDetail: null,
+          data: []
+        }
+      ]
+    },
+    {
+      customerName: 'TraceWorks QA',
+      customerEmail: 'qa@example.com',
+      purchased_tier: 'comprehensive'
+    }
+  );
+
+  const text = dynamicReportToText(report);
+  assert.ok(text.includes('## Investigative Analysis'));
+  assert.ok(text.includes('### Chain Analysis'));
+  assert.ok(text.includes('### Heir Candidate Review'));
+  assert.ok(text.includes('### Confidence Matrix'));
+  assert.ok(text.includes('### Coverage Gaps'));
+
+  const html = dynamicReportToHtml(report);
+  assert.ok(html.includes('Cross-Source Discrepancies'));
+  assert.ok(html.includes('Alex Mercer'));
+  assert.ok(html.includes('Manual validation required: 1'));
 });
