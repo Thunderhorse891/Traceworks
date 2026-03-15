@@ -75,7 +75,7 @@
         <div id="loginError" class="err-msg" style="display:none;"></div>
       </form>
     </div>
-    <p style="font-size:11px;color:var(--text-4);text-align:center;margin-top:16px;">Enter your ADMIN_API_KEY. Credentials are stored in sessionStorage only.</p>
+    <p style="font-size:11px;color:var(--text-4);text-align:center;margin-top:16px;">Enter your ADMIN_API_KEY once. TraceWorks will keep the admin session in an HttpOnly cookie instead of browser storage.</p>
   </div>
 
   <!-- Admin dashboard -->
@@ -169,9 +169,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'tw_admin_key';
-
-    function getKey() { return sessionStorage.getItem(STORAGE_KEY) || ''; }
+    let adminSessionReady = false;
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -205,13 +203,10 @@
     }
 
     async function postAdminAction(action, payload = {}) {
-      const key = getKey();
       const res = await fetch('/api/admin-actions', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...payload })
       });
       const body = await res.json().catch(() => ({}));
@@ -245,8 +240,11 @@
       return result;
     }
 
-    function logout() {
-      sessionStorage.removeItem(STORAGE_KEY);
+    async function logout() {
+      try {
+        await fetch('/api/admin-logout', { method: 'POST', credentials: 'same-origin' });
+      } catch {}
+      adminSessionReady = false;
       document.getElementById('adminDash').style.display = 'none';
       document.getElementById('loginScreen').style.display = '';
       document.getElementById('logoutBtn').style.display = 'none';
@@ -291,19 +289,21 @@
     }
 
     async function loadData() {
-      const key = getKey();
-      const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
       const errEl = document.getElementById('dashError');
       errEl.style.display = 'none';
 
       try {
         const [metricsRes, ordersRes, healthRes] = await Promise.all([
-          fetch('/api/admin-metrics', { headers }),
-          fetch('/api/admin-orders?limit=50', { headers }),
-          fetch('/api/health', { headers }),
+          fetch('/api/admin-metrics', { credentials: 'same-origin' }),
+          fetch('/api/admin-orders?limit=50', { credentials: 'same-origin' }),
+          fetch('/api/health', { credentials: 'same-origin' }),
         ]);
 
-        if (metricsRes.status === 401 || ordersRes.status === 401) { logout(); return; }
+        if (metricsRes.status === 401 || ordersRes.status === 401) {
+          adminSessionReady = false;
+          await logout();
+          return;
+        }
 
         const metrics = await metricsRes.json();
         const orders = await ordersRes.json();
@@ -421,6 +421,7 @@
           </tr>`).join('');
 
         document.getElementById('lastRefresh').textContent = `Last refreshed: ${new Date().toLocaleTimeString()}`;
+        adminSessionReady = true;
       } catch (err) {
         errEl.textContent = err.message;
         errEl.style.display = '';
@@ -436,10 +437,15 @@
       btn.disabled = true;
       const key = document.getElementById('apiKey').value.trim();
       try {
-        const res = await fetch('/api/admin-metrics', { headers: { Authorization: `Bearer ${key}` } });
+        const res = await fetch('/api/admin-login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: key })
+        });
         if (res.status === 401) throw new Error('Invalid API key.');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        sessionStorage.setItem(STORAGE_KEY, key);
+        adminSessionReady = true;
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminDash').style.display = '';
         document.getElementById('logoutBtn').style.display = '';
@@ -492,15 +498,20 @@
     });
 
     // Init
-    if (getKey()) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('adminDash').style.display = '';
-      document.getElementById('logoutBtn').style.display = '';
-      loadData();
-      setInterval(loadData, 60000);
-    } else {
-      document.getElementById('loginScreen').style.display = '';
-    }
+    loadData()
+      .then(() => {
+        if (adminSessionReady) {
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('adminDash').style.display = '';
+          document.getElementById('logoutBtn').style.display = '';
+          setInterval(loadData, 60000);
+          return;
+        }
+        document.getElementById('loginScreen').style.display = '';
+      })
+      .catch(() => {
+        document.getElementById('loginScreen').style.display = '';
+      });
   </script>
 </body>
 </html>
