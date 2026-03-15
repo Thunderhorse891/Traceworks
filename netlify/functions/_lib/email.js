@@ -1,4 +1,5 @@
 import { getBusinessEmail } from './business.js';
+import { resolveEmailSettings } from './email-config.js';
 
 let cachedNodemailer;
 
@@ -14,10 +15,7 @@ async function loadNodemailer() {
 }
 
 async function getTransport() {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const { host, port, user, pass } = resolveEmailSettings(process.env);
 
   if (!host || !user || !pass) {
     throw new Error('SMTP credentials are missing.');
@@ -34,7 +32,7 @@ async function getTransport() {
 
 export async function sendReportEmails({ ownerEmail, customerEmail, subject, textBody, htmlBody }) {
   const resolvedOwner = ownerEmail || getBusinessEmail();
-  const from = process.env.EMAIL_FROM || resolvedOwner;
+  const from = resolveEmailSettings(process.env).from || resolvedOwner;
   const transport = await getTransport();
 
   const message = {
@@ -61,7 +59,7 @@ export async function sendOrderConfirmationEmail({
   intakeSummary,
 }) {
   const resolvedOwner = ownerEmail || getBusinessEmail();
-  const from = process.env.EMAIL_FROM || resolvedOwner;
+  const from = resolveEmailSettings(process.env).from || resolvedOwner;
   const transport = await getTransport();
   const eta = deliveryHours ? `Estimated delivery window: within ${deliveryHours} hours of confirmed payment.` : 'Estimated delivery window depends on source availability and package scope.';
   const location = [county, state].filter(Boolean).join(', ') || 'target county not provided';
@@ -124,7 +122,7 @@ export async function sendOrderConfirmationEmail({
 
 export async function sendLeadNotificationEmail({ ownerEmail, lead }) {
   const resolvedOwner = ownerEmail || getBusinessEmail();
-  const from = process.env.EMAIL_FROM || resolvedOwner;
+  const from = resolveEmailSettings(process.env).from || resolvedOwner;
   const transport = await getTransport();
 
   const subject = `[Lead] ${lead.company} (${lead.monthlyCases} cases/mo)`;
@@ -147,7 +145,7 @@ export async function sendLeadNotificationEmail({ ownerEmail, lead }) {
 
 export async function sendOpsAlertEmail({ ownerEmail, subject, lines = [] }) {
   const resolvedOwner = ownerEmail || getBusinessEmail();
-  const from = process.env.EMAIL_FROM || resolvedOwner;
+  const from = resolveEmailSettings(process.env).from || resolvedOwner;
   const transport = await getTransport();
   await transport.sendMail({
     from,

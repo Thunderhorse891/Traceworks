@@ -6,6 +6,7 @@ import {
   resolveInvestigationInput,
   validateCheckoutPayload
 } from '../netlify/functions/_lib/validation.js';
+import { resolveEmailSettings } from '../netlify/functions/_lib/email-config.js';
 import { hitRateLimit } from '../netlify/functions/_lib/rate-limit.js';
 import { jsonWithRequestId } from '../netlify/functions/_lib/http.js';
 import { getBusinessEmail } from '../netlify/functions/_lib/business.js';
@@ -127,4 +128,20 @@ test('status token is disabled when STATUS_TOKEN_SECRET is missing', () => {
   if (priorStatus) process.env.STATUS_TOKEN_SECRET = priorStatus; else delete process.env.STATUS_TOKEN_SECRET;
   if (priorAdmin) process.env.ADMIN_API_KEY = priorAdmin; else delete process.env.ADMIN_API_KEY;
   if (priorStripe) process.env.STRIPE_SECRET_KEY = priorStripe; else delete process.env.STRIPE_SECRET_KEY;
+});
+
+test('email settings accept SMTP and from-address aliases', () => {
+  const settings = resolveEmailSettings({
+    SMTP_HOST: 'smtp-mail.outlook.com',
+    SMTP_PORT: '587',
+    SMTP_USERNAME: 'traceworks.tx@outlook.com',
+    SMTP_PASSWORD: 'secret',
+    FROM_ADDRESS: 'traceworks.tx@outlook.com'
+  });
+
+  assert.equal(settings.host, 'smtp-mail.outlook.com');
+  assert.equal(settings.port, 587);
+  assert.equal(settings.user, 'traceworks.tx@outlook.com');
+  assert.equal(settings.pass, 'secret');
+  assert.equal(settings.from, 'traceworks.tx@outlook.com');
 });

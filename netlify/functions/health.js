@@ -1,4 +1,5 @@
 import { getMetrics } from './_lib/store.js';
+import { missingEmailConfigKeys } from './_lib/email-config.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { missingKvConfigKeys, storageDriverName } from './_lib/storage-runtime.js';
 import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig } from './_lib/sources/source-config.js';
@@ -14,9 +15,6 @@ export default async (event) => {
     'URL',
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
-    'SMTP_HOST',
-    'SMTP_USER',
-    'SMTP_PASS',
     'ADMIN_API_KEY',
     'STATUS_TOKEN_SECRET',
     'QUEUE_CRON_SECRET',
@@ -38,7 +36,10 @@ export default async (event) => {
   if (storageDriver === 'kv') {
     required.push(...missingKvConfigKeys());
   }
-  const missing = [...new Set(required.filter((k) => !process.env[k]))];
+  const missing = [...new Set([
+    ...required.filter((k) => !process.env[k]),
+    ...missingEmailConfigKeys(process.env)
+  ])];
   const sourceConfigMode = String(process.env.PUBLIC_RECORD_SOURCE_CONFIG || '').trim() ? 'env' : 'default';
   let sourceCatalog = null;
   let sourceConfigGaps = [];

@@ -1,4 +1,5 @@
 import { BUSINESS_EMAIL, getBusinessEmail } from './business.js';
+import { resolveEmailSettings } from './email-config.js';
 import { PACKAGE_LIST, getPackage } from './packages.js';
 import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig } from './sources/source-config.js';
 import { resolveKvRestConfig, storageDriverName } from './storage-runtime.js';
@@ -246,10 +247,7 @@ function storageChecks(env, checks) {
 }
 
 function emailChecks(env, checks) {
-  const host = trim(env.SMTP_HOST);
-  const user = trim(env.SMTP_USER);
-  const pass = trim(env.SMTP_PASS);
-  const from = trim(env.EMAIL_FROM);
+  const { host, user, pass, from } = resolveEmailSettings(env);
   const ownerEmail = getBusinessEmail();
 
   if (!host || !user || !pass) {
