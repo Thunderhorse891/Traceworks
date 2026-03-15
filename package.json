@@ -6,6 +6,8 @@
   "scripts": {
     "check": "node --test && npm run lint:js",
     "launch:audit": "node scripts/launch-audit.mjs",
+    "launch:env": "node scripts/netlify-env-template.mjs",
+    "launch:secrets": "node scripts/generate-launch-secrets.mjs",
     "live:smoke": "node scripts/live-smoke.mjs",
     "lint:js": "node scripts/check-syntax.mjs",
     "test": "node --test"
