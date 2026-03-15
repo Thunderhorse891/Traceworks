@@ -59,6 +59,8 @@ test('order status tracker supports signed polling links', () => {
   const html = readFileSync('public/order-status.html', 'utf8');
   assert.ok(html.includes("params.set('status_token', currentStatusToken)"));
   assert.ok(html.includes('payment_confirmation_email_status'));
+  assert.ok(html.includes('id="briefPanel"'));
+  assert.ok(html.includes('id="resRequestedFindings"'));
 });
 
 test('homepage app persists a structured local draft for intake continuity', () => {
@@ -66,4 +68,11 @@ test('homepage app persists a structured local draft for intake continuity', () 
   assert.ok(js.includes('traceworksCheckoutDraftV1'));
   assert.ok(js.includes('localStorage.setItem'));
   assert.ok(js.includes('Local draft restored.'));
+});
+
+test('success page surfaces stored intake brief details', () => {
+  const html = readFileSync('public/success.html', 'utf8');
+  assert.ok(html.includes('id="briefPanel"'));
+  assert.ok(html.includes('id="fieldRequestedFindings"'));
+  assert.ok(html.includes('id="briefSignalChips"'));
 });

@@ -33,6 +33,11 @@
     .error-msg { padding: 14px 18px; background: rgba(220,60,60,.1); border: 1px solid rgba(220,60,60,.2); border-radius: 3px; color: #f07070; font-size: 13px; margin-top: 16px; }
     .report-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
     .report-actions a { text-decoration: none; }
+    .brief-panel { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.06); }
+    .brief-grid { display: grid; gap: 14px; margin-top: 14px; }
+    .brief-copy { font-size: 13px; color: var(--text-2); line-height: 1.65; }
+    .brief-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .brief-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,.08); background: rgba(120,160,220,.07); color: var(--text-2); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
   </style>
 </head>
 <body>
@@ -101,6 +106,26 @@
           <div id="completedRow" style="display:none;">
             <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Completed</div>
             <div id="resCompleted" style="font-size:14px;color:var(--text-2);"></div>
+          </div>
+        </div>
+        <div id="briefPanel" class="brief-panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);">Investigation Brief</div>
+            <div id="resSignalStrength" class="status-badge status-processing">0 identifiers</div>
+          </div>
+          <div class="brief-grid">
+            <div>
+              <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Requested Findings</div>
+              <div id="resRequestedFindings" class="brief-copy"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Case Objective</div>
+              <div id="resGoals" class="brief-copy"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Structured Identifiers</div>
+              <div id="resSignalChips" class="brief-chip-row"></div>
+            </div>
           </div>
         </div>
         <div class="timeline" id="timeline"></div>
@@ -230,7 +255,42 @@
       }
 
       syncReportActions(data);
+      renderBrief(data);
       document.getElementById('orderResult').style.display = '';
+    }
+
+    function briefSignals(input = {}) {
+      const aliasCount = Array.isArray(input.alternateNames) ? input.alternateNames.length : 0;
+      return [
+        ['Address', input.lastKnownAddress],
+        ['Parcel', input.parcelId],
+        ['Aliases', aliasCount ? `${aliasCount} captured` : ''],
+        ['DOB', input.dateOfBirth],
+        ['Death year', input.deathYear],
+        ['Phone', input.subjectPhone],
+        ['Email', input.subjectEmail],
+        ['URL', input.websiteProfile],
+        ['Search seeds', Array.isArray(input.searchSeeds) && input.searchSeeds.length ? `${input.searchSeeds.length} loaded` : '']
+      ].filter(([, value]) => value);
+    }
+
+    function renderBrief(data) {
+      const input = data.input_criteria || {};
+      const requested = input.requestedFindingsList?.length
+        ? input.requestedFindingsList.join('; ')
+        : input.requestedFindings || '';
+      const goals = input.goals || '';
+      const signals = briefSignals(input);
+      const panel = document.getElementById('briefPanel');
+      const hasBrief = Boolean(requested || goals || signals.length);
+
+      panel.style.display = hasBrief ? 'block' : 'none';
+      if (!hasBrief) return;
+
+      document.getElementById('resRequestedFindings').textContent = requested || 'No requested-findings note was stored for this order.';
+      document.getElementById('resGoals').textContent = goals || 'No explicit case objective was stored for this order.';
+      document.getElementById('resSignalStrength').textContent = `${signals.length} identifiers`;
+      document.getElementById('resSignalChips').innerHTML = signals.map(([label, value]) => `<span class="brief-chip">${label}: ${value}</span>`).join('');
     }
 
     function buildArtifactUrl(caseRef, format) {
