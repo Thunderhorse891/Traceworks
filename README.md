@@ -51,6 +51,12 @@ The live paid workflows are driven by `netlify/functions/_lib/tier-handlers.js`,
 
 Production launch notes live in `docs/production-launch.md`.
 
+## CI and Deployment
+
+- GitHub Actions CI lives at `.github/workflows/ci.yml` and runs the same repo verification command used locally: `npm run ci`.
+- Netlify is the only supported deployment target for the live app. `netlify.toml` is authoritative for publish, functions, schedule, redirects, and site security headers.
+- Static security headers, including the site-wide Content Security Policy, are defined in `netlify.toml`.
+
 ## Repo Cleanup Policy
 
 If a file duplicates `public/` or `netlify/functions/`, ships retired sample content, or contains mock/simulated production behavior, it should be removed instead of kept around “just in case.”

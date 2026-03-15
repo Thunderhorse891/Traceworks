@@ -4,13 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --test && npm run lint:js",
+    "check": "npm run lint:js && npm run test",
+    "ci": "npm run check",
     "launch:audit": "node scripts/launch-audit.mjs",
     "launch:env": "node scripts/netlify-env-template.mjs",
     "launch:secrets": "node scripts/generate-launch-secrets.mjs",
     "live:smoke": "node scripts/live-smoke.mjs",
     "lint:js": "node scripts/check-syntax.mjs",
-    "test": "node --test"
+    "test": "node --test --test-isolation=none --test-concurrency=1"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
