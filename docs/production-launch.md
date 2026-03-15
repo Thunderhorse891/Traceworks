@@ -79,6 +79,8 @@ Non-empty responses should contain the keys the workflow expects, such as:
 2. Populate Netlify environment variables.
 3. Deploy the site.
 4. Run `npm run launch:audit`.
-5. Run `npm run live:smoke -- --url https://your-site.example --admin-key YOUR_ADMIN_API_KEY`.
-6. Run one real paid end-to-end order on the deployed domain.
-7. Verify email delivery, status links, queue progression, artifact access, and Netlify logs.
+5. Run package/county preflight against the deployed domain before you charge a real customer:
+   - `curl -X POST https://your-site.example/api/intake-preflight -H "content-type: application/json" -d "{\"packageId\":\"standard\",\"subjectName\":\"Launch Probe\",\"county\":\"Harris\",\"state\":\"TX\"}"`
+6. Run `npm run live:smoke -- --url https://your-site.example --admin-key YOUR_ADMIN_API_KEY --package-id standard --county Harris --state TX`.
+7. Run one real paid end-to-end order on the deployed domain.
+8. Verify email delivery, status links, queue progression, artifact access, and Netlify logs.

@@ -1,3 +1,5 @@
+import { canonicalPackageId, publicRecordFamiliesForPackage } from '../package-contract.js';
+
 const TEXAS_FIRST_SOURCE_CONFIG = {
   countyProperty: [
     {
@@ -146,6 +148,57 @@ export const SOURCE_CONFIG_FAMILIES = Object.freeze([
   'entitySearch'
 ]);
 
+const FAMILY_LABELS = Object.freeze({
+  countyProperty: 'County property',
+  countyRecorder: 'County recorder',
+  probateIndex: 'Probate index',
+  entitySearch: 'Entity registry'
+});
+
+function normalizeState(value) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+function normalizeCounty(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+county$/i, '')
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeCoverageItems(values, normalizer) {
+  const list = Array.isArray(values) ? values : values ? [values] : [];
+  return list.map((value) => normalizer(value)).filter(Boolean);
+}
+
+function configCoversJurisdiction(config, { county, state }) {
+  const configuredStates = normalizeCoverageItems(config?.coverage?.states, normalizeState);
+  const configuredCounties = normalizeCoverageItems(config?.coverage?.counties, normalizeCounty);
+  const queryState = normalizeState(state);
+  const queryCounty = normalizeCounty(county);
+
+  if (configuredStates.length && (!queryState || !configuredStates.includes(queryState))) return false;
+  if (configuredCounties.length && (!queryCounty || !configuredCounties.includes(queryCounty))) return false;
+  return true;
+}
+
+function familyRequiredForInput(family, input = {}) {
+  if (family !== 'entitySearch') return true;
+  return normalizeState(input.subjectType || '').toLowerCase() === 'entity' && String(input.subjectName || input.entityName || '').trim().length > 0;
+}
+
+function familyLabel(family) {
+  return FAMILY_LABELS[family] || family;
+}
+
+function locationLabel({ county, state } = {}) {
+  const countyLabel = String(county || '').trim();
+  const stateLabel = normalizeState(state);
+  if (countyLabel && stateLabel) return `${countyLabel} County, ${stateLabel}`;
+  return countyLabel || stateLabel || 'the requested jurisdiction';
+}
+
 function normalizeSourceConfig(parsed = {}) {
   return {
     countyProperty: Array.isArray(parsed.countyProperty) ? parsed.countyProperty : TEXAS_FIRST_SOURCE_CONFIG.countyProperty,
@@ -190,4 +243,62 @@ export function loadSourceConfig(env = process.env) {
 
 export function usingBundledSourceConfig(env = process.env) {
   return !String(env.PUBLIC_RECORD_SOURCE_CONFIG || '').trim();
+}
+
+export function assessPackageJurisdictionCoverage({ packageId, input = {}, env = process.env }) {
+  const canonicalPackage = canonicalPackageId(packageId) || 'standard';
+  const sourceConfig = loadSourceConfig(env);
+  const requestedFamilies = publicRecordFamiliesForPackage(canonicalPackage);
+  const targetLocation = locationLabel(input);
+
+  const familyCoverage = requestedFamilies.map((family) => {
+    const configs = Array.isArray(sourceConfig?.[family]) ? sourceConfig[family] : [];
+    const required = familyRequiredForInput(family, input);
+    const inScopeConfigs = required
+      ? configs.filter((config) => configCoversJurisdiction(config, input))
+      : [];
+    const automatedConfigs = inScopeConfigs.filter((config) => config?.type !== 'browser');
+    const browserBackedConfigs = inScopeConfigs.filter((config) => config?.type === 'browser');
+
+    let detail = `${familyLabel(family)} coverage is not required for this intake.`;
+    if (required && !configs.length) {
+      detail = `No ${familyLabel(family).toLowerCase()} sources are configured for this runtime.`;
+    } else if (required && !inScopeConfigs.length) {
+      detail = `No ${familyLabel(family).toLowerCase()} sources currently cover ${targetLocation}.`;
+    } else if (required && !automatedConfigs.length && browserBackedConfigs.length) {
+      detail = `${browserBackedConfigs.length} in-scope ${familyLabel(family).toLowerCase()} source(s) are browser-backed and will likely require manual review in the current runtime.`;
+    } else if (required) {
+      detail = `${automatedConfigs.length} automated ${familyLabel(family).toLowerCase()} source(s) currently cover ${targetLocation}.`;
+    }
+
+    return {
+      family,
+      label: familyLabel(family),
+      required,
+      configuredSources: configs.length,
+      inScopeSources: inScopeConfigs.length,
+      automatedSources: automatedConfigs.length,
+      browserBackedSources: browserBackedConfigs.length,
+      ready: !required || inScopeConfigs.length > 0,
+      detail
+    };
+  });
+
+  const blockingFamilies = familyCoverage.filter((family) => family.required && family.inScopeSources === 0);
+  const manualReviewFamilies = familyCoverage.filter((family) => family.required && family.inScopeSources > 0 && family.automatedSources === 0);
+
+  return {
+    packageId: canonicalPackage,
+    locationLabel: targetLocation,
+    requestedFamilies,
+    familyCoverage,
+    coverageReady: blockingFamilies.length === 0,
+    blockingFamilies,
+    manualReviewFamilies,
+    summary: blockingFamilies.length
+      ? `${canonicalPackage} is missing automated jurisdiction coverage for ${targetLocation}.`
+      : manualReviewFamilies.length
+        ? `${canonicalPackage} covers ${targetLocation}, but at least one required family is browser-backed in the current runtime.`
+        : `${canonicalPackage} has in-scope automated source coverage for ${targetLocation}.`
+  };
 }

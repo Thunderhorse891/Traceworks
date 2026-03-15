@@ -8,7 +8,7 @@ import { createStatusToken } from './_lib/status-token.js';
 import { validateStripeSecretKey } from './_lib/stripe-config.js';
 import { ORDER_STATUS } from './_lib/order-status.js';
 import { resolvePurchasedTier } from './_lib/tier-mapping.js';
-import { assessPackageLaunchGate } from './_lib/launch-audit.js';
+import { assessOrderLaunchGate } from './_lib/launch-audit.js';
 import { buildCheckoutSessionPayload } from './_lib/stripe-checkout.js';
 
 function makeCaseRef() {
@@ -38,12 +38,13 @@ export default async (event) => {
     const pkg = getPackage(packageId);
     if (!pkg) return jsonWithRequestId(event, 400, { error: 'Invalid package selected.' });
     const inputCriteria = buildInputCriteria(payload);
-    const launchGate = assessPackageLaunchGate(packageId, process.env);
+    const launchGate = assessOrderLaunchGate(packageId, inputCriteria, process.env);
     if (!launchGate.launchReady) {
       return jsonWithRequestId(event, 503, {
         error: launchGate.launchMessage,
         launchBlocked: true,
-        blockingAreas: launchGate.launchBlockingAreas
+        blockingAreas: launchGate.launchBlockingAreas,
+        blockingDetails: launchGate.launchBlockingDetails
       });
     }
 
@@ -78,6 +79,9 @@ export default async (event) => {
       requestedFindings: inputCriteria.requestedFindings,
       goals,
       input_criteria: inputCriteria,
+      coverage_assessment: launchGate.orderCoverage || null,
+      manualReviewLikely: Boolean(launchGate.manualReviewLikely),
+      manualReviewIndicators: launchGate.manualReviewDetails || [],
       stripe_checkout_session_id: null,
       stripe_payment_intent_id: null,
       artifact_url_or_path: null,

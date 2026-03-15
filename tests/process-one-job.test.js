@@ -160,3 +160,66 @@ test('processOneFulfillmentJob routes queued work to manual review when launch g
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('processOneFulfillmentJob routes unsupported county coverage to manual review before execution', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'tw-job-county-'));
+  process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
+
+  const snapshot = snapshotEnv(LAUNCH_GATE_KEYS);
+  for (const key of LAUNCH_GATE_KEYS) delete process.env[key];
+  setLaunchReadyEnv();
+  process.env.TRACEWORKS_STORAGE_DRIVER = 'file';
+  process.env.PUBLIC_RECORD_SOURCE_CONFIG = JSON.stringify({
+    countyProperty: [{ id: 'harris-property', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+    countyRecorder: [{ id: 'harris-recorder', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+    probateIndex: [{ id: 'probate', type: 'html' }],
+    entitySearch: [{ id: 'entity', type: 'json' }]
+  });
+
+  try {
+    const stamp = Date.now();
+    const store = await import(`../netlify/functions/_lib/store.js?ts=${stamp}`);
+    const { processOneFulfillmentJob } = await import(`../netlify/functions/_lib/process-one-job.js?ts=${stamp}`);
+
+    const caseRef = 'TW-JOB-COUNTY';
+    await store.upsertOrder(caseRef, {
+      order_id: caseRef,
+      caseRef,
+      status: 'queued',
+      packageId: 'standard',
+      customerEmail: 'client@example.com',
+      input_criteria: {
+        packageId: 'standard',
+        subjectName: 'Jane Owner',
+        subjectType: 'property',
+        county: 'Dallas',
+        state: 'TX'
+      }
+    });
+    await store.enqueueJob({
+      type: 'fulfillment',
+      payload: { caseRef, packageId: 'standard' }
+    });
+
+    const result = await processOneFulfillmentJob({
+      ownerEmail: 'owner@example.com',
+      deps: {
+        assessPackageLaunchGateImpl: () => ({ launchReady: true, launchBlockingDetails: [] }),
+        processFulfillmentJobImpl: async () => {
+          throw new Error('fulfillment should not run when county coverage is blocked');
+        }
+      }
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.manualReview, true);
+    assert.equal(result.message, 'order_coverage_blocked');
+
+    const order = await store.getOrder(caseRef);
+    assert.equal(order.status, 'manual_review');
+    assert.ok(String(order.failure_reason || '').includes('Dallas County, TX'));
+  } finally {
+    restoreEnv(snapshot, LAUNCH_GATE_KEYS);
+    await rm(dir, { recursive: true, force: true });
+  }
+});

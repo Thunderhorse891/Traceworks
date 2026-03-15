@@ -29,6 +29,10 @@ async function requestText(url, options = {}) {
 const args = parseArgs(process.argv.slice(2));
 const baseUrl = String(args.url || process.env.URL || '').trim();
 const adminKey = String(args['admin-key'] || process.env.ADMIN_API_KEY || '').trim();
+const preflightPackageId = String(args['package-id'] || '').trim();
+const preflightCounty = String(args.county || '').trim();
+const preflightState = String(args.state || 'TX').trim();
+const preflightSubject = String(args.subject || 'TraceWorks Launch Probe').trim();
 
 if (!baseUrl) {
   console.error('Usage: node scripts/live-smoke.mjs --url https://your-site.example [--admin-key your-admin-key]');
@@ -84,6 +88,9 @@ if (adminKey) {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     if (!Array.isArray(body.checks)) throw new Error('Launch audit checks missing.');
+    if (body.ok !== true) {
+      throw new Error(`Launch audit still reports ${body.blockingCount || 0} blocking issue(s).`);
+    }
   });
 
   await runCheck('Admin health exposes diagnostics', async () => {
@@ -92,6 +99,23 @@ if (adminKey) {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     if (body.visibility !== 'admin') throw new Error('Admin health did not return admin visibility.');
+  });
+}
+
+if (preflightPackageId && preflightCounty) {
+  await runCheck('Intake preflight confirms jurisdiction coverage', async () => {
+    const { response, body } = await requestJson(absoluteUrl(baseUrl, '/api/intake-preflight'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        packageId: preflightPackageId,
+        subjectName: preflightSubject,
+        county: preflightCounty,
+        state: preflightState
+      })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (body.launchReady !== true) throw new Error(body.launchMessage || 'Intake preflight reported blocked coverage.');
   });
 }
 

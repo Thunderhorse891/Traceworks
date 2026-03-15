@@ -2,12 +2,13 @@ import { BUSINESS_EMAIL, getBusinessEmail } from './business.js';
 import { resolveEmailSettings } from './email-config.js';
 import { resolvePremiumOsintConfig } from './osint-config.js';
 import { PACKAGE_LIST, getPackage } from './packages.js';
-import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig, usingBundledSourceConfig } from './sources/source-config.js';
+import { assessPackageJurisdictionCoverage, findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig, usingBundledSourceConfig } from './sources/source-config.js';
 import { resolveKvRestConfig, storageDriverName } from './storage-runtime.js';
 import { validateStripeSecretKey, validateStripeWebhookSecret } from './stripe-config.js';
 
 const PUBLIC_GATE_MESSAGE = 'TraceWorks is temporarily not accepting paid orders while launch requirements are being completed. No charge was created.';
 const PACKAGE_SOURCE_PENDING_MESSAGE = 'This package is not live yet because the required source coverage is not fully connected.';
+const JURISDICTION_SOURCE_PENDING_MESSAGE = 'This package is live, but automated source coverage is not configured for the requested jurisdiction yet. No charge was created.';
 
 const CUSTOMER_CORE_BLOCKING_IDS = new Set([
   'base_url',
@@ -658,4 +659,59 @@ export function assessPackageLaunchGate(packageId, env = process.env, existingCh
 export function listPackageLaunchStatus(env = process.env, existingChecks = null) {
   const checks = existingChecks || collectLaunchChecks(env);
   return PACKAGE_LIST.map((pkg) => assessPackageLaunchGate(pkg.id, env, checks));
+}
+
+export function assessOrderLaunchGate(packageId, input = {}, env = process.env, existingChecks = null) {
+  const packageGate = assessPackageLaunchGate(packageId, env, existingChecks);
+  const orderCoverage = assessPackageJurisdictionCoverage({ packageId, input, env });
+
+  if (!packageGate.launchReady) {
+    return {
+      ...packageGate,
+      orderCoverage,
+      manualReviewLikely: orderCoverage.manualReviewFamilies.length > 0,
+      manualReviewDetails: orderCoverage.manualReviewFamilies.map((family) => ({
+        id: `${family.family}_manual_review`,
+        label: `${family.label} automation boundary`,
+        detail: family.detail
+      }))
+    };
+  }
+
+  const jurisdictionBlockingDetails = orderCoverage.blockingFamilies.map((family) => ({
+    id: `${family.family}_coverage`,
+    label: `${family.label} coverage`,
+    detail: family.detail
+  }));
+
+  const manualReviewDetails = orderCoverage.manualReviewFamilies.map((family) => ({
+    id: `${family.family}_manual_review`,
+    label: `${family.label} automation boundary`,
+    detail: family.detail
+  }));
+
+  const launchReady = jurisdictionBlockingDetails.length === 0;
+  const readinessSummary = launchReady
+    ? manualReviewDetails.length
+      ? `${packageGate.name} covers ${orderCoverage.locationLabel}, but at least one required family remains browser-backed in the current runtime.`
+      : `${packageGate.name} is automation-ready for ${orderCoverage.locationLabel}.`
+    : `${packageGate.name} is not automation-ready for ${orderCoverage.locationLabel}.`;
+
+  return {
+    ...packageGate,
+    launchReady,
+    launchMessage: launchReady
+      ? packageGate.launchMessage
+      : `${JURISDICTION_SOURCE_PENDING_MESSAGE} Requested location: ${orderCoverage.locationLabel}.`,
+    launchBlockingAreas: launchReady
+      ? packageGate.launchBlockingAreas
+      : [...new Set([...packageGate.launchBlockingAreas, 'jurisdiction'])],
+    launchBlockingDetails: launchReady
+      ? packageGate.launchBlockingDetails
+      : [...packageGate.launchBlockingDetails, ...jurisdictionBlockingDetails],
+    readinessSummary,
+    orderCoverage,
+    manualReviewLikely: manualReviewDetails.length > 0,
+    manualReviewDetails
+  };
 }

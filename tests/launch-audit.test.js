@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { assessPackageLaunchGate, auditLaunchReadiness } from '../netlify/functions/_lib/launch-audit.js';
+import { assessOrderLaunchGate, assessPackageLaunchGate, auditLaunchReadiness } from '../netlify/functions/_lib/launch-audit.js';
 
 test('launch audit blocks file storage and missing launch secrets', () => {
   const result = auditLaunchReadiness({
@@ -188,4 +188,82 @@ test('package launch gate blocks only packages whose source coverage is missing'
   assert.equal(probate.launchReady, false);
   assert.ok(probate.launchBlockingAreas.includes('sources'));
   assert.ok(probate.launchBlockingDetails.some((detail) => detail.id === 'OBITUARY_API_URL'));
+});
+
+test('order launch gate blocks a package when the requested county is outside configured coverage', () => {
+  const env = {
+    URL: 'https://traceworks.app',
+    STRIPE_SECRET_KEY: 'sk_live_123',
+    STRIPE_WEBHOOK_SECRET: 'whsec_123',
+    SMTP_HOST: 'smtp-mail.outlook.com',
+    SMTP_USER: 'traceworks@example.com',
+    SMTP_PASS: 'secret',
+    STATUS_TOKEN_SECRET: 'status',
+    QUEUE_CRON_SECRET: 'queue',
+    TRACEWORKS_STORAGE_DRIVER: 'kv',
+    UPSTASH_REDIS_REST_URL: 'https://kv.example.com',
+    UPSTASH_REDIS_REST_TOKEN: 'kv-secret',
+    APPRAISAL_API_URL: 'https://sources.example/appraisal',
+    TAX_COLLECTOR_API_URL: 'https://sources.example/tax',
+    PARCEL_GIS_API_URL: 'https://sources.example/gis',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [{ id: 'harris-property', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      countyRecorder: [{ id: 'harris-recorder', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      probateIndex: [{ id: 'probate', type: 'html' }],
+      entitySearch: [{ id: 'entity', type: 'json' }]
+    })
+  };
+
+  const gate = assessOrderLaunchGate('standard', {
+    packageId: 'standard',
+    subjectType: 'property',
+    subjectName: 'Jane Owner',
+    county: 'Dallas',
+    state: 'TX'
+  }, env);
+
+  assert.equal(gate.launchReady, false);
+  assert.ok(gate.launchBlockingAreas.includes('jurisdiction'));
+  assert.ok(gate.launchMessage.includes('requested jurisdiction'));
+  assert.ok(gate.launchBlockingDetails.some((detail) => detail.id === 'countyProperty_coverage'));
+});
+
+test('order launch gate warns when in-scope coverage is browser-backed only', () => {
+  const env = {
+    URL: 'https://traceworks.app',
+    STRIPE_SECRET_KEY: 'sk_live_123',
+    STRIPE_WEBHOOK_SECRET: 'whsec_123',
+    SMTP_HOST: 'smtp-mail.outlook.com',
+    SMTP_USER: 'traceworks@example.com',
+    SMTP_PASS: 'secret',
+    STATUS_TOKEN_SECRET: 'status',
+    QUEUE_CRON_SECRET: 'queue',
+    TRACEWORKS_STORAGE_DRIVER: 'kv',
+    UPSTASH_REDIS_REST_URL: 'https://kv.example.com',
+    UPSTASH_REDIS_REST_TOKEN: 'kv-secret',
+    APPRAISAL_API_URL: 'https://sources.example/appraisal',
+    TAX_COLLECTOR_API_URL: 'https://sources.example/tax',
+    PARCEL_GIS_API_URL: 'https://sources.example/gis',
+    COUNTY_CLERK_API_URL: 'https://sources.example/clerk',
+    GRANTOR_GRANTEE_API_URL: 'https://sources.example/grantor',
+    MORTGAGE_INDEX_API_URL: 'https://sources.example/mortgage',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [{ id: 'property', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      countyRecorder: [{ id: 'recorder-browser', type: 'browser', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      probateIndex: [{ id: 'probate', type: 'html' }],
+      entitySearch: [{ id: 'entity', type: 'json' }]
+    })
+  };
+
+  const gate = assessOrderLaunchGate('ownership_encumbrance', {
+    packageId: 'ownership_encumbrance',
+    subjectType: 'property',
+    subjectName: 'Jane Owner',
+    county: 'Harris',
+    state: 'TX'
+  }, env);
+
+  assert.equal(gate.launchReady, true);
+  assert.equal(gate.manualReviewLikely, true);
+  assert.ok(gate.manualReviewDetails.some((detail) => detail.id === 'countyRecorder_manual_review'));
 });

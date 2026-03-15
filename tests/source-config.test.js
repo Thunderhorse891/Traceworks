@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  assessPackageJurisdictionCoverage,
   findStrictSourceConfigGaps,
   loadSourceConfig,
   summarizeSourceConfig,
@@ -47,4 +48,60 @@ test('loadSourceConfig rejects invalid JSON', () => {
 test('usingBundledSourceConfig detects when the starter catalog is still active', () => {
   assert.equal(usingBundledSourceConfig({}), true);
   assert.equal(usingBundledSourceConfig({ PUBLIC_RECORD_SOURCE_CONFIG: '{"countyProperty":[],"countyRecorder":[],"probateIndex":[],"entitySearch":[]}' }), false);
+});
+
+test('assessPackageJurisdictionCoverage flags unsupported county coverage', () => {
+  const coverage = assessPackageJurisdictionCoverage({
+    packageId: 'standard',
+    input: { county: 'Dallas', state: 'TX', subjectType: 'property', subjectName: 'Jane Owner' },
+    env: {
+      PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+        countyProperty: [{ id: 'harris-only', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+        countyRecorder: [],
+        probateIndex: [],
+        entitySearch: []
+      })
+    }
+  });
+
+  assert.equal(coverage.coverageReady, false);
+  assert.equal(coverage.blockingFamilies.length, 1);
+  assert.ok(coverage.blockingFamilies[0].detail.includes('Dallas County, TX'));
+});
+
+test('assessPackageJurisdictionCoverage marks browser-only families for manual review', () => {
+  const coverage = assessPackageJurisdictionCoverage({
+    packageId: 'ownership_encumbrance',
+    input: { county: 'Harris', state: 'TX', subjectType: 'property', subjectName: 'Jane Owner' },
+    env: {
+      PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+        countyProperty: [{ id: 'property', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+        countyRecorder: [{ id: 'recorder-browser', type: 'browser', coverage: { states: ['TX'], counties: ['Harris'] } }],
+        probateIndex: [],
+        entitySearch: []
+      })
+    }
+  });
+
+  assert.equal(coverage.coverageReady, true);
+  assert.equal(coverage.manualReviewFamilies.length, 1);
+  assert.equal(coverage.manualReviewFamilies[0].family, 'countyRecorder');
+});
+
+test('assessPackageJurisdictionCoverage does not require entity coverage unless intake is entity-scoped', () => {
+  const coverage = assessPackageJurisdictionCoverage({
+    packageId: 'asset_network',
+    input: { county: 'Harris', state: 'TX', subjectType: 'person', subjectName: 'Jane Owner' },
+    env: {
+      PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+        countyProperty: [{ id: 'property', type: 'html' }],
+        countyRecorder: [{ id: 'recorder', type: 'html' }],
+        probateIndex: [],
+        entitySearch: []
+      })
+    }
+  });
+
+  assert.equal(coverage.coverageReady, true);
+  assert.equal(coverage.blockingFamilies.length, 0);
 });
