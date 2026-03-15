@@ -1,3 +1,4 @@
+import { requireAdmin } from './_lib/admin-auth.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { listOrders } from './_lib/store.js';
@@ -9,10 +10,8 @@ export default async (event) => {
   const limit = hitRateLimit({ key: `admin-orders:${ip}`, windowMs: 60_000, max: 30 });
   if (limit.limited) return jsonWithRequestId(event, 429, { error: 'Too many requests.' });
 
-  const auth = event.headers.authorization || '';
-  const key = process.env.ADMIN_API_KEY;
-  if (!key) return jsonWithRequestId(event, 500, { error: 'ADMIN_API_KEY is not configured.' });
-  if (auth !== `Bearer ${key}`) return jsonWithRequestId(event, 401, { error: 'Unauthorized' });
+  const auth = requireAdmin(event);
+  if (!auth.ok) return auth.response;
 
   const limitParam = event.queryStringParameters?.limit || '50';
   const statusFilter = event.queryStringParameters?.status || '';

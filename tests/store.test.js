@@ -90,3 +90,26 @@ test('operations snapshot exposes manual review orders and active jobs', async (
 
   await rm(dir, { recursive: true, force: true });
 });
+
+test('requeueCaseJob creates one new queued job and blocks duplicate active retries', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'tw-store-requeue-'));
+  process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
+
+  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  await store.enqueueJob({ type: 'fulfillment', payload: { caseRef: 'TW-RETRY', packageId: 'standard' } });
+  const first = await store.requeueCaseJob('fulfillment', 'TW-RETRY', { subjectName: 'Jane Doe' });
+
+  assert.equal(first.ok, false);
+  assert.equal(first.reason, 'active_job_exists');
+
+  const claimed = await store.claimJobByCaseRef('fulfillment', 'TW-RETRY');
+  await store.failJob(claimed.id, 'terminal error', 1);
+
+  const second = await store.requeueCaseJob('fulfillment', 'TW-RETRY', { subjectName: 'Jane Doe' });
+  assert.equal(second.ok, true);
+  assert.equal(second.job.status, 'queued');
+  assert.equal(second.job.payload.caseRef, 'TW-RETRY');
+  assert.equal(second.previousJob.id, claimed.id);
+
+  await rm(dir, { recursive: true, force: true });
+});

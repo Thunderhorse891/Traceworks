@@ -88,6 +88,10 @@ function backoffMs(attempts) {
   return Math.min(60_000, 2 ** Math.max(0, attempts - 1) * 1000);
 }
 
+function jobSortValue(job) {
+  return Date.parse(job?.updatedAt || job?.createdAt || 0);
+}
+
 export async function upsertOrder(caseRef, patch) {
   return mutateStore(async (store) => {
     const current = store.orders[caseRef] || { caseRef, createdAt: new Date().toISOString(), fulfillmentAttempts: 0 };
@@ -248,6 +252,43 @@ export async function failJob(jobId, error, maxAttempts = 5) {
       updatedAt: new Date().toISOString()
     };
     return { terminal, attempts, nextAttemptAt, waitMs };
+  });
+}
+
+export async function requeueCaseJob(type, caseRef, payload = {}) {
+  if (!type || !caseRef) return { ok: false, reason: 'invalid_request' };
+
+  return mutateStore(async (store) => {
+    const jobsForCase = store.jobs
+      .filter((job) => job.type === type && job.payload?.caseRef === caseRef)
+      .sort((a, b) => jobSortValue(b) - jobSortValue(a));
+
+    const activeJob = jobsForCase.find((job) => ['queued', 'retry', 'processing'].includes(job.status));
+    if (activeJob) {
+      return { ok: false, reason: 'active_job_exists', job: activeJob };
+    }
+
+    const latestJob = jobsForCase[0] || null;
+    const now = new Date().toISOString();
+    const item = {
+      id: makeJobId(),
+      status: 'queued',
+      attempts: 0,
+      createdAt: now,
+      updatedAt: now,
+      nextAttemptAt: now,
+      type,
+      payload: {
+        ...(latestJob?.payload || {}),
+        ...payload,
+        caseRef
+      }
+    };
+
+    store.jobs.push(item);
+    if (store.jobs.length > 20000) store.jobs = store.jobs.slice(-20000);
+
+    return { ok: true, job: item, previousJob: latestJob };
   });
 }
 

@@ -100,4 +100,8 @@ test('admin dashboard exposes operator visibility panels for live launch monitor
   assert.ok(html.includes('activeJobRows'));
   assert.ok(html.includes('auditEventRows'));
   assert.ok(html.includes('deadLetterRows'));
+  assert.ok(html.includes('Run Worker Once'));
+  assert.ok(html.includes('opsFeedback'));
+  assert.ok(html.includes("data-admin-action=\"${escapeHtml(action)}\""));
+  assert.ok(html.includes('function escapeHtml'));
 });

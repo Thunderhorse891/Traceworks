@@ -40,6 +40,13 @@
     .health-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 12px; }
     .health-row:last-child { border-bottom: none; }
     .err-msg { padding: 12px 16px; background: rgba(220,60,60,.1); border: 1px solid rgba(220,60,60,.2); border-radius: 3px; color: #f07070; font-size: 12px; margin-top: 12px; }
+    .ops-msg { padding: 12px 16px; border-radius: 3px; font-size: 12px; margin: 0 0 18px; display: none; }
+    .ops-msg[data-tone="ok"] { background: rgba(94,203,148,.12); border: 1px solid rgba(94,203,148,.24); color: #9ee5bc; display: block; }
+    .ops-msg[data-tone="warn"] { background: rgba(201,168,76,.12); border: 1px solid rgba(201,168,76,.24); color: #e2c978; display: block; }
+    .ops-msg[data-tone="error"] { background: rgba(220,60,60,.1); border: 1px solid rgba(220,60,60,.2); color: #f07070; display: block; }
+    .mini-btn { padding: 6px 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; color: var(--text-2, #b8c4e0); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+    .mini-btn:hover { border-color: rgba(255,255,255,.22); color: var(--text-1, #f3f6ff); }
+    .mini-btn:disabled { opacity: .45; cursor: wait; }
   </style>
 </head>
 <body>
@@ -79,10 +86,13 @@
         <h2 style="font-family:var(--serif,Georgia,serif);font-size:24px;color:var(--text-1);margin:8px 0 0;">Operations Dashboard</h2>
       </div>
       <div style="display:flex;gap:10px;">
+        <button id="runWorkerBtn" class="btn-primary" style="font-size:12px;padding:8px 16px;">Run Worker Once</button>
         <button onclick="refresh()" class="btn-outline" style="font-size:12px;padding:8px 16px;">Refresh</button>
         <button onclick="logout()" style="font-size:12px;padding:8px 16px;background:none;border:1px solid rgba(255,255,255,.1);color:var(--text-3);border-radius:2px;cursor:pointer;">Logout</button>
       </div>
     </div>
+
+    <div id="opsFeedback" class="ops-msg" aria-live="polite"></div>
 
     <!-- Metrics cards -->
     <div class="metrics-grid">
@@ -163,11 +173,84 @@
 
     function getKey() { return sessionStorage.getItem(STORAGE_KEY) || ''; }
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizeStatusTone(status) {
+      return /^[a-z_]+$/.test(status || '') ? status : 'failed';
+    }
+
+    function setOpsFeedback(message, tone = '') {
+      const el = document.getElementById('opsFeedback');
+      if (!el) return;
+      el.textContent = message || '';
+      if (!message) {
+        el.style.display = 'none';
+        el.removeAttribute('data-tone');
+        return;
+      }
+      el.style.display = 'block';
+      el.setAttribute('data-tone', tone || 'ok');
+    }
+
+    function renderActionButton(label, action, caseRef) {
+      if (!caseRef) return '';
+      return `<button class="mini-btn" data-admin-action="${escapeHtml(action)}" data-case-ref="${escapeHtml(caseRef)}">${escapeHtml(label)}</button>`;
+    }
+
+    async function postAdminAction(action, payload = {}) {
+      const key = getKey();
+      const res = await fetch('/api/admin-actions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action, ...payload })
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const error = body.error || `HTTP ${res.status}`;
+        const err = new Error(error);
+        err.status = res.status;
+        err.payload = body;
+        throw err;
+      }
+      return body;
+    }
+
+    async function requeueCase(caseRef) {
+      const result = await postAdminAction('requeue_case', { caseRef });
+      const manualReviewNote = result.manualReviewLikely ? ' Manual review may still be needed for browser-backed sources.' : '';
+      setOpsFeedback(`Case ${caseRef} requeued successfully.${manualReviewNote}`, result.manualReviewLikely ? 'warn' : 'ok');
+      await loadData();
+      return result;
+    }
+
+    async function runQueueOnce(caseRef = '') {
+      const result = await postAdminAction('run_queue_once', caseRef ? { caseRef } : {});
+      const target = result.caseRef ? ` for ${result.caseRef}` : '';
+      const tone = result.manualReview ? 'warn' : 'ok';
+      const message = result.message === 'no_jobs'
+        ? `No queued fulfillment jobs were ready${target}.`
+        : `Queue worker ran${target}.`;
+      setOpsFeedback(message, tone);
+      await loadData();
+      return result;
+    }
+
     function logout() {
       sessionStorage.removeItem(STORAGE_KEY);
       document.getElementById('adminDash').style.display = 'none';
       document.getElementById('loginScreen').style.display = '';
       document.getElementById('logoutBtn').style.display = 'none';
+      setOpsFeedback('');
     }
 
     function statusBadge(status) {
@@ -185,8 +268,8 @@
         refunded:'Refunded',
         canceled:'Canceled'
       };
-      const tone = status === 'retry' ? 'retrying' : status;
-      return `<span class="status-badge s-${tone}">${labels[status] || status}</span>`;
+      const tone = normalizeStatusTone(status === 'retry' ? 'retrying' : status);
+      return `<span class="status-badge s-${tone}">${escapeHtml(labels[status] || status || 'unknown')}</span>`;
     }
 
     function fmtDate(iso) {
@@ -248,13 +331,13 @@
           { label: 'Admin API Key', ok: true },
         ];
         document.getElementById('healthRows').innerHTML = healthChecks.map(c =>
-          `<div class="health-row"><span style="color:var(--text-2);">${c.label}</span><span class="status-dot ${c.ok ? 'dot-ok' : 'dot-error'}"></span></div>`
+          `<div class="health-row"><span style="color:var(--text-2);">${escapeHtml(c.label)}</span><span class="status-dot ${c.ok ? 'dot-ok' : 'dot-error'}"></span></div>`
         ).join('');
 
         // By-status
         const bs = orders.aggregate?.byStatus || {};
         document.getElementById('byStatusRows').innerHTML = Object.entries(bs).length
-          ? Object.entries(bs).map(([s, n]) => `<div class="health-row"><span>${statusBadge(s)}</span><span style="color:var(--text-1);font-weight:700;">${n}</span></div>`).join('')
+          ? Object.entries(bs).map(([s, n]) => `<div class="health-row"><span>${statusBadge(s)}</span><span style="color:var(--text-1);font-weight:700;">${escapeHtml(n)}</span></div>`).join('')
           : '<p style="font-size:12px;color:var(--text-4);">No orders.</p>';
 
         const ops = metrics.operations || {};
@@ -268,12 +351,15 @@
           <div class="health-row" style="display:block;">
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
               <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${order.caseRef || order.order_id || '—'}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${order.packageId || order.purchased_tier || 'unknown package'} · ${fmtDate(order.updatedAt || order.completed_at || order.createdAt)}</div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(order.caseRef || order.order_id || '—')}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(order.packageId || order.purchased_tier || 'unknown package')} · ${escapeHtml(fmtDate(order.updatedAt || order.completed_at || order.createdAt))}</div>
               </div>
-              <span>${statusBadge(order.status || 'manual_review')}</span>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                ${renderActionButton('Requeue', 'requeue-case', order.caseRef || order.order_id || '')}
+                <span>${statusBadge(order.status || 'manual_review')}</span>
+              </div>
             </div>
-            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${order.failure_reason || 'Manual review required.'}</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${escapeHtml(order.failure_reason || 'Manual review required.')}</div>
           </div>
         `);
 
@@ -282,12 +368,12 @@
           <div class="health-row" style="display:block;">
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
               <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${job.payload?.caseRef || job.id}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${job.type || 'job'} · attempts ${job.attempts || 0} · next ${fmtDate(job.nextAttemptAt || job.updatedAt || job.createdAt)}</div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(job.payload?.caseRef || job.id)}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(job.type || 'job')} · attempts ${escapeHtml(job.attempts || 0)} · next ${escapeHtml(fmtDate(job.nextAttemptAt || job.updatedAt || job.createdAt))}</div>
               </div>
               <span>${statusBadge(job.status || 'queued')}</span>
             </div>
-            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${job.lastError || 'Awaiting worker action.'}</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${escapeHtml(job.lastError || 'Awaiting worker action.')}</div>
           </div>
         `);
 
@@ -296,11 +382,11 @@
           <div class="health-row" style="display:block;">
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
               <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${entry.event || 'audit_event'}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${entry.caseRef || entry.orderId || 'system'} · ${fmtDate(entry.at)}</div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(entry.event || 'audit_event')}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(entry.caseRef || entry.orderId || 'system')} · ${escapeHtml(fmtDate(entry.at))}</div>
               </div>
             </div>
-            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${entry.error || entry.status || entry.packageId || entry.tier || 'Recorded in audit log.'}</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${escapeHtml(entry.error || entry.status || entry.packageId || entry.tier || 'Recorded in audit log.')}</div>
           </div>
         `);
 
@@ -309,11 +395,14 @@
           <div class="health-row" style="display:block;">
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
               <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${entry.caseRef || entry.jobId || 'dead_letter'}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${entry.source || 'queue'} · ${fmtDate(entry.at)}</div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(entry.caseRef || entry.jobId || 'dead_letter')}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(entry.source || 'queue')} · ${escapeHtml(fmtDate(entry.at))}</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                ${renderActionButton('Requeue', 'requeue-case', entry.caseRef || '')}
               </div>
             </div>
-            <div style="margin-top:8px;font-size:12px;color:#f0a3a3;line-height:1.5;">${entry.error || 'Unknown queue failure.'}</div>
+            <div style="margin-top:8px;font-size:12px;color:#f0a3a3;line-height:1.5;">${escapeHtml(entry.error || 'Unknown queue failure.')}</div>
           </div>
         `);
 
@@ -323,12 +412,12 @@
         document.getElementById('noOrders').style.display = rows.length ? 'none' : '';
         document.getElementById('ordersBody').innerHTML = rows.map(o => `
           <tr>
-            <td style="font-family:var(--mono);color:var(--text-1);">${o.caseRef || '—'}</td>
-            <td>${o.packageId || o.tier || '—'}</td>
+            <td style="font-family:var(--mono);color:var(--text-1);">${escapeHtml(o.caseRef || '—')}</td>
+            <td>${escapeHtml(o.packageId || o.tier || '—')}</td>
             <td>${statusBadge(o.status || 'unknown')}</td>
-            <td>${fmtDate(o.createdAt)}</td>
-            <td>${fmtAmt(o.amountTotal)}</td>
-            <td style="color:${(o.fulfillmentAttempts||0)>2?'#f07070':'var(--text-2)'};">${o.fulfillmentAttempts || 0}</td>
+            <td>${escapeHtml(fmtDate(o.createdAt))}</td>
+            <td>${escapeHtml(fmtAmt(o.amountTotal))}</td>
+            <td style="color:${(o.fulfillmentAttempts||0)>2?'#f07070':'var(--text-2)'};">${escapeHtml(o.fulfillmentAttempts || 0)}</td>
           </tr>`).join('');
 
         document.getElementById('lastRefresh').textContent = `Last refreshed: ${new Date().toLocaleTimeString()}`;
@@ -365,6 +454,42 @@
     }
 
     async function refresh() { await loadData(); }
+
+    document.getElementById('runWorkerBtn').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = 'Running…';
+      try {
+        await runQueueOnce();
+      } catch (err) {
+        const tone = err.status === 409 || err.status === 202 ? 'warn' : 'error';
+        setOpsFeedback(err.message, tone);
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Run Worker Once';
+      }
+    });
+
+    document.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-admin-action]');
+      if (!button) return;
+      const action = button.dataset.adminAction || '';
+      const caseRef = button.dataset.caseRef || '';
+      if (action !== 'requeue-case' || !caseRef) return;
+
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = 'Requeueing…';
+      try {
+        await requeueCase(caseRef);
+      } catch (err) {
+        const tone = err.status === 409 ? 'warn' : 'error';
+        setOpsFeedback(err.message, tone);
+      } finally {
+        button.disabled = false;
+        button.textContent = original;
+      }
+    });
 
     // Init
     if (getKey()) {

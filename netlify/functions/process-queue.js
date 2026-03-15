@@ -1,3 +1,4 @@
+import { requireAdmin } from './_lib/admin-auth.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { processOneFulfillmentJob } from './_lib/process-one-job.js';
@@ -6,10 +7,8 @@ import { getBusinessEmail } from './_lib/business.js';
 export default async (event) => {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
-  const key = process.env.ADMIN_API_KEY;
-  const auth = event.headers.authorization || '';
-  if (!key) return jsonWithRequestId(event, 500, { error: 'ADMIN_API_KEY is not configured.' });
-  if (auth !== `Bearer ${key}`) return jsonWithRequestId(event, 401, { error: 'Unauthorized' });
+  const auth = requireAdmin(event);
+  if (!auth.ok) return auth.response;
 
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
   const limit = hitRateLimit({ key: `queue-worker:${ip}`, windowMs: 60_000, max: 120 });
