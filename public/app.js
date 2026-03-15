@@ -40,6 +40,11 @@ const packageModalWorkflow = document.getElementById('packageModalWorkflow');
 const packageModalRequired = document.getElementById('packageModalRequired');
 const packageModalRecommended = document.getElementById('packageModalRecommended');
 const packageModalGuidance = document.getElementById('packageModalGuidance');
+const heroReadyCount = document.getElementById('heroReadyCount');
+const heroBlockedCount = document.getElementById('heroBlockedCount');
+const heroTurnaroundWindow = document.getElementById('heroTurnaroundWindow');
+const heroCoverageSummary = document.getElementById('heroCoverageSummary');
+const heroPackageMatrix = document.getElementById('heroPackageMatrix');
 
 const intakeFieldWrappers = new Map(
   [...document.querySelectorAll('[data-intake-field]')].map((el) => [el.dataset.intakeField, el])
@@ -101,6 +106,70 @@ function packageAvailabilityCopy(pkg) {
   return pkg.readinessSummary || pkg.launchMessage || 'This package is not live yet in the current environment.';
 }
 
+function readyPackages() {
+  return packageCatalog.filter((pkg) => pkg.launchReady !== false);
+}
+
+function turnaroundWindow(packages = readyPackages()) {
+  const hours = packages
+    .map((pkg) => Number(pkg.deliveryHours || 0))
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((left, right) => left - right);
+
+  if (!hours.length) return 'Awaiting live package sync';
+  const min = hours[0];
+  const max = hours[hours.length - 1];
+  return min === max ? `${min}h standard` : `${min}-${max}h typical`;
+}
+
+function renderHeroCommandCenter() {
+  const ready = readyPackages();
+  const blocked = packageCatalog.filter((pkg) => pkg.launchReady === false);
+
+  if (heroReadyCount) heroReadyCount.textContent = String(ready.length);
+  if (heroBlockedCount) heroBlockedCount.textContent = String(blocked.length);
+  if (heroTurnaroundWindow) heroTurnaroundWindow.textContent = turnaroundWindow(ready);
+  if (heroCoverageSummary) {
+    heroCoverageSummary.textContent = ready.length
+      ? `${ready.length}/${packageCatalog.length} packages live`
+      : 'Source coverage pending';
+  }
+
+  if (!heroPackageMatrix) return;
+
+  heroPackageMatrix.innerHTML = packageCatalog
+    .map((pkg) => {
+      const tone = pkg.launchReady === false ? 'blocked' : 'ready';
+      const selected = selectedPackage?.id === pkg.id ? ' active' : '';
+      const note = pkg.launchReady === false
+        ? 'Coverage pending'
+        : `${Number(pkg.deliveryHours || 0) > 0 ? `${pkg.deliveryHours}h target` : 'Launch ready'}`;
+
+      return `
+        <button type="button" class="hero-package-row ${tone}${selected}" data-hero-package-id="${pkg.id}">
+          <span class="hero-package-row-copy">
+            <strong>${pkg.name}</strong>
+            <small>${pkg.bestFor || pkg.summary || 'Investigative package'}</small>
+          </span>
+          <span class="hero-package-row-meta">${note}</span>
+        </button>
+      `;
+    })
+    .join('');
+
+  heroPackageMatrix.querySelectorAll('[data-hero-package-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const pkg = getPackageById(button.dataset.heroPackageId);
+      if (!pkg) return;
+      if (pkg.launchReady === false) {
+        openPackageModal(pkg);
+        return;
+      }
+      void selectPackage(pkg, { source: 'hero_matrix' });
+    });
+  });
+}
+
 async function syncPackageAvailability() {
   try {
     const response = await fetch('/api/packages');
@@ -152,6 +221,7 @@ function setDefaultIntakeState() {
   for (const fieldName of intakeFieldWrappers.keys()) {
     setFieldVisibility(fieldName, true);
   }
+  renderHeroCommandCenter();
 }
 
 function formatTime(timestamp) {
@@ -397,6 +467,7 @@ async function selectPackage(pkg, { shouldScroll = true, source = 'grid', trackS
   card?.classList.add('selected');
 
   applyPackageToForm(pkg);
+  renderHeroCommandCenter();
   updateGuidedExperience();
   queueDraftSave();
 
@@ -450,20 +521,50 @@ function closePackageModal() {
 }
 
 function buildCard(pkg) {
+  const includedCount = (pkg.includedFindings || []).length || (pkg.bullets || []).length;
+  const workflowCount = (pkg.workflowScope || []).length || (pkg.bullets || []).length;
+  const intakeGroupCount = (pkg.intake?.requiredGroups || []).length;
+  const recommendedCount = (pkg.intake?.recommendedFields || []).length;
   const el = document.createElement('article');
-  el.className = `card${pkg.featured ? ' featured' : ''}${pkg.launchReady === false ? ' unavailable' : ''}`;
+  el.className = `card package-card${pkg.featured ? ' featured' : ''}${pkg.launchReady === false ? ' unavailable' : ''}`;
   el.dataset.packageId = pkg.id;
   el.innerHTML = `
-    <p class="label">${pkg.id.replaceAll('_', ' ').toUpperCase()}</p>
-    ${pkg.featured ? '<p class="feature-badge">Most Selected</p>' : ''}
-    ${pkg.launchReady === false ? '<p class="availability-badge blocked">Source Coverage Pending</p>' : '<p class="availability-badge ready">Launch Ready</p>'}
-    <h4>${pkg.name}</h4>
-    <p class="price">${pkg.price}</p>
+    <div class="package-card-top">
+      <div class="package-card-heading">
+        <p class="label">${pkg.id.replaceAll('_', ' ').toUpperCase()}</p>
+        <h4>${pkg.name}</h4>
+      </div>
+      <div class="package-card-badges">
+        ${pkg.featured ? '<p class="feature-badge">Most Selected</p>' : ''}
+        ${pkg.launchReady === false ? '<p class="availability-badge blocked">Source Coverage Pending</p>' : '<p class="availability-badge ready">Launch Ready</p>'}
+      </div>
+    </div>
+    <div class="package-price-row">
+      <p class="price">${pkg.price}</p>
+      <p class="pkg-turnaround">${pkg.turnaround || 'Typical delivery: same day to 24h'}</p>
+    </div>
     <p class="pkg-meta"><strong>Best for:</strong> ${pkg.bestFor || 'Legal locate intelligence workflows'}</p>
-    <p class="pkg-meta">${pkg.summary || ''}</p>
-    <p class="pkg-turnaround">${pkg.turnaround || 'Typical delivery: same day to 24h'}</p>
+    <p class="pkg-meta pkg-summary">${pkg.summary || ''}</p>
+    <div class="package-stat-grid">
+      <div class="package-stat">
+        <span>Included findings</span>
+        <strong>${includedCount}</strong>
+      </div>
+      <div class="package-stat">
+        <span>Workflow modules</span>
+        <strong>${workflowCount}</strong>
+      </div>
+      <div class="package-stat">
+        <span>Required signals</span>
+        <strong>${intakeGroupCount}</strong>
+      </div>
+      <div class="package-stat">
+        <span>Recommended IDs</span>
+        <strong>${recommendedCount}</strong>
+      </div>
+    </div>
     ${packageAvailabilityCopy(pkg) ? `<p class="pkg-availability-copy">${packageAvailabilityCopy(pkg)}</p>` : ''}
-    <ul>${pkg.bullets.map((item) => `<li>${item}</li>`).join('')}</ul>
+    <ul class="package-checklist">${pkg.bullets.map((item) => `<li>${item}</li>`).join('')}</ul>
     <div class="card-actions">
       <button type="button" class="btn-outline package-detail-btn">View Scope</button>
       <button type="button" class="select-btn"${pkg.launchReady === false ? ' disabled aria-disabled="true"' : ''}>${pkg.launchReady === false ? 'Unavailable' : 'Start Intake'}</button>
@@ -637,6 +738,7 @@ clearDraftBtn?.addEventListener('click', () => {
 async function boot() {
   await syncPackageAvailability();
   renderPackages();
+  renderHeroCommandCenter();
   setDefaultIntakeState();
   const restoredDraft = restoreDraft();
 

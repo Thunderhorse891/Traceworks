@@ -190,6 +190,38 @@ function statusTone(report) {
   return 'error';
 }
 
+function humanizeLabel(value) {
+  return String(value || '')
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatTimestamp(value) {
+  if (!value) return 'Not captured';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  });
+}
+
+function sourceToneFromStatus(status) {
+  if (status === SOURCE_STATUS.FOUND) return 'ok';
+  if (status === SOURCE_STATUS.PARTIAL) return 'warn';
+  if (status === SOURCE_STATUS.NOT_FOUND || status === SOURCE_STATUS.SKIPPED) return 'muted';
+  return 'error';
+}
+
+function renderSourceUrl(url) {
+  const value = String(url || '').trim();
+  if (!value) return '<strong>Not captured</strong>';
+  if (/^https?:\/\//i.test(value)) {
+    return `<a href="${escapeHtml(value)}" target="_blank" rel="noreferrer noopener">${escapeHtml(value)}</a>`;
+  }
+  return `<strong>${escapeHtml(value)}</strong>`;
+}
+
 export function buildDynamicReportFromWorkflow(workflow, order) {
   const generatedAt = new Date().toISOString();
   const disclaimerBase = DISCLAIMERS[workflow.tier] || DISCLAIMERS.comprehensive;
@@ -300,6 +332,10 @@ export function dynamicReportToHtml(report) {
   const keyFindingsList = Array.isArray(report.keyFindings) ? report.keyFindings : [];
   const analysisPanels = Array.isArray(report.analysisPanels) ? report.analysisPanels : [];
   const sourceSummary = report.sourceSummary || summarizeSources(sections.map((section) => section.source).filter(Boolean));
+  const objectiveSummary =
+    report.customerInputs?.goals ||
+    report.customerInputs?.requestedFindings ||
+    'No case objective was stored with this order. Review the intake profile and source trace before external use.';
   const inputRows = normalizeInputRows(report.customerInputs)
     .map(
       (row) => `
@@ -312,45 +348,59 @@ export function dynamicReportToHtml(report) {
     .join('');
 
   const keyFindings = keyFindingsList.length
-    ? `<section class="card"><h2>Key Findings</h2><ul class="finding-list">${keyFindingsList.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>`
+    ? `
+      <section class="report-section">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Executive Findings</p>
+            <h2>Key Findings</h2>
+          </div>
+          <p class="section-copy">Highest-signal findings pulled from responsive sources in this workflow.</p>
+        </div>
+        <div class="finding-card-grid">
+          ${keyFindingsList.map((item) => `<article class="finding-card"><span class="finding-card-index">Signal</span><p>${escapeHtml(item)}</p></article>`).join('')}
+        </div>
+      </section>
+    `
     : '';
 
   const analysisCards = analysisPanels.length
     ? analysisPanels
-        .map(
-          (panel) => `
-            <section class="card">
-              <h2>${escapeHtml(panel.title)}</h2>
-              <ul class="finding-list">${(panel.items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
-            </section>
-          `
-        )
+        .map((panel) => `
+          <section class="analysis-card">
+            <div class="analysis-card-head">
+              <p class="section-kicker">Workflow Intelligence</p>
+              <h3>${escapeHtml(panel.title)}</h3>
+            </div>
+            <ul class="finding-list">${(panel.items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+          </section>
+        `)
         .join('')
     : '';
 
   const sourceRows = sections
     .map(
       (section) => `
-        <section class="card source-card tone-${escapeHtml(statusTone({ overallStatus: section.source.status === SOURCE_STATUS.FOUND ? 'complete' : section.source.status === SOURCE_STATUS.NOT_FOUND ? 'partial' : 'failed' }))}">
+        <section class="source-card tone-${escapeHtml(sourceToneFromStatus(section.source.status))}">
           <div class="source-head">
             <div>
-              <div class="eyebrow">${escapeHtml(section.source.sourceLabel)}</div>
+              <div class="section-kicker">${escapeHtml(section.source.sourceLabel)}</div>
               <h3>${escapeHtml(section.title)}</h3>
             </div>
-            <div class="chip">${escapeHtml(section.source.status)}</div>
+            <div class="chip tone-${escapeHtml(sourceToneFromStatus(section.source.status))}">${escapeHtml(section.source.status)}</div>
           </div>
           <p class="finding-copy">${escapeHtml(section.finding)}</p>
-          <div class="meta-grid">
-            <div><span>Status</span><strong>${escapeHtml(section.source.status)}</strong></div>
-            <div><span>Confidence</span><strong>${escapeHtml(section.source.confidence)}</strong></div>
-            <div><span>Queried At</span><strong>${escapeHtml(section.source.queriedAt)}</strong></div>
-            <div><span>Source URL</span><strong>${escapeHtml(section.source.sourceUrl)}</strong></div>
+          <div class="source-meta-grid">
+            <div class="meta-cell"><span>Status</span><strong>${escapeHtml(section.source.status)}</strong></div>
+            <div class="meta-cell"><span>Confidence</span><strong>${escapeHtml(section.source.confidence)}</strong></div>
+            <div class="meta-cell"><span>Queried At</span><strong>${escapeHtml(formatTimestamp(section.source.queriedAt))}</strong></div>
+            <div class="meta-cell"><span>Source URL</span>${renderSourceUrl(section.source.sourceUrl)}</div>
           </div>
-          <div class="trace-block">
-            <div class="trace-label">Query Used</div>
+          <details class="trace-block" open>
+            <summary>Query Trace</summary>
             <pre>${escapeHtml(section.source.queryUsed)}</pre>
-          </div>
-          ${section.source.data ? `<div class="trace-block"><div class="trace-label">Returned Data</div><pre>${escapeHtml(JSON.stringify(section.source.data, null, 2))}</pre></div>` : ''}
+          </details>
+          ${section.source.data ? `<details class="trace-block"><summary>Returned Data</summary><pre>${escapeHtml(JSON.stringify(section.source.data, null, 2))}</pre></details>` : ''}
         </section>
       `
     )
@@ -358,8 +408,14 @@ export function dynamicReportToHtml(report) {
 
   const nextSteps = report.nextSteps?.recommendations?.length
     ? `
-      <section class="card">
-        <h2>Recommended Next Steps</h2>
+      <section class="report-section section-card">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Operator Guidance</p>
+            <h2>Recommended Next Steps</h2>
+          </div>
+          <p class="section-copy">Workflow-driven follow-up suggestions based on the current evidence, confidence, and discrepancy profile.</p>
+        </div>
         <ul class="finding-list">${report.nextSteps.recommendations.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ul>
         <p class="muted">${escapeHtml(report.nextSteps.disclaimer)}</p>
       </section>
@@ -376,11 +432,14 @@ export function dynamicReportToHtml(report) {
         :root {
           color-scheme: dark;
           --bg: #060c14;
-          --panel: #0f1c2e;
-          --panel-2: #0b1420;
-          --border: rgba(120,160,220,0.18);
+          --bg-deep: #08111d;
+          --panel: rgba(10, 17, 29, 0.96);
+          --panel-soft: rgba(14, 24, 39, 0.94);
+          --border: rgba(120,160,220,0.16);
+          --border-strong: rgba(120,160,220,0.28);
           --text: #edf2fc;
           --muted: #b8c6e0;
+          --subtle: #7a8fad;
           --gold: #d4a827;
           --gold-soft: #f4d67b;
           --ok: #22c55e;
@@ -390,105 +449,96 @@ export function dynamicReportToHtml(report) {
         * { box-sizing: border-box; }
         body {
           margin: 0;
-          padding: 28px;
+          padding: 30px 18px 48px;
           background:
-            radial-gradient(circle at top left, rgba(212,168,39,0.10), transparent 32%),
-            radial-gradient(circle at top right, rgba(59,130,246,0.10), transparent 28%),
+            radial-gradient(circle at top left, rgba(212,168,39,0.12), transparent 28%),
+            radial-gradient(circle at top right, rgba(59,130,246,0.10), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.02), transparent 20%),
             var(--bg);
           color: var(--text);
-          font-family: Inter, Arial, sans-serif;
+          font-family: "Segoe UI", Inter, Arial, sans-serif;
         }
         .wrap {
-          max-width: 1100px;
+          max-width: 1180px;
           margin: 0 auto;
           display: grid;
-          gap: 18px;
+          gap: 20px;
         }
-        .hero,
-        .card {
+        .cover,
+        .section-card,
+        .analysis-card,
+        .source-card {
           background: var(--panel);
           border: 1px solid var(--border);
-          border-radius: 22px;
-          padding: 22px;
+          border-radius: 24px;
         }
-        .hero {
-          background: linear-gradient(135deg, rgba(212,168,39,0.12), rgba(15,28,46,0.98) 42%, rgba(11,20,32,0.98));
+        .cover {
+          position: relative;
+          overflow: hidden;
+          padding: 28px;
+          background:
+            radial-gradient(circle at top left, rgba(212,168,39,0.14), transparent 30%),
+            radial-gradient(circle at 85% 16%, rgba(59,130,246,0.12), transparent 26%),
+            linear-gradient(155deg, rgba(15,28,46,0.98), rgba(7, 13, 23, 0.98));
+          box-shadow: 0 18px 55px rgba(0,0,0,0.28);
         }
-        .hero h1,
-        .card h2,
-        .card h3 {
+        .cover::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(120deg, rgba(255,255,255,0.05), transparent 20%),
+            radial-gradient(circle at 100% 0%, rgba(212,168,39,0.09), transparent 20%);
+          pointer-events: none;
+        }
+        .cover-grid {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.72fr);
+          gap: 18px;
+          align-items: start;
+        }
+        .cover-copy h1,
+        .section-head h2,
+        .analysis-card h3,
+        .source-card h3 {
           margin: 0;
-          font-family: Georgia, serif;
+          font-family: Georgia, "Times New Roman", serif;
           color: var(--gold-soft);
         }
-        .hero p {
-          color: var(--muted);
-          line-height: 1.7;
+        .cover-copy h1 {
+          max-width: 10ch;
+          font-size: clamp(38px, 5vw, 62px);
+          line-height: 0.98;
+          letter-spacing: -0.03em;
         }
-        .eyebrow {
+        .cover-copy p,
+        .section-copy,
+        .finding-copy,
+        .muted {
+          color: var(--muted);
+          line-height: 1.65;
+        }
+        .section-kicker {
           font-size: 11px;
-          letter-spacing: 0.14em;
+          letter-spacing: 0.16em;
           text-transform: uppercase;
           color: var(--gold);
           font-weight: 700;
-          margin-bottom: 10px;
+          margin: 0 0 10px;
         }
-        .summary-grid,
-        .meta-grid,
-        .detail-grid {
-          display: grid;
-          gap: 12px;
-        }
-        .summary-grid {
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        .cover-status-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 10px;
           margin-top: 18px;
         }
-        .meta-grid {
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          margin-top: 16px;
-        }
-        .detail-grid {
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        }
-        .stat,
-        .detail-row {
-          padding: 14px;
-          border-radius: 16px;
-          border: 1px solid var(--border);
-          background: var(--panel-2);
-        }
-        .stat-label,
-        .detail-label,
-        .meta-grid span {
-          display: block;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: #7a8fad;
-          margin-bottom: 6px;
-        }
-        .stat-value,
-        .detail-value,
-        .meta-grid strong {
-          font-size: 15px;
-          color: var(--text);
-        }
-        .finding-list {
-          margin: 14px 0 0;
-          padding-left: 18px;
-        }
-        .finding-list li {
-          margin-bottom: 8px;
-          color: var(--muted);
-          line-height: 1.6;
-        }
-        .source-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 14px;
-        }
+        .status-pill,
         .chip {
+          display: inline-flex;
+          align-items: center;
           padding: 7px 12px;
           border-radius: 999px;
           border: 1px solid var(--border);
@@ -499,71 +549,363 @@ export function dynamicReportToHtml(report) {
           letter-spacing: 0.08em;
           font-weight: 700;
         }
-        .finding-copy,
-        .muted {
-          color: var(--muted);
-          line-height: 1.7;
+        .tone-ok {
+          border-color: rgba(34,197,94,0.25);
+          color: #9ae6b4;
+          background: rgba(34,197,94,0.08);
         }
-        .trace-block {
-          margin-top: 16px;
+        .tone-warn {
+          border-color: rgba(245,158,11,0.26);
+          color: #f6cd76;
+          background: rgba(245,158,11,0.08);
         }
-        .trace-label {
-          margin-bottom: 8px;
+        .tone-error {
+          border-color: rgba(239,68,68,0.22);
+          color: #ffb0b0;
+          background: rgba(239,68,68,0.08);
+        }
+        .tone-muted {
+          border-color: rgba(120,160,220,0.18);
+          color: #c8d6ee;
+          background: rgba(120,160,220,0.06);
+        }
+        .cover-brief {
+          padding: 18px;
+          border-radius: 20px;
+          border: 1px solid var(--border);
+          background: rgba(7, 13, 23, 0.74);
+          backdrop-filter: blur(10px);
+        }
+        .brief-list {
+          display: grid;
+          gap: 12px;
+          margin: 14px 0 0;
+        }
+        .brief-row {
+          display: grid;
+          gap: 4px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid rgba(120,160,220,0.10);
+        }
+        .brief-row:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+        .brief-row span,
+        .detail-label,
+        .meta-cell span,
+        .stat-label {
+          display: block;
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: #7a8fad;
+          color: var(--subtle);
+          margin-bottom: 6px;
+          font-weight: 700;
+        }
+        .brief-row strong,
+        .detail-value,
+        .meta-cell strong,
+        .meta-cell a,
+        .stat-value {
+          color: var(--text);
+          font-size: 15px;
+          line-height: 1.5;
+        }
+        .summary-grid,
+        .finding-card-grid,
+        .analysis-grid,
+        .detail-grid {
+          display: grid;
+          gap: 12px;
+        }
+        .summary-grid {
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+        .detail-grid {
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+        .finding-card-grid,
+        .analysis-grid {
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+        .report-section,
+        .section-card {
+          padding: 24px;
+          background: var(--panel-soft);
+        }
+        .section-head {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 16px;
+        }
+        .section-head h2 {
+          font-size: 30px;
+        }
+        .section-copy {
+          max-width: 460px;
+          margin: 0;
+          font-size: 13px;
+        }
+        .stat,
+        .detail-row {
+          padding: 14px;
+          border-radius: 18px;
+          border: 1px solid var(--border);
+          background: var(--bg-deep);
+        }
+        .objective-banner {
+          margin-top: 16px;
+          padding: 16px 18px;
+          border-radius: 18px;
+          border: 1px solid rgba(212,168,39,0.18);
+          background: rgba(212,168,39,0.06);
+        }
+        .objective-banner p {
+          margin: 8px 0 0;
+          color: var(--text);
+          line-height: 1.7;
+        }
+        .finding-card,
+        .analysis-card {
+          padding: 18px;
+          background: var(--panel-soft);
+        }
+        .finding-card-index {
+          display: inline-flex;
+          margin-bottom: 10px;
+          color: var(--gold);
+          font-size: 11px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+        .finding-card p {
+          margin: 0;
+          color: var(--text);
+          line-height: 1.65;
+        }
+        .analysis-card-head {
+          margin-bottom: 12px;
+        }
+        .finding-list {
+          margin: 0;
+          padding-left: 18px;
+        }
+        .finding-list li {
+          margin-bottom: 8px;
+          color: var(--muted);
+          line-height: 1.6;
+        }
+        .source-card {
+          padding: 22px;
+          background: var(--panel-soft);
+        }
+        .source-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+        }
+        .source-card h3 {
+          font-size: 26px;
+        }
+        .source-meta-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 12px;
+          margin-top: 16px;
+        }
+        .meta-cell {
+          padding: 14px;
+          border-radius: 16px;
+          border: 1px solid var(--border);
+          background: var(--bg-deep);
+        }
+        .trace-block {
+          margin-top: 16px;
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          background: rgba(5, 10, 19, 0.72);
+          overflow: hidden;
+        }
+        .trace-block summary {
+          cursor: pointer;
+          padding: 14px 16px;
+          list-style: none;
+          color: var(--text);
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .trace-block summary::-webkit-details-marker {
+          display: none;
         }
         pre {
           margin: 0;
-          padding: 14px;
+          padding: 0 16px 16px;
           overflow: auto;
           white-space: pre-wrap;
-          border-radius: 16px;
-          border: 1px solid var(--border);
-          background: #07111e;
+          background: transparent;
           color: #d7e3f8;
           font: 12px/1.6 "JetBrains Mono", Consolas, monospace;
         }
+        a {
+          color: #9cc8ff;
+        }
+        .disclaimer-card pre {
+          white-space: pre-wrap;
+        }
+        @media (max-width: 860px) {
+          .cover-grid,
+          .section-head {
+            grid-template-columns: 1fr;
+            display: grid;
+          }
+        }
         @media (max-width: 700px) {
           body { padding: 16px; }
-          .hero, .card { padding: 16px; }
+          .cover,
+          .report-section,
+          .section-card,
+          .analysis-card,
+          .source-card {
+            padding: 18px;
+          }
+          .cover-copy h1 {
+            font-size: 36px;
+          }
+          .summary-grid,
+          .detail-grid,
+          .finding-card-grid,
+          .analysis-grid,
+          .source-meta-grid {
+            grid-template-columns: 1fr;
+          }
         }
       </style>
     </head>
     <body>
       <article class="wrap">
-        <section class="hero">
-          <div class="eyebrow">${escapeHtml(report.reportType)} investigative report</div>
-          <h1>TraceWorks Report</h1>
-          <p>${escapeHtml(report.executiveSummary)}</p>
-          <div class="summary-grid">
-            <div class="stat"><span class="stat-label">Order ID</span><div class="stat-value">${escapeHtml(report.orderId)}</div></div>
-            <div class="stat"><span class="stat-label">Overall Status</span><div class="stat-value">${escapeHtml(report.overallStatus)}</div></div>
-            <div class="stat"><span class="stat-label">Sources Attempted</span><div class="stat-value">${escapeHtml(sourceSummary.total)}</div></div>
-            <div class="stat"><span class="stat-label">Responsive Sources</span><div class="stat-value">${escapeHtml(sourceSummary.found)}</div></div>
+        <section class="cover">
+          <div class="cover-grid">
+            <div class="cover-copy">
+              <div class="section-kicker">${escapeHtml(humanizeLabel(report.reportType))} investigative report</div>
+              <h1>TraceWorks executive dossier</h1>
+              <p>${escapeHtml(report.executiveSummary)}</p>
+              <div class="cover-status-row">
+                <span class="status-pill tone-${escapeHtml(statusTone(report))}">${escapeHtml(humanizeLabel(report.overallStatus))}</span>
+                <span class="status-pill">${escapeHtml(report.orderId)}</span>
+                <span class="status-pill">${escapeHtml(humanizeLabel(report.purchasedTier || report.reportType))}</span>
+              </div>
+            </div>
+            <aside class="cover-brief">
+              <div class="section-kicker">Engagement Brief</div>
+              <div class="brief-list">
+                <div class="brief-row">
+                  <span>Customer</span>
+                  <strong>${escapeHtml(report.customerName || 'Not captured')}</strong>
+                </div>
+                <div class="brief-row">
+                  <span>Delivery Email</span>
+                  <strong>${escapeHtml(report.customerEmail || 'Not captured')}</strong>
+                </div>
+                <div class="brief-row">
+                  <span>Generated</span>
+                  <strong>${escapeHtml(formatTimestamp(report.generatedAt))}</strong>
+                </div>
+                <div class="brief-row">
+                  <span>Workflow</span>
+                  <strong>${escapeHtml(humanizeLabel(report.reportType))}</strong>
+                </div>
+              </div>
+            </aside>
           </div>
         </section>
-        <section class="card">
-          <h2>Intake Profile</h2>
-          <div class="detail-grid">${inputRows || '<div class="detail-row"><div class="detail-label">Inputs</div><div class="detail-value">No structured intake was stored for this order.</div></div>'}</div>
+
+        <section class="report-section section-card">
+          <div class="summary-grid">
+            <div class="stat"><span class="stat-label">Sources Attempted</span><div class="stat-value">${escapeHtml(sourceSummary.total)}</div></div>
+            <div class="stat"><span class="stat-label">Responsive Sources</span><div class="stat-value">${escapeHtml(sourceSummary.found)}</div></div>
+            <div class="stat"><span class="stat-label">Manual Review Flags</span><div class="stat-value">${escapeHtml(sourceSummary.manualReview + sourceSummary.errors)}</div></div>
+            <div class="stat"><span class="stat-label">Skipped or Unavailable</span><div class="stat-value">${escapeHtml(sourceSummary.skipped + sourceSummary.partial + sourceSummary.notFound)}</div></div>
+          </div>
         </section>
+
+        <section class="report-section section-card">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Case Intake</p>
+              <h2>Intake Profile</h2>
+            </div>
+            <p class="section-copy">Structured request data captured at checkout and used to drive the actual investigative workflow.</p>
+          </div>
+          <div class="objective-banner">
+            <div class="section-kicker">Case Objective</div>
+            <p>${escapeHtml(objectiveSummary)}</p>
+          </div>
+          <div class="detail-grid" style="margin-top:16px;">${inputRows || '<div class="detail-row"><div class="detail-label">Inputs</div><div class="detail-value">No structured intake was stored for this order.</div></div>'}</div>
+        </section>
+
         ${keyFindings}
-        ${analysisCards}
-        <section class="card">
-          <h2>Source Summary</h2>
+
+        ${analysisPanels.length ? `
+          <section class="report-section">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Workflow Intelligence</p>
+                <h2>Investigative Analysis</h2>
+              </div>
+              <p class="section-copy">Derived workflow signals across corroboration, conflicts, gaps, confidence, and enrichment.</p>
+            </div>
+            <div class="analysis-grid">
+              ${analysisCards}
+            </div>
+          </section>
+        ` : ''}
+
+        <section class="report-section section-card">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Workflow Totals</p>
+              <h2>Source Summary</h2>
+            </div>
+            <p class="section-copy">This summary reflects every source attempted in the run, including documented misses, skips, and automation boundaries.</p>
+          </div>
           <div class="summary-grid">
             <div class="stat"><span class="stat-label">Found</span><div class="stat-value">${escapeHtml(sourceSummary.found)}</div></div>
             <div class="stat"><span class="stat-label">Partial</span><div class="stat-value">${escapeHtml(sourceSummary.partial)}</div></div>
             <div class="stat"><span class="stat-label">Not Found</span><div class="stat-value">${escapeHtml(sourceSummary.notFound)}</div></div>
             <div class="stat"><span class="stat-label">Skipped</span><div class="stat-value">${escapeHtml(sourceSummary.skipped)}</div></div>
-            <div class="stat"><span class="stat-label">Manual Review</span><div class="stat-value">${escapeHtml(sourceSummary.manualReview + sourceSummary.errors)}</div></div>
+            <div class="stat"><span class="stat-label">Manual Review</span><div class="stat-value">${escapeHtml(sourceSummary.manualReview)}</div></div>
+            <div class="stat"><span class="stat-label">Errors</span><div class="stat-value">${escapeHtml(sourceSummary.errors)}</div></div>
           </div>
         </section>
-        ${sourceRows}
+
+        <section class="report-section">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Evidence Ledger</p>
+              <h2>Source Trace</h2>
+            </div>
+            <p class="section-copy">Every source attempted, the exact query issued, and any returned data captured for audit or analyst review.</p>
+          </div>
+          <div class="analysis-grid">
+            ${sourceRows}
+          </div>
+        </section>
+
         ${nextSteps}
-        <section class="card">
-          <h2>Disclaimer</h2>
+        <section class="report-section section-card disclaimer-card">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Compliance</p>
+              <h2>Disclaimer</h2>
+            </div>
+          </div>
           <pre>${escapeHtml(report.disclaimer)}</pre>
         </section>
       </article>

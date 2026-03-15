@@ -36,35 +36,93 @@
 
     <!-- ─ Hero ────────────────────────────────────────────────────── -->
     <section class="hero">
-      <div class="hero-eyebrow">
-        <span class="hero-eyebrow-line"></span>
-        <span class="eyebrow">Investigative Reports &nbsp;·&nbsp; Texas Public Record</span>
-      </div>
-      <h2>Property.<br />Ownership.<br /><em>Automated.</em></h2>
-      <p class="hero-sub">
-        Evidence-grade public-record reports for real estate attorneys, probate investors, title researchers, and asset recovery firms. Every source logged. Every finding confidence-rated.
-      </p>
-      <div class="hero-actions">
-        <a href="#order" class="btn-primary">Submit a Request</a>
-        <a href="#reports" class="btn-outline">View Report Tiers</a>
-      </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span class="hero-stat-value">5+</span>
-          <span class="hero-stat-label">Texas Counties</span>
+      <div class="hero-grid">
+        <div class="hero-main">
+          <div class="hero-eyebrow">
+            <span class="hero-eyebrow-line"></span>
+            <span class="eyebrow">Investigative Reports &nbsp;·&nbsp; Texas Public Record</span>
+          </div>
+          <h2>Evidence-grade property, probate, and ownership intelligence.</h2>
+          <p class="hero-sub">
+            TraceWorks turns a structured intake into an evidence-traceable investigative dossier. Customers choose a package, complete secure intake, pay through Stripe, and receive a report built only from the sources actually returned in that run.
+          </p>
+          <div class="hero-actions hero-cta">
+            <a href="#order" class="btn-primary">Start Secure Intake</a>
+            <a href="#reports" class="btn-outline">Compare Report Tiers</a>
+          </div>
+          <p class="hero-proof">Built for attorneys, title researchers, probate operators, and asset-recovery teams that need source-traceable output instead of black-box summaries.</p>
+
+          <div class="hero-signal-row">
+            <span class="hero-signal">Structured intake</span>
+            <span class="hero-signal">Stripe-backed checkout</span>
+            <span class="hero-signal">Workflow-specific automation</span>
+            <span class="hero-signal">Confidence-labeled findings</span>
+          </div>
+
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="hero-stat-value">5+</span>
+              <span class="hero-stat-label">Texas Counties</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-value">7</span>
+              <span class="hero-stat-label">Workflow Steps</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-value">100%</span>
+              <span class="hero-stat-label">Cited or Flagged</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-value">&lt;45 min</span>
+              <span class="hero-stat-label">Typical Delivery</span>
+            </div>
+          </div>
         </div>
-        <div class="hero-stat">
-          <span class="hero-stat-value">7</span>
-          <span class="hero-stat-label">Workflow Steps</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat-value">100%</span>
-          <span class="hero-stat-label">Public Record</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat-value">&lt;45 min</span>
-          <span class="hero-stat-label">Typical Delivery</span>
-        </div>
+
+        <aside class="hero-panel hero-command-center" aria-label="Operational overview">
+          <div class="hero-panel-head">
+            <div>
+              <p class="label">Operational Overview</p>
+              <h3>Customer delivery posture</h3>
+            </div>
+            <span class="hero-command-pill" id="heroCoverageSummary">Checking package readiness</span>
+          </div>
+
+          <div class="hero-panel-metrics">
+            <article class="hero-mini-stat">
+              <span>Packages live</span>
+              <strong id="heroReadyCount">0</strong>
+              <small>ready to purchase now</small>
+            </article>
+            <article class="hero-mini-stat">
+              <span>Packages gated</span>
+              <strong id="heroBlockedCount">0</strong>
+              <small>source coverage pending</small>
+            </article>
+            <article class="hero-mini-stat hero-mini-stat-wide">
+              <span>Delivery window</span>
+              <strong id="heroTurnaroundWindow">Awaiting sync</strong>
+              <small>based on currently live packages</small>
+            </article>
+          </div>
+
+          <div class="hero-package-ledger">
+            <div class="hero-ledger-head">
+              <h4>Package matrix</h4>
+              <p>Quick-start a package directly from the command rail.</p>
+            </div>
+            <div class="hero-package-matrix" id="heroPackageMatrix"></div>
+          </div>
+
+          <div class="hero-deliverable-panel">
+            <h4>What the customer receives</h4>
+            <ul class="hero-deliverables">
+              <li>Case-specific dossier with executive summary and source trace</li>
+              <li>Workflow intelligence panels: discrepancies, confidence, and gaps</li>
+              <li>Honest manual-review flags when automation hits a boundary</li>
+            </ul>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -118,6 +176,23 @@
         <p>All reports include a source trace panel — every query logged, timestamped, and confidence-rated.</p>
       </div>
       <div class="packages-grid" id="packages-grid"></div>
+      <div class="report-runtime-rail">
+        <article class="runtime-card">
+          <span class="runtime-card-label">Purchase Flow</span>
+          <strong>Package selection opens a structured intake, not a blank form.</strong>
+          <p>Each package unlocks the identifiers, guidance, and workflow signals that matter most for that investigative scope.</p>
+        </article>
+        <article class="runtime-card">
+          <span class="runtime-card-label">Automation Standard</span>
+          <strong>The engine runs the package the customer actually purchased.</strong>
+          <p>Property, recorder, probate, and OSINT steps stay package-scoped so the report matches the commercial promise.</p>
+        </article>
+        <article class="runtime-card">
+          <span class="runtime-card-label">Delivery Standard</span>
+          <strong>Reports show what was found, what was not, and what still needs manual review.</strong>
+          <p>No simulated evidence, no fabricated gaps filled in, and no silent omission of blocked sources.</p>
+        </article>
+      </div>
     </section>
 
     <dialog id="packageModal" class="package-modal" aria-labelledby="packageModalName">
