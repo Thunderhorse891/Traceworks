@@ -1,5 +1,6 @@
 import { gatherPublicRecordIntel } from './public-records.js';
 import { canonicalPackageId, openWebKeywordsForPackage } from './package-contract.js';
+import { resolveApifyOsintConfig, resolveFirecrawlConfig } from './osint-config.js';
 
 function domainOf(url) {
   try {
@@ -20,7 +21,20 @@ async function fetchJson(url, fetchImpl, timeoutMs = 9000, init = {}) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetchImpl(url, { ...init, signal: controller.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      let detail = '';
+      try {
+        const body = typeof res.json === 'function' ? await res.json() : null;
+        detail = body?.error || body?.message || '';
+      } catch {
+        if (typeof res.text === 'function') {
+          try {
+            detail = await res.text();
+          } catch {}
+        }
+      }
+      throw new Error(detail ? `HTTP ${res.status}: ${detail}` : `HTTP ${res.status}`);
+    }
     return await res.json();
   } finally {
     clearTimeout(timer);
@@ -136,6 +150,140 @@ async function fromRobin(query, fetchImpl, env) {
     .slice(0, 10);
 }
 
+function firecrawlLocation(opts = {}) {
+  if (String(opts.location || '').trim()) return String(opts.location).trim();
+  const input = opts.publicRecordOrder?.input || {};
+  const county = String(input.county || '').trim();
+  const state = String(input.state || '').trim();
+  if (!county && !state) return '';
+  if (county && state) return `${county} County, ${state}, United States`;
+  return state ? `${state}, United States` : '';
+}
+
+function normalizeFirecrawlRows(data) {
+  const rows = Array.isArray(data?.data?.web)
+    ? data.data.web
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.results)
+        ? data.results
+        : [];
+
+  return rows
+    .map((row) =>
+      normalizeRecord(
+        {
+          title: row.title || row.metadata?.title || row.description || row.markdown || 'Firecrawl search result',
+          url: row.url || row.link,
+          sourceType: row.markdown ? 'search-scrape' : 'search-index',
+          confidence: row.markdown ? 'medium' : 'low'
+        },
+        'firecrawl'
+      )
+    )
+    .filter(Boolean);
+}
+
+async function fromFirecrawl(query, fetchImpl, env, opts = {}) {
+  const config = resolveFirecrawlConfig(env);
+  if (!config.configured) throw new Error('FIRECRAWL_API_KEY is not configured');
+
+  const body = {
+    query,
+    limit: config.resultLimit,
+    country: config.country
+  };
+  const location = firecrawlLocation(opts);
+  if (location) body.location = location;
+  if (config.scrapeResults) {
+    body.scrapeOptions = {
+      formats: ['markdown'],
+      onlyMainContent: true
+    };
+  }
+
+  const data = await fetchJson(`${config.apiBaseUrl.replace(/\/$/, '')}/search`, fetchImpl, config.timeoutMs, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${config.apiKey}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  return normalizeFirecrawlRows(data).slice(0, config.resultLimit);
+}
+
+function fillTemplateValue(value, tokens) {
+  if (Array.isArray(value)) return value.map((item) => fillTemplateValue(item, tokens));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, fillTemplateValue(item, tokens)]));
+  }
+  if (typeof value !== 'string') return value;
+  return value.replace(/\{(\w+)\}/g, (_, key) => String(tokens[key] ?? ''));
+}
+
+function buildApifyInput(query, packageId, config, opts = {}) {
+  const tokens = {
+    query,
+    packageId,
+    limit: config.resultLimit,
+    location: firecrawlLocation(opts),
+    country: resolveFirecrawlConfig(opts.env || process.env).country
+  };
+  if (config.inputTemplate) return fillTemplateValue(config.inputTemplate, tokens);
+  return { queries: query };
+}
+
+function flattenApifyItems(items = []) {
+  return items.flatMap((item) => {
+    if (Array.isArray(item?.nonPromotedSearchResults)) return item.nonPromotedSearchResults;
+    if (Array.isArray(item?.organicResults)) return item.organicResults;
+    if (Array.isArray(item?.results)) return item.results;
+    return [item];
+  });
+}
+
+function normalizeApifyRows(items) {
+  return flattenApifyItems(items)
+    .map((row) =>
+      normalizeRecord(
+        {
+          title: row.title || row.name || row.description || row.snippet || 'Apify search result',
+          url: row.url || row.link,
+          sourceType: row.sourceType || 'search-index',
+          confidence: row.confidence || 'medium'
+        },
+        'apify'
+      )
+    )
+    .filter(Boolean);
+}
+
+async function fromApify(query, fetchImpl, env, opts = {}) {
+  const config = resolveApifyOsintConfig(env);
+  if (!config.configured) throw new Error('APIFY_API_TOKEN is not configured');
+  if (config.templateError) throw new Error(config.templateError);
+
+  const url = new URL(`${config.apiBaseUrl.replace(/\/$/, '')}/acts/${config.actorId}/run-sync-get-dataset-items`);
+  url.searchParams.set('clean', '1');
+  url.searchParams.set('format', 'json');
+  url.searchParams.set('limit', String(config.resultLimit));
+  url.searchParams.set('timeout', String(config.timeoutSeconds));
+
+  const data = await fetchJson(url.toString(), fetchImpl, Math.max(10_000, config.timeoutSeconds * 1000 + 5_000), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${config.token}`
+    },
+    body: JSON.stringify(buildApifyInput(query, canonicalPackageId(opts.packageId || 'standard') || 'standard', config, { ...opts, env }))
+  });
+
+  const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+  return normalizeApifyRows(items).slice(0, config.resultLimit);
+}
+
 function buildQueries(query, packageId) {
   const base = (query || 'subject public records').trim();
   const extras = openWebKeywordsForPackage(packageId);
@@ -195,7 +343,7 @@ function providerHealth(results) {
   }));
 }
 
-function buildProviders(env) {
+function buildProviders(env, opts = {}) {
   const providers = [
     { name: "duckduckgo", fn: fromDuckDuckGo },
     { name: "wikipedia", fn: fromWikipediaSearch },
@@ -207,6 +355,14 @@ function buildProviders(env) {
     providers.push({ name: "robin", fn: (query, fetchImpl) => fromRobin(query, fetchImpl, env) });
   }
 
+  if (resolveFirecrawlConfig(env).configured) {
+    providers.push({ name: 'firecrawl', fn: (query, fetchImpl) => fromFirecrawl(query, fetchImpl, env, opts) });
+  }
+
+  if (resolveApifyOsintConfig(env).configured) {
+    providers.push({ name: 'apify', fn: (query, fetchImpl) => fromApify(query, fetchImpl, env, { ...opts, packageId: opts.packageId }) });
+  }
+
   return providers;
 }
 
@@ -215,7 +371,7 @@ export async function gatherOsint(query, opts = {}) {
   const env = opts.env || process.env;
   const packageId = canonicalPackageId(opts.packageId || 'standard') || 'standard';
   const queries = buildQueries(query, packageId);
-  const providers = buildProviders(env);
+  const providers = buildProviders(env, { ...opts, packageId });
 
   const settled = [];
   for (const q of queries) {

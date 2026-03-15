@@ -32,6 +32,8 @@ test('buildNetlifyEnvTemplate prints required launch env names', () => {
   assert.ok(template.includes('TRACEWORKS_STORAGE_DRIVER=kv'));
   assert.ok(template.includes('ADMIN_API_KEY=admin-secret'));
   assert.ok(template.includes('PEOPLE_ASSOC_LICENSED=true'));
+  assert.ok(template.includes('FIRECRAWL_API_KEY=<firecrawl-api-key>'));
+  assert.ok(template.includes('APIFY_API_TOKEN=<apify-api-token>'));
 });
 
 test('formatSourceEndpointContracts documents source query expectations', () => {

@@ -76,7 +76,7 @@ export default async (event) => {
 
   const session = stripeEvent.data.object;
   const metadata = session.metadata || {};
-  const caseRef = metadata.caseRef || `TW-${session.id}`;
+  const caseRef = metadata.caseRef || session.client_reference_id || `TW-${session.id}`;
   const existingOrder = await getOrder(caseRef);
 
   let stripePriceId = null;
@@ -127,6 +127,7 @@ export default async (event) => {
     stripeSessionId: session.id,
     stripe_checkout_session_id: session.id,
     stripe_payment_intent_id: session.payment_intent || null,
+    stripe_customer_id: session.customer || existingOrder?.stripe_customer_id || null,
     packageId: metadata.packageId,
     packageName: metadata.packageName,
     amountTotal,

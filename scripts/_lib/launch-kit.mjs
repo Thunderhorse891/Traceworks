@@ -21,6 +21,18 @@ export const CORE_ENV_VARS = Object.freeze([
   'UPSTASH_REDIS_REST_TOKEN'
 ]);
 
+export const OPTIONAL_PREMIUM_OSINT_ENV_VARS = Object.freeze([
+  'FIRECRAWL_API_KEY',
+  'FIRECRAWL_API_URL',
+  'FIRECRAWL_OSINT_RESULT_LIMIT',
+  'FIRECRAWL_OSINT_SCRAPE_RESULTS',
+  'APIFY_API_TOKEN',
+  'APIFY_OSINT_ACTOR_ID',
+  'APIFY_OSINT_INPUT_TEMPLATE',
+  'APIFY_OSINT_RESULT_LIMIT',
+  'APIFY_OSINT_TIMEOUT_SECONDS'
+]);
+
 export const SOURCE_ENDPOINT_CONTRACTS = Object.freeze([
   {
     env: 'APPRAISAL_API_URL',
@@ -135,7 +147,18 @@ export function buildNetlifyEnvTemplate({
     'OBITUARY_API_URL=<obituary-endpoint>',
     'PROBATE_API_URL=<probate-endpoint>',
     'PEOPLE_ASSOC_LICENSED=true',
-    'PEOPLE_ASSOC_API_URL=<licensed-people-association-endpoint>'
+    'PEOPLE_ASSOC_API_URL=<licensed-people-association-endpoint>',
+    '',
+    '# Premium OSINT enrichment (optional but recommended)',
+    'FIRECRAWL_API_KEY=<firecrawl-api-key>',
+    'FIRECRAWL_API_URL=https://api.firecrawl.dev/v2',
+    'FIRECRAWL_OSINT_RESULT_LIMIT=4',
+    'FIRECRAWL_OSINT_SCRAPE_RESULTS=true',
+    'APIFY_API_TOKEN=<apify-api-token>',
+    'APIFY_OSINT_ACTOR_ID=apify~google-search-scraper',
+    'APIFY_OSINT_RESULT_LIMIT=6',
+    'APIFY_OSINT_TIMEOUT_SECONDS=90',
+    '# Optional for custom actors: APIFY_OSINT_INPUT_TEMPLATE={"queries":"{query}"}'
   ];
 
   return lines.join('\n');

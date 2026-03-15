@@ -145,6 +145,13 @@ test('dynamic report surfaces workflow intelligence panels from real derived dat
         weakOrSpeculative: [{ sourceId: 'probate_case_index' }],
         requiresManualValidation: [{ sourceId: 'people_association_lookup' }]
       },
+      osint: {
+        providerNote: 'Premium OSINT enrichment returned 2 cited lead(s) across 2 provider(s).',
+        coverage: { totalOpenWebSources: 2, providersWithHits: 2 },
+        sources: [
+          { provider: 'firecrawl', title: 'County record lead', url: 'https://county.example/record' }
+        ]
+      },
       sources: [
         {
           sourceId: 'county_property',
@@ -172,9 +179,11 @@ test('dynamic report surfaces workflow intelligence panels from real derived dat
   assert.ok(text.includes('### Heir Candidate Review'));
   assert.ok(text.includes('### Confidence Matrix'));
   assert.ok(text.includes('### Coverage Gaps'));
+  assert.ok(text.includes('### Open-Web OSINT Enrichment'));
 
   const html = dynamicReportToHtml(report);
   assert.ok(html.includes('Cross-Source Discrepancies'));
   assert.ok(html.includes('Alex Mercer'));
   assert.ok(html.includes('Manual validation required: 1'));
+  assert.ok(html.includes('County record lead'));
 });

@@ -127,6 +127,21 @@ function summarizeCoverageGaps(workflow) {
   return { title: 'Coverage Gaps', items: [...new Set(items)] };
 }
 
+function summarizeOsint(workflow) {
+  const osint = workflow.osint;
+  if (!osint) return null;
+  const items = [];
+  if (osint.providerNote) items.push(osint.providerNote);
+  if (osint.coverage) {
+    items.push(`Premium OSINT coverage: ${Number(osint.coverage.totalOpenWebSources || 0)} cited lead(s), ${Number(osint.coverage.providersWithHits || 0)} provider(s) with hits.`);
+  }
+  for (const source of (osint.sources || []).slice(0, 5)) {
+    items.push(`${source.provider}: ${source.title} (${source.url})`);
+  }
+  if (!items.length) return null;
+  return { title: 'Open-Web OSINT Enrichment', items };
+}
+
 function summarizeDiscrepancies(discrepancy) {
   if (!discrepancy) return null;
   const items = [
@@ -154,6 +169,7 @@ function summarizeConfidenceMatrix(confidenceMatrix) {
 
 function buildAnalysisPanels(workflow) {
   return [
+    summarizeOsint(workflow),
     summarizeChainAnalysis(workflow.chainAnalysis),
     summarizeHeirCandidates(workflow.scoredCandidates),
     summarizeDiscrepancies(workflow.discrepancy),

@@ -144,3 +144,69 @@ test('gatherOsint normalizes legacy package aliases and counts structured eviden
   assert.equal(result.coverage.totalStructuredEvidence, 1);
   assert.equal(result.coverage.totalSources, result.coverage.totalOpenWebSources + result.coverage.totalStructuredEvidence);
 });
+
+test('gatherOsint adds Firecrawl provider hits when configured', async () => {
+  const result = await gatherOsint('jordan mercer texas', {
+    packageId: 'asset_network',
+    env: { FIRECRAWL_API_KEY: 'firecrawl-secret' },
+    fetchImpl: async (url) => {
+      if (url.includes('duckduckgo.com')) return { ok: true, json: async () => ({ RelatedTopics: [] }) };
+      if (url.includes('wikipedia.org')) return { ok: true, json: async () => ({ query: { search: [] } }) };
+      if (url.includes('reddit.com')) return { ok: true, json: async () => ({ data: { children: [] } }) };
+      if (url.includes('opencorporates.com')) return { ok: true, json: async () => ({ results: { companies: [] } }) };
+      if (url.includes('firecrawl.dev')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              web: [
+                {
+                  title: 'County record lead',
+                  url: 'https://county.example/record',
+                  markdown: '# County record lead'
+                }
+              ]
+            }
+          })
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    }
+  });
+
+  assert.ok(result.sources.some((source) => source.provider === 'firecrawl'));
+  assert.ok(result.providerHealth.some((provider) => provider.provider === 'firecrawl' && provider.hitCount >= 1));
+});
+
+test('gatherOsint adds Apify actor hits when configured', async () => {
+  const result = await gatherOsint('jordan mercer texas', {
+    packageId: 'standard',
+    env: { APIFY_API_TOKEN: 'apify-secret' },
+    fetchImpl: async (url) => {
+      if (url.includes('duckduckgo.com')) return { ok: true, json: async () => ({ RelatedTopics: [] }) };
+      if (url.includes('wikipedia.org')) return { ok: true, json: async () => ({ query: { search: [] } }) };
+      if (url.includes('reddit.com')) return { ok: true, json: async () => ({ data: { children: [] } }) };
+      if (url.includes('opencorporates.com')) return { ok: true, json: async () => ({ results: { companies: [] } }) };
+      if (url.includes('api.apify.com')) {
+        return {
+          ok: true,
+          json: async () => ([
+            {
+              nonPromotedSearchResults: [
+                {
+                  title: 'Apify actor lead',
+                  url: 'https://lead.example/osint',
+                  description: 'Web lead from search actor'
+                }
+              ]
+            }
+          ])
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    }
+  });
+
+  assert.ok(result.sources.some((source) => source.provider === 'apify'));
+  assert.ok(result.providerHealth.some((provider) => provider.provider === 'apify' && provider.hitCount >= 1));
+});

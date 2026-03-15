@@ -17,6 +17,7 @@ import {
 import { REPORT_TIER } from './tier-mapping.js';
 import { SOURCE_STATUS } from './workflow-results.js';
 import { gatherPublicRecordIntel } from './public-records.js';
+import { gatherOsint } from './osint.js';
 import { resolveInvestigationInput } from './validation.js';
 
 function requireConfiguredSources(keys, env = process.env) {
@@ -54,6 +55,60 @@ function makePublicRecordInput(input) {
   };
 }
 
+function shouldEnrichWithOsint(env = process.env) {
+  return String(env.TRACEWORKS_ENABLE_OSINT_ENRICHMENT || 'true').toLowerCase() !== 'false';
+}
+
+function buildOsintQuery(input) {
+  return [
+    input.subjectName,
+    input.lastKnownAddress,
+    input.parcelId,
+    input.county ? `${input.county} County` : '',
+    input.state,
+    ...(input.alternateNames || []).slice(0, 2)
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
+async function gatherWorkflowOsint(order, input, packageId, ctx = {}) {
+  const env = ctx.env || process.env;
+  if (!shouldEnrichWithOsint(env) || ctx.skipOsint) return null;
+
+  const query = buildOsintQuery(input);
+  if (!query) return null;
+
+  try {
+    return await gatherOsint(query, {
+      packageId,
+      fetchImpl: ctx.fetchImpl,
+      env,
+      location: input.county && input.state ? `${input.county} County, ${input.state}, United States` : '',
+      publicRecordOrder: null,
+      orderId: order.order_id || order.caseRef
+    });
+  } catch (error) {
+    return {
+      packageId,
+      query,
+      queryPlan: [query],
+      providerHealth: [],
+      providerNote: `OSINT enrichment failed in this run: ${String(error?.message || error)}`,
+      coverage: {
+        totalSources: 0,
+        totalOpenWebSources: 0,
+        totalStructuredEvidence: 0,
+        distinctDomains: 0,
+        providersWithHits: 0
+      },
+      sources: [],
+      evidence: []
+    };
+  }
+}
+
 function mkWorkflow(order, tier, sources, input, extra = {}) {
   const startedAt = extra.startedAt || new Date().toISOString();
   const completedAt = new Date().toISOString();
@@ -87,10 +142,12 @@ export async function runStandardReport(order, ctx = {}) {
   const parcelId = input.parcelId || s1?.data?.parcelId || s1?.data?.apn || '';
   const s2 = await taxCollectorScraper({ county: input.county, state: input.state, parcelId, fetchImpl: ctx.fetchImpl });
   const s3 = await parcelGisLookup({ county: input.county, state: input.state, query: input.lastKnownAddress || query, fetchImpl: ctx.fetchImpl });
+  const osint = await gatherWorkflowOsint(order, { ...input, parcelId }, 'standard', ctx);
 
   return mkWorkflow(order, 'standard', [...publicRecords.sources, s1, s2, s3], input, {
     startedAt: ctx.startedAt,
     publicRecords,
+    osint,
   });
 }
 
@@ -128,11 +185,13 @@ export async function runOwnershipEncumbranceReport(order, ctx = {}) {
   if (Array.isArray(s2.data?.instruments)) instruments.push(...s2.data.instruments);
   if (Array.isArray(s3.data?.instruments)) instruments.push(...s3.data.instruments);
   const chain = chainContinuityAnalyzer(instruments);
+  const osint = await gatherWorkflowOsint(order, { ...input, parcelId }, 'ownership_encumbrance', ctx);
 
   return mkWorkflow(order, 'ownership_encumbrance', [...publicRecords.sources, s1, s2, s3, s4], input, {
     startedAt: ctx.startedAt,
     chainAnalysis: chain,
     publicRecords,
+    osint,
   });
 }
 
@@ -169,11 +228,13 @@ export async function runProbateHeirshipReport(order, ctx = {}) {
 
   const candidates = Array.isArray(s3?.data?.candidates) ? s3.data.candidates : [];
   const scoredCandidates = heirCandidateScorer(candidates);
+  const osint = await gatherWorkflowOsint(order, input, 'probate_heirship', ctx);
 
   return mkWorkflow(order, 'probate_heirship', [...publicRecords.sources, s1, s2, s3], input, {
     startedAt: ctx.startedAt,
     scoredCandidates,
     publicRecords,
+    osint,
   });
 }
 
@@ -210,19 +271,21 @@ export async function runAssetNetworkReport(order, ctx = {}) {
   if (Array.isArray(s4.data?.instruments)) instruments.push(...s4.data.instruments);
   if (Array.isArray(s5.data?.instruments)) instruments.push(...s5.data.instruments);
   const chain = chainContinuityAnalyzer(instruments);
+  const osint = await gatherWorkflowOsint(order, { ...input, parcelId }, 'asset_network', ctx);
 
   return mkWorkflow(order, 'asset_network', [...publicRecords.sources, s1, s2, s3, s4, s5], input, {
     startedAt: ctx.startedAt,
     chainAnalysis: chain,
     publicRecords,
+    osint,
   });
 }
 
 export async function runComprehensiveReport(order, ctx = {}) {
   const [standard, ownership, heirship] = await Promise.all([
-    runStandardReport(order, ctx),
-    runOwnershipEncumbranceReport(order, ctx),
-    runProbateHeirshipReport(order, ctx),
+    runStandardReport(order, { ...ctx, skipOsint: true }),
+    runOwnershipEncumbranceReport(order, { ...ctx, skipOsint: true }),
+    runProbateHeirshipReport(order, { ...ctx, skipOsint: true }),
   ]);
 
   const input = resolveInvestigationInput(order);
@@ -238,12 +301,14 @@ export async function runComprehensiveReport(order, ctx = {}) {
   const discrepancy = crossSourceDiscrepancyAnalyzer(combined);
   const confidenceMatrix = confidenceMatrixBuilder(combined);
   const nextSteps = recommendedNextStepsGenerator(discrepancy, confidenceMatrix);
+  const osint = await gatherWorkflowOsint(order, input, 'comprehensive', ctx);
 
   return {
     ...combined,
     discrepancy,
     confidenceMatrix,
     nextSteps,
+    osint,
   };
 }
 

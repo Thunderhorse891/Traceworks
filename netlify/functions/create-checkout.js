@@ -9,6 +9,7 @@ import { validateStripeSecretKey } from './_lib/stripe-config.js';
 import { ORDER_STATUS } from './_lib/order-status.js';
 import { resolvePurchasedTier } from './_lib/tier-mapping.js';
 import { assessPackageLaunchGate } from './_lib/launch-audit.js';
+import { buildCheckoutSessionPayload } from './_lib/stripe-checkout.js';
 
 function makeCaseRef() {
   return `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -91,24 +92,18 @@ export default async (event) => {
 
     const stripe = new Stripe(stripeConfig.key);
     const base = process.env.URL || `https://${event.headers.host}`;
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      customer_email: customerEmail,
-      line_items: [{ price_data: { currency: pkg.currency, product_data: { name: pkg.name }, unit_amount: pkg.amount }, quantity: 1 }],
-      metadata: {
-        caseRef,
-        packageId,
-        packageName: pkg.name,
-        customerName,
-        customerEmail,
-        subjectName,
-        subjectType: inputCriteria.subjectType,
-        county,
-        state,
-      },
-      success_url: `${base}/success.html?session_id={CHECKOUT_SESSION_ID}&case_ref=${caseRef}${statusToken ? `&status_token=${encodeURIComponent(statusToken)}` : `&email=${encodeURIComponent(customerEmail)}`}`,
-      cancel_url: `${base}/cancel.html`
-    });
+    const session = await stripe.checkout.sessions.create(buildCheckoutSessionPayload({
+      pkg,
+      caseRef,
+      customerName,
+      customerEmail,
+      subjectName,
+      county,
+      state,
+      inputCriteria,
+      baseUrl: base,
+      statusToken
+    }));
 
     await upsertOrder(caseRef, {
       stripe_checkout_session_id: session.id,

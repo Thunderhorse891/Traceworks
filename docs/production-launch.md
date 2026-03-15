@@ -32,6 +32,22 @@ Set these in Netlify site environment variables before taking paid traffic:
 - `PEOPLE_ASSOC_LICENSED=true`
 - `PEOPLE_ASSOC_API_URL`
 
+## Premium OSINT Providers
+
+These are optional for launch, but recommended if you want richer paid-package web intelligence:
+
+- `FIRECRAWL_API_KEY`
+- `FIRECRAWL_API_URL` defaults to `https://api.firecrawl.dev/v2`
+- `FIRECRAWL_OSINT_RESULT_LIMIT`
+- `FIRECRAWL_OSINT_SCRAPE_RESULTS=true`
+- `APIFY_API_TOKEN`
+- `APIFY_OSINT_ACTOR_ID` defaults to `apify~google-search-scraper`
+- `APIFY_OSINT_RESULT_LIMIT`
+- `APIFY_OSINT_TIMEOUT_SECONDS`
+- `APIFY_OSINT_INPUT_TEMPLATE` only if you are using a custom actor contract
+
+TraceWorks treats these as enrichment providers, not legal-record sources. They can add cited web leads and scraped context, but they do not replace the county/probate/title source modules above.
+
 ## Source Endpoint Contracts
 
 These source endpoints are expected to return JSON and accept query parameters as follows:

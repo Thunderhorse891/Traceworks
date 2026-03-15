@@ -1,5 +1,6 @@
 import { BUSINESS_EMAIL, getBusinessEmail } from './business.js';
 import { resolveEmailSettings } from './email-config.js';
+import { resolvePremiumOsintConfig } from './osint-config.js';
 import { PACKAGE_LIST, getPackage } from './packages.js';
 import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig, usingBundledSourceConfig } from './sources/source-config.js';
 import { resolveKvRestConfig, storageDriverName } from './storage-runtime.js';
@@ -336,6 +337,42 @@ function secretChecks(env, checks) {
   }
 }
 
+function premiumOsintChecks(env, checks) {
+  const config = resolvePremiumOsintConfig(env);
+  const configuredCount = config.configuredProviders.length;
+
+  if (config.apify.templateError) {
+    addCheck(checks, makeCheck({
+      id: 'premium_osint_template',
+      label: 'Premium OSINT actor template',
+      severity: 'warning',
+      status: 'warn',
+      detail: config.apify.templateError,
+      action: 'Fix APIFY_OSINT_INPUT_TEMPLATE or remove it to use the default documented actor input.'
+    }));
+  }
+
+  if (configuredCount === 0) {
+    addCheck(checks, makeCheck({
+      id: 'premium_osint',
+      label: 'Premium OSINT providers',
+      severity: 'warning',
+      status: 'warn',
+      detail: 'Neither Firecrawl nor Apify OSINT enrichment is configured. Paid reports can still run, but premium web-intelligence enrichment is disabled.',
+      action: 'Set FIRECRAWL_API_KEY and/or APIFY_API_TOKEN to enable premium OSINT providers.'
+    }));
+    return;
+  }
+
+  addCheck(checks, makeCheck({
+    id: 'premium_osint',
+    label: 'Premium OSINT providers',
+    severity: 'warning',
+    status: 'pass',
+    detail: `Premium OSINT enrichment is configured via ${config.configuredProviders.join(' and ')}.`
+  }));
+}
+
 function sourceChecks(env, checks) {
   const strict = isStrictFulfillment(env);
   try {
@@ -507,6 +544,7 @@ function collectLaunchChecks(env = process.env) {
   storageChecks(env, checks);
   emailChecks(env, checks);
   secretChecks(env, checks);
+  premiumOsintChecks(env, checks);
   sourceModuleChecks(env, checks);
   sourceChecks(env, checks);
   return checks;
