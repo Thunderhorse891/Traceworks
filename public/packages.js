@@ -32,7 +32,12 @@ export const clientPackages = [
       guidance:
         'Best results come from a property address or parcel ID. Owner name still helps when parcel data is incomplete.',
       requiredSignals: ['Subject or property name', 'County'],
+      requiredGroups: [
+        { label: 'Primary subject', anyOf: ['subjectName'] },
+        { label: 'County', anyOf: ['county'] }
+      ],
       recommendedSignals: ['Last known address', 'Parcel / APN ID', 'Profile or listing URL'],
+      recommendedFields: ['lastKnownAddress', 'parcelId', 'websiteProfile'],
       fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'websiteProfile', 'requestedFindings']
     }
   },
@@ -69,7 +74,12 @@ export const clientPackages = [
       guidance:
         'Use this when you need deed history or encumbrance signals. Address, parcel ID, and alternate owner names materially improve continuity checks.',
       requiredSignals: ['Subject or property name', 'County'],
+      requiredGroups: [
+        { label: 'Primary subject', anyOf: ['subjectName'] },
+        { label: 'County', anyOf: ['county'] }
+      ],
       recommendedSignals: ['Last known address', 'Parcel / APN ID', 'Alternate owner / entity names'],
+      recommendedFields: ['lastKnownAddress', 'parcelId', 'alternateNames', 'websiteProfile'],
       fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'alternateNames', 'websiteProfile', 'requestedFindings']
     }
   },
@@ -104,8 +114,14 @@ export const clientPackages = [
       defaultSubjectType: 'estate',
       guidance:
         'For probate matters, decedent name plus one extra identifier like death year, date of birth, address, or relative alias improves match quality and reduces false positives.',
-      requiredSignals: ['Decedent name', 'County'],
+      requiredSignals: ['Decedent name', 'County', 'One secondary identifier'],
+      requiredGroups: [
+        { label: 'Decedent name', anyOf: ['subjectName'] },
+        { label: 'County', anyOf: ['county'] },
+        { label: 'Secondary identifier', anyOf: ['deathYear', 'dateOfBirth', 'lastKnownAddress', 'alternateNames', 'subjectPhone', 'subjectEmail'] }
+      ],
       recommendedSignals: ['Death year', 'Date of birth', 'Last known address', 'Aliases / relative names'],
+      recommendedFields: ['deathYear', 'dateOfBirth', 'lastKnownAddress', 'alternateNames', 'subjectPhone', 'subjectEmail'],
       fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'alternateNames', 'dateOfBirth', 'deathYear', 'subjectPhone', 'subjectEmail', 'requestedFindings']
     }
   },
@@ -141,7 +157,12 @@ export const clientPackages = [
       guidance:
         'This tier performs best when you provide the primary owner or entity plus any known parcel, address, alias, or business registration trail.',
       requiredSignals: ['Subject name or entity', 'County'],
+      requiredGroups: [
+        { label: 'Primary subject or entity', anyOf: ['subjectName'] },
+        { label: 'County', anyOf: ['county'] }
+      ],
       recommendedSignals: ['Last known address', 'Parcel / APN ID', 'Alternate names', 'Profile or company URL'],
+      recommendedFields: ['lastKnownAddress', 'parcelId', 'alternateNames', 'websiteProfile', 'subjectPhone', 'subjectEmail'],
       fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'alternateNames', 'websiteProfile', 'subjectPhone', 'subjectEmail', 'requestedFindings']
     }
   },
@@ -177,7 +198,12 @@ export const clientPackages = [
       guidance:
         'Use comprehensive intake detail here. The engine will prioritize the strongest identifiers first, then expand outward across property, entity, and probate branches.',
       requiredSignals: ['Primary subject name', 'County'],
+      requiredGroups: [
+        { label: 'Primary subject', anyOf: ['subjectName'] },
+        { label: 'County', anyOf: ['county'] }
+      ],
       recommendedSignals: ['Address', 'Parcel / APN ID', 'Aliases', 'Date of birth or death year', 'Phone or email'],
+      recommendedFields: ['lastKnownAddress', 'parcelId', 'alternateNames', 'dateOfBirth', 'deathYear', 'subjectPhone', 'subjectEmail', 'websiteProfile'],
       fields: ['subjectType', 'subjectName', 'county', 'state', 'lastKnownAddress', 'parcelId', 'alternateNames', 'dateOfBirth', 'deathYear', 'subjectPhone', 'subjectEmail', 'websiteProfile', 'requestedFindings']
     }
   }

@@ -1,6 +1,7 @@
 import { clientPackages } from './packages.js';
 
 const packagesGrid = document.getElementById('packages-grid');
+const checkoutForm = document.getElementById('checkoutForm');
 const packageInput = document.getElementById('packageId');
 const statusEl = document.getElementById('status');
 const salesStatus = document.getElementById('salesStatus');
@@ -11,6 +12,20 @@ const selectedPackageSummary = document.getElementById('selectedPackageSummary')
 const selectedPackageName = document.getElementById('selectedPackageName');
 const selectedPackageTurnaround = document.getElementById('selectedPackageTurnaround');
 const selectedPackageGuidance = document.getElementById('selectedPackageGuidance');
+
+const intakeProgressHeading = document.getElementById('intakeProgressHeading');
+const intakeProgressText = document.getElementById('intakeProgressText');
+const intakeProgressFill = document.getElementById('intakeProgressFill');
+const requiredSignalsStatus = document.getElementById('requiredSignalsStatus');
+const recommendedSignalsStatus = document.getElementById('recommendedSignalsStatus');
+const signalChipRow = document.getElementById('signalChipRow');
+const clearDraftBtn = document.getElementById('clearDraftBtn');
+const draftStatus = document.getElementById('draftStatus');
+const briefPackage = document.getElementById('briefPackage');
+const briefSubject = document.getElementById('briefSubject');
+const briefJurisdiction = document.getElementById('briefJurisdiction');
+const briefSignalStrength = document.getElementById('briefSignalStrength');
+const briefObjective = document.getElementById('briefObjective');
 
 const packageModal = document.getElementById('packageModal');
 const packageModalClose = document.getElementById('packageModalClose');
@@ -29,7 +44,24 @@ const intakeFieldWrappers = new Map(
   [...document.querySelectorAll('[data-intake-field]')].map((el) => [el.dataset.intakeField, el])
 );
 
+const DRAFT_STORAGE_KEY = 'traceworksCheckoutDraftV1';
+const FIELD_LABELS = {
+  subjectName: 'Primary subject',
+  county: 'County',
+  lastKnownAddress: 'Last known address',
+  parcelId: 'Parcel or APN',
+  websiteProfile: 'Profile or listing URL',
+  alternateNames: 'Aliases or alternate names',
+  dateOfBirth: 'Date of birth',
+  deathYear: 'Death year',
+  subjectPhone: 'Subject phone',
+  subjectEmail: 'Subject email'
+};
+
 let activeModalPackage = null;
+let selectedPackage = null;
+let lastDraftSavedAt = 0;
+let draftSaveTimer = null;
 
 async function track(type, detail = '') {
   try {
@@ -59,7 +91,110 @@ function setFieldVisibility(fieldName, visible) {
   });
 }
 
+function setDefaultIntakeState() {
+  selectedPackage = null;
+  if (packageInput) packageInput.value = '';
+  if (selectedPackageSummary) selectedPackageSummary.hidden = true;
+  if (selectedPackageName) selectedPackageName.textContent = 'Choose a tier above';
+  if (selectedPackageTurnaround) selectedPackageTurnaround.textContent = 'Awaiting selection';
+  if (selectedPackageGuidance) selectedPackageGuidance.textContent = '';
+  if (packageSelectionHelp) {
+    packageSelectionHelp.textContent = 'Start with a package above to unlock the recommended intake fields for that workflow.';
+  }
+  if (intakeGuidance) {
+    intakeGuidance.textContent = 'We only search public-record and configured licensed sources. More identifiers improve match quality and reduce manual review.';
+  }
+
+  document.querySelectorAll('[data-package-id]').forEach((card) => card.classList.remove('selected'));
+  for (const fieldName of intakeFieldWrappers.keys()) {
+    setFieldVisibility(fieldName, true);
+  }
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return '';
+  return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function fieldLabel(fieldName) {
+  return FIELD_LABELS[fieldName] || fieldName;
+}
+
+function readDraft() {
+  try {
+    return JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(payload) {
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
+  } catch {}
+}
+
+function clearDraftStorage() {
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {}
+}
+
+function formValue(fieldName) {
+  if (!checkoutForm) return '';
+  const field = checkoutForm.elements.namedItem(fieldName);
+  if (!field) return '';
+
+  if (typeof RadioNodeList !== 'undefined' && field instanceof RadioNodeList) {
+    return String(field.value || '').trim();
+  }
+
+  if (typeof field.length === 'number' && typeof field.value === 'undefined') {
+    return Array.from(field).find((item) => item.checked)?.value || '';
+  }
+
+  if (field.type === 'checkbox') {
+    return field.checked ? 'true' : '';
+  }
+
+  return String(field.value || '').trim();
+}
+
+function hasMeaningfulValue(fieldName) {
+  const value = formValue(fieldName);
+  if (fieldName === 'alternateNames') {
+    return value.split(/[\n,;]+/).map((item) => item.trim()).filter(Boolean).length > 0;
+  }
+  return value.length > 0;
+}
+
+function syncDraftStatus() {
+  if (!draftStatus) return;
+  draftStatus.textContent = lastDraftSavedAt
+    ? `Draft saved ${formatTime(lastDraftSavedAt)}`
+    : 'Draft saves locally';
+}
+
+function serializeDraft() {
+  if (!checkoutForm) return {};
+  const payload = Object.fromEntries(new FormData(checkoutForm).entries());
+  delete payload.legalConsent;
+  delete payload.tosConsent;
+  return payload;
+}
+
+function queueDraftSave() {
+  if (!checkoutForm) return;
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = window.setTimeout(() => {
+    lastDraftSavedAt = Date.now();
+    writeDraft({ savedAt: lastDraftSavedAt, data: serializeDraft() });
+    syncDraftStatus();
+  }, 180);
+}
+
 function applyPackageToForm(pkg) {
+  selectedPackage = pkg;
   if (packageInput) packageInput.value = pkg.id;
   if (subjectTypeInput && pkg.intake?.defaultSubjectType) subjectTypeInput.value = pkg.intake.defaultSubjectType;
 
@@ -80,12 +215,139 @@ function applyPackageToForm(pkg) {
   }
 }
 
-async function selectPackage(pkg, { shouldScroll = true, source = 'grid' } = {}) {
+function countSatisfiedRequiredGroups(pkg) {
+  const groups = pkg?.intake?.requiredGroups || [];
+  const completed = groups.filter((group) => (group.anyOf || []).some((fieldName) => hasMeaningfulValue(fieldName)));
+  return { total: groups.length, completed };
+}
+
+function countRecommendedFields(pkg) {
+  const fields = pkg?.intake?.recommendedFields || [];
+  const completed = fields.filter((fieldName) => hasMeaningfulValue(fieldName));
+  return { total: fields.length, completed };
+}
+
+function identifierFieldList(pkg) {
+  return [...new Set([
+    ...(pkg?.intake?.requiredGroups || []).flatMap((group) => group.anyOf || []),
+    ...(pkg?.intake?.recommendedFields || []),
+    'subjectName',
+    'county',
+    'lastKnownAddress',
+    'parcelId',
+    'alternateNames',
+    'dateOfBirth',
+    'deathYear',
+    'subjectPhone',
+    'subjectEmail',
+    'websiteProfile'
+  ])];
+}
+
+function renderSignalChips(pkg, requiredGroups, recommendedFields) {
+  if (!signalChipRow) return;
+  if (!pkg) {
+    signalChipRow.innerHTML = '';
+    return;
+  }
+
+  const requiredChips = (pkg.intake?.requiredGroups || []).map((group) => {
+    const met = requiredGroups.completed.some((item) => item.label === group.label);
+    return `<span class="signal-chip ${met ? 'is-met' : 'is-pending'} required">${group.label}</span>`;
+  });
+
+  const recommendedChips = (pkg.intake?.recommendedFields || []).map((fieldName) => {
+    const met = recommendedFields.completed.includes(fieldName);
+    return `<span class="signal-chip ${met ? 'is-met' : 'is-pending'} optional">${fieldLabel(fieldName)}</span>`;
+  });
+
+  signalChipRow.innerHTML = [...requiredChips, ...recommendedChips].join('');
+}
+
+function updateBriefCard(pkg, requiredGroups, recommendedFields) {
+  if (briefPackage) briefPackage.textContent = pkg?.name || 'Awaiting package selection';
+  if (briefSubject) briefSubject.textContent = formValue('subjectName') || 'Awaiting subject name';
+
+  const county = formValue('county');
+  const state = formValue('state');
+  if (briefJurisdiction) {
+    briefJurisdiction.textContent = county ? `${county}${state ? `, ${state}` : ''}` : 'Awaiting county';
+  }
+
+  const identifierCount = identifierFieldList(pkg).filter((fieldName) => hasMeaningfulValue(fieldName)).length;
+  if (briefSignalStrength) {
+    const requiredNote = pkg ? `${requiredGroups.completed.length}/${requiredGroups.total} required` : '0 required';
+    briefSignalStrength.textContent = `${identifierCount} identifiers on file - ${requiredNote}`;
+  }
+
+  if (briefObjective) {
+    briefObjective.textContent =
+      formValue('goals') ||
+      formValue('requestedFindings') ||
+      pkg?.intake?.guidance ||
+      'Choose a package, add the strongest identifiers you have, and describe what the report needs to confirm or uncover.';
+  }
+
+  void recommendedFields;
+}
+
+function updateGuidedExperience() {
+  const pkg = selectedPackage;
+
+  if (!pkg) {
+    if (intakeProgressHeading) intakeProgressHeading.textContent = 'Step 1 of 4 - Choose a package';
+    if (intakeProgressText) intakeProgressText.textContent = 'Select a report tier above and the intake will guide you toward the strongest identifiers for that workflow.';
+    if (intakeProgressFill) intakeProgressFill.style.width = '0%';
+    if (requiredSignalsStatus) requiredSignalsStatus.textContent = 'Required signals: 0 / 0';
+    if (recommendedSignalsStatus) recommendedSignalsStatus.textContent = 'Recommended identifiers: 0 / 0';
+    renderSignalChips(null, { completed: [], total: 0 }, { completed: [], total: 0 });
+    updateBriefCard(null, { completed: [], total: 0 }, { completed: [], total: 0 });
+    syncDraftStatus();
+    return;
+  }
+
+  const requiredGroups = countSatisfiedRequiredGroups(pkg);
+  const recommendedFields = countRecommendedFields(pkg);
+  const hasObjective = Boolean(formValue('requestedFindings') || formValue('goals'));
+  const consentReady = checked(checkoutForm, 'legalConsent') && checked(checkoutForm, 'tosConsent');
+
+  let heading = 'Step 2 of 4 - Strengthen identifiers';
+  let copy = 'Add the strongest identifiers you have so the engine starts with higher-confidence seeds and fewer false positives.';
+  let progress = 34;
+
+  if (requiredGroups.completed.length === requiredGroups.total && !hasObjective) {
+    heading = 'Step 3 of 4 - Define the report outcome';
+    copy = 'Your minimum intake is in place. Now tell TraceWorks what the report must confirm, uncover, or document.';
+    progress = 62;
+  } else if (requiredGroups.completed.length === requiredGroups.total && hasObjective && !consentReady) {
+    heading = 'Step 4 of 4 - Confirm legal use';
+    copy = 'The intake is strong enough to start. Review the legal-use acknowledgements and proceed to Stripe checkout.';
+    progress = 84;
+  } else if (requiredGroups.completed.length === requiredGroups.total && hasObjective && consentReady) {
+    heading = 'Ready for secure checkout';
+    copy = 'Your request is structured for the selected package. Proceed to Stripe and the queue will begin immediately after payment confirmation.';
+    progress = 100;
+  }
+
+  if (intakeProgressHeading) intakeProgressHeading.textContent = heading;
+  if (intakeProgressText) intakeProgressText.textContent = copy;
+  if (intakeProgressFill) intakeProgressFill.style.width = `${progress}%`;
+  if (requiredSignalsStatus) requiredSignalsStatus.textContent = `Required signals: ${requiredGroups.completed.length} / ${requiredGroups.total}`;
+  if (recommendedSignalsStatus) recommendedSignalsStatus.textContent = `Recommended identifiers: ${recommendedFields.completed.length} / ${recommendedFields.total}`;
+
+  renderSignalChips(pkg, requiredGroups, recommendedFields);
+  updateBriefCard(pkg, requiredGroups, recommendedFields);
+  syncDraftStatus();
+}
+
+async function selectPackage(pkg, { shouldScroll = true, source = 'grid', trackSelection = true } = {}) {
   document.querySelectorAll('[data-package-id]').forEach((card) => card.classList.remove('selected'));
   const card = document.querySelector(`[data-package-id="${pkg.id}"]`);
   card?.classList.add('selected');
 
   applyPackageToForm(pkg);
+  updateGuidedExperience();
+  queueDraftSave();
 
   if (statusEl) statusEl.textContent = `${pkg.name} selected. Complete the structured intake below so the workflow starts with the strongest identifiers.`;
 
@@ -93,7 +355,9 @@ async function selectPackage(pkg, { shouldScroll = true, source = 'grid' } = {})
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  await track(source === 'prefill' ? 'package_prefilled' : 'package_selected', pkg.id);
+  if (trackSelection) {
+    await track(source === 'prefill' ? 'package_prefilled' : 'package_selected', pkg.id);
+  }
 }
 
 function fillPackageModal(pkg) {
@@ -166,10 +430,41 @@ function renderPackages() {
 }
 
 function checked(form, name) {
-  return form.querySelector(`[name="${name}"]`)?.checked === true;
+  return form?.querySelector(`[name="${name}"]`)?.checked === true;
 }
 
-document.getElementById('checkoutForm')?.addEventListener('submit', async (event) => {
+function restoreDraft() {
+  if (!checkoutForm) return false;
+  const draft = readDraft();
+  if (!draft?.data) {
+    syncDraftStatus();
+    return false;
+  }
+
+  lastDraftSavedAt = Number(draft.savedAt || 0);
+
+  for (const [name, value] of Object.entries(draft.data)) {
+    const field = checkoutForm.elements.namedItem(name);
+    if (!field || value == null) continue;
+
+    if (typeof RadioNodeList !== 'undefined' && field instanceof RadioNodeList) {
+      field.value = value;
+      continue;
+    }
+
+    if (field.type === 'checkbox') {
+      field.checked = value === 'true';
+      continue;
+    }
+
+    field.value = value;
+  }
+
+  syncDraftStatus();
+  return true;
+}
+
+checkoutForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target;
 
@@ -217,6 +512,16 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (event
   window.location.href = data.checkoutUrl;
 });
 
+checkoutForm?.addEventListener('input', () => {
+  updateGuidedExperience();
+  queueDraftSave();
+});
+
+checkoutForm?.addEventListener('change', () => {
+  updateGuidedExperience();
+  queueDraftSave();
+});
+
 document.getElementById('salesForm')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target;
@@ -259,12 +564,33 @@ packageModalSelect?.addEventListener('click', async () => {
   await selectPackage(activeModalPackage, { source: 'modal' });
 });
 
+clearDraftBtn?.addEventListener('click', () => {
+  clearDraftStorage();
+  lastDraftSavedAt = 0;
+  checkoutForm?.reset();
+  setDefaultIntakeState();
+  updateGuidedExperience();
+  if (statusEl) statusEl.textContent = 'Local draft cleared. Choose a package to start a fresh request.';
+});
+
 renderPackages();
+setDefaultIntakeState();
+const restoredDraft = restoreDraft();
 
 const requestedPackageId = new URLSearchParams(window.location.search).get('packageId');
 if (requestedPackageId) {
   const pkg = clientPackages.find((item) => item.id === requestedPackageId);
-  if (pkg) selectPackage(pkg, { shouldScroll: false, source: 'prefill' });
+  if (pkg) void selectPackage(pkg, { shouldScroll: false, source: 'prefill' });
+} else if (restoredDraft) {
+  const pkg = clientPackages.find((item) => item.id === formValue('packageId'));
+  if (pkg) {
+    void selectPackage(pkg, { shouldScroll: false, source: 'restore', trackSelection: false });
+    if (statusEl) statusEl.textContent = 'Local draft restored. Confirm the request details, then proceed to secure checkout.';
+  } else {
+    updateGuidedExperience();
+  }
+} else {
+  updateGuidedExperience();
 }
 
 const yearEl = document.getElementById('year');

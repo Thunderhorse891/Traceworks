@@ -19,6 +19,8 @@ test('client packages include valid Stripe payment links', () => {
     assert.ok(typeof pkg.summary === 'string' && pkg.summary.length > 20);
     assert.equal('reportPreviewPath' in pkg, false);
     assert.ok(Array.isArray(pkg.includedFindings) && pkg.includedFindings.length >= 3);
+    assert.ok(Array.isArray(pkg.intake?.requiredGroups) && pkg.intake.requiredGroups.length >= 2);
+    assert.ok(Array.isArray(pkg.intake?.recommendedFields) && pkg.intake.recommendedFields.length >= 2);
   }
 
   for (const pkg of paid) {
@@ -33,6 +35,9 @@ test('homepage includes enterprise sales form', () => {
   assert.ok(html.includes('name="requestedFindings"'));
   assert.ok(html.includes('name="lastKnownAddress"'));
   assert.ok(html.includes('id="packageModal"'));
+  assert.ok(html.includes('id="liveBriefCard"'));
+  assert.ok(html.includes('id="intakeProgressFill"'));
+  assert.ok(html.includes('id="clearDraftBtn"'));
 });
 
 test('homepage keeps customer navigation on real production pages', () => {
@@ -54,4 +59,11 @@ test('order status tracker supports signed polling links', () => {
   const html = readFileSync('public/order-status.html', 'utf8');
   assert.ok(html.includes("params.set('status_token', currentStatusToken)"));
   assert.ok(html.includes('payment_confirmation_email_status'));
+});
+
+test('homepage app persists a structured local draft for intake continuity', () => {
+  const js = readFileSync('public/app.js', 'utf8');
+  assert.ok(js.includes('traceworksCheckoutDraftV1'));
+  assert.ok(js.includes('localStorage.setItem'));
+  assert.ok(js.includes('Local draft restored.'));
 });

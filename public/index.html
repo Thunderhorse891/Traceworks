@@ -211,6 +211,69 @@
               <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a>
               <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
             </div>
+            <div class="intake-side-rail">
+              <div class="journey-card">
+                <p class="label">Request Journey</p>
+                <div class="journey-step-list">
+                  <div class="journey-step">
+                    <span class="journey-step-index">01</span>
+                    <div>
+                      <strong>Choose a package</strong>
+                      <p>Set the workflow and evidence scope first.</p>
+                    </div>
+                  </div>
+                  <div class="journey-step">
+                    <span class="journey-step-index">02</span>
+                    <div>
+                      <strong>Strengthen identifiers</strong>
+                      <p>More seeds mean better automation and less manual review.</p>
+                    </div>
+                  </div>
+                  <div class="journey-step">
+                    <span class="journey-step-index">03</span>
+                    <div>
+                      <strong>Define the outcome</strong>
+                      <p>Tell the engine what the report must return.</p>
+                    </div>
+                  </div>
+                  <div class="journey-step">
+                    <span class="journey-step-index">04</span>
+                    <div>
+                      <strong>Secure checkout</strong>
+                      <p>Stripe confirms payment, then the queue begins immediately.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="journey-card live-brief-card" id="liveBriefCard">
+                <div class="live-brief-head">
+                  <div>
+                    <p class="label">Live Intake Snapshot</p>
+                    <h4>Investigation brief</h4>
+                  </div>
+                  <span class="draft-status" id="draftStatus">Draft saves locally</span>
+                </div>
+                <div class="brief-grid">
+                  <div class="brief-item">
+                    <span>Package</span>
+                    <strong id="briefPackage">Awaiting package selection</strong>
+                  </div>
+                  <div class="brief-item">
+                    <span>Target</span>
+                    <strong id="briefSubject">Awaiting subject name</strong>
+                  </div>
+                  <div class="brief-item">
+                    <span>Jurisdiction</span>
+                    <strong id="briefJurisdiction">Awaiting county</strong>
+                  </div>
+                  <div class="brief-item">
+                    <span>Signal strength</span>
+                    <strong id="briefSignalStrength">0 identifiers on file</strong>
+                  </div>
+                </div>
+                <p class="brief-copy" id="briefObjective">Choose a package, add the strongest identifiers you have, and describe what the report needs to confirm or uncover.</p>
+              </div>
+            </div>
           </div>
 
           <div class="form-wrap">
@@ -219,6 +282,26 @@
             </div>
             <div class="form-body">
               <form id="checkoutForm">
+                <div class="intake-progress-card">
+                  <div class="intake-progress-header">
+                    <div>
+                      <p class="label">Investigation Setup</p>
+                      <h4 id="intakeProgressHeading">Step 1 of 4 - Choose a package</h4>
+                    </div>
+                    <button type="button" class="btn-outline intake-clear-btn" id="clearDraftBtn">Clear Draft</button>
+                  </div>
+                  <p class="intake-progress-copy" id="intakeProgressText">Select a report tier above and the intake will guide you toward the strongest identifiers for that workflow.</p>
+                  <div class="progress-wrap">
+                    <div class="progress-track">
+                      <div class="progress-fill" id="intakeProgressFill" style="width:0%"></div>
+                    </div>
+                    <div class="intake-progress-meta">
+                      <span id="requiredSignalsStatus">Required signals: 0 / 0</span>
+                      <span id="recommendedSignalsStatus">Recommended identifiers: 0 / 0</span>
+                    </div>
+                  </div>
+                  <div class="signal-chip-row" id="signalChipRow"></div>
+                </div>
                 <div class="selected-package-summary" id="selectedPackageSummary" hidden>
                   <div>
                     <p class="label">Selected Package</p>
