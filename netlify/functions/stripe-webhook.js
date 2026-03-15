@@ -12,6 +12,7 @@ import { buildInputCriteria, normalizeCheckoutPayload } from './_lib/validation.
 import { getPackage } from './_lib/packages.js';
 import { createStatusToken } from './_lib/status-token.js';
 import { sendOrderConfirmationEmail } from './_lib/email.js';
+import { assessPaidOrderLaunchGate } from './_lib/launch-audit.js';
 
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
@@ -156,6 +157,24 @@ export default async (event) => {
     failure_reason: null,
     email_delivery_status: 'pending'
   });
+
+  const launchGate = assessPaidOrderLaunchGate(process.env);
+  if (!launchGate.ok) {
+    await upsertOrder(caseRef, {
+      status: ORDER_STATUS.MANUAL_REVIEW,
+      failure_reason: launchGate.internalMessage,
+      payment_confirmation_email_status: 'skipped',
+      queuedAt: null,
+      retryAt: null
+    });
+    await recordAuditEvent({
+      event: 'launch_gate_blocked_paid_order',
+      caseRef,
+      blockingChecks: launchGate.blockingChecks.map((check) => check.id)
+    });
+    await markProcessedWebhookEvent(stripeEvent.id);
+    return jsonWithRequestId(event, 200, { ok: true, manualReview: true });
+  }
 
   await upsertOrder(caseRef, { status: ORDER_STATUS.QUEUED });
 

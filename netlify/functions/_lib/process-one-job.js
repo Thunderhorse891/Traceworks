@@ -1,12 +1,33 @@
-import { claimJobByCaseRef, claimNextJob, completeJob, failJob, incrementFulfillmentAttempt, recordDeadLetter, upsertOrder } from './store.js';
+import { claimJobByCaseRef, claimNextJob, completeJob, failJob, incrementFulfillmentAttempt, recordAuditEvent, recordDeadLetter, upsertOrder } from './store.js';
 import { processFulfillmentJob } from './fulfillment.js';
 import { ORDER_STATUS } from './order-status.js';
+import { assessPaidOrderLaunchGate } from './launch-audit.js';
 
 export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, caseRef: requestedCaseRef = null, deps = {} }) {
   const job = requestedCaseRef ? await claimJobByCaseRef('fulfillment', requestedCaseRef) : await claimNextJob('fulfillment');
   if (!job) return { ok: true, message: 'no_jobs' };
 
   const caseRef = job.payload?.caseRef || 'unknown';
+  const evaluateLaunchGate = deps.assessPaidOrderLaunchGateImpl || assessPaidOrderLaunchGate;
+  const launchGate = evaluateLaunchGate(process.env);
+  if (!launchGate.ok) {
+    await upsertOrder(caseRef, {
+      status: ORDER_STATUS.MANUAL_REVIEW,
+      lastError: null,
+      retryAt: null,
+      completed_at: new Date().toISOString(),
+      failure_reason: launchGate.internalMessage
+    });
+    await recordAuditEvent({
+      event: 'launch_gate_blocked_fulfillment_job',
+      caseRef,
+      jobId: job.id,
+      blockingChecks: launchGate.blockingChecks.map((check) => check.id)
+    });
+    await completeJob(job.id);
+    return { ok: true, message: 'launch_gate_blocked', jobId: job.id, caseRef, manualReview: true };
+  }
+
   const attempt = await incrementFulfillmentAttempt(caseRef);
   await upsertOrder(caseRef, {
     status: ORDER_STATUS.RUNNING,

@@ -3,6 +3,8 @@ import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig } f
 import { resolveKvRestConfig, storageDriverName } from './storage-runtime.js';
 import { validateStripeSecretKey, validateStripeWebhookSecret } from './stripe-config.js';
 
+const PUBLIC_GATE_MESSAGE = 'TraceWorks is temporarily not accepting paid orders while launch requirements are being completed. No charge was created.';
+
 function trim(value) {
   return String(value || '').trim();
 }
@@ -347,6 +349,76 @@ function sourceChecks(env, checks) {
   }
 }
 
+function sourceModuleChecks(env, checks) {
+  const requirements = [
+    {
+      id: 'property_source_modules',
+      label: 'Property source modules',
+      keys: ['APPRAISAL_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL'],
+      description: 'Standard property and asset-network workflows rely on appraisal, tax, and parcel modules.'
+    },
+    {
+      id: 'title_source_modules',
+      label: 'Title source modules',
+      keys: ['COUNTY_CLERK_API_URL', 'GRANTOR_GRANTEE_API_URL', 'MORTGAGE_INDEX_API_URL'],
+      description: 'Ownership and encumbrance workflows rely on deed, grantor-grantee, and mortgage modules.'
+    },
+    {
+      id: 'probate_source_modules',
+      label: 'Probate source modules',
+      keys: ['OBITUARY_API_URL', 'PROBATE_API_URL'],
+      description: 'Probate and heirship workflows rely on obituary and probate modules.'
+    }
+  ];
+
+  for (const requirement of requirements) {
+    const missing = requirement.keys.filter((key) => !trim(env[key]));
+    if (missing.length) {
+      addCheck(checks, makeCheck({
+        id: requirement.id,
+        label: requirement.label,
+        severity: 'blocking',
+        status: 'fail',
+        detail: `${requirement.description} Missing: ${missing.join(', ')}.`,
+        action: `Set ${missing.join(', ')} before taking paid orders for these workflows.`
+      }));
+      continue;
+    }
+
+    addCheck(checks, makeCheck({
+      id: requirement.id,
+      label: requirement.label,
+      severity: 'warning',
+      status: 'pass',
+      detail: `${requirement.description} Required source module endpoints are configured.`
+    }));
+  }
+
+  const peopleAssocLicensed = trim(env.PEOPLE_ASSOC_LICENSED).toLowerCase() === 'true';
+  const peopleAssocUrl = trim(env.PEOPLE_ASSOC_API_URL);
+  if (!peopleAssocLicensed || !peopleAssocUrl) {
+    const missing = [];
+    if (!peopleAssocLicensed) missing.push('PEOPLE_ASSOC_LICENSED=true');
+    if (!peopleAssocUrl) missing.push('PEOPLE_ASSOC_API_URL');
+    addCheck(checks, makeCheck({
+      id: 'people_association_source',
+      label: 'Licensed people-association source',
+      severity: 'blocking',
+      status: 'fail',
+      detail: `Probate and comprehensive workflows include a licensed people-association lookup. Missing: ${missing.join(', ')}.`,
+      action: 'Set PEOPLE_ASSOC_LICENSED=true and PEOPLE_ASSOC_API_URL only when the licensed connector is actually available.'
+    }));
+  } else {
+    addCheck(checks, makeCheck({
+      id: 'people_association_source',
+      label: 'Licensed people-association source',
+      severity: 'warning',
+      status: 'pass',
+      detail: 'Licensed people-association lookup is configured.'
+    }));
+  }
+}
+
 export function auditLaunchReadiness(env = process.env) {
   const checks = [];
   baseUrlCheck(env, checks);
@@ -354,6 +426,7 @@ export function auditLaunchReadiness(env = process.env) {
   storageChecks(env, checks);
   emailChecks(env, checks);
   secretChecks(env, checks);
+  sourceModuleChecks(env, checks);
   sourceChecks(env, checks);
 
   const blockingCount = checks.filter((check) => check.severity === 'blocking' && check.status === 'fail').length;
@@ -373,5 +446,40 @@ export function auditLaunchReadiness(env = process.env) {
     warningCount,
     checks,
     manualActions
+  };
+}
+
+const PUBLIC_REASON_BY_CHECK = Object.freeze({
+  base_url: 'operations',
+  stripe_secret: 'payments',
+  stripe_webhook: 'payments',
+  storage_driver: 'storage',
+  kv_rest: 'storage',
+  smtp: 'delivery',
+  admin_api_key: 'operations',
+  status_token_secret: 'tracking',
+  queue_cron_secret: 'operations',
+  property_source_modules: 'sources',
+  title_source_modules: 'sources',
+  probate_source_modules: 'sources',
+  people_association_source: 'sources',
+  source_config: 'sources'
+});
+
+export function assessPaidOrderLaunchGate(env = process.env) {
+  const audit = auditLaunchReadiness(env);
+  const blockingChecks = audit.checks.filter((check) => check.severity === 'blocking' && check.status === 'fail');
+  const reasonCodes = [...new Set(
+    blockingChecks.map((check) => PUBLIC_REASON_BY_CHECK[check.id] || 'operations')
+  )];
+
+  return {
+    ok: blockingChecks.length === 0,
+    blockingChecks,
+    reasonCodes,
+    publicMessage: blockingChecks.length ? PUBLIC_GATE_MESSAGE : '',
+    internalMessage: blockingChecks.length
+      ? `Launch gate blocked automated paid-order flow: ${blockingChecks.map((check) => `${check.label} (${check.id})`).join(', ')}.`
+      : ''
   };
 }

@@ -8,6 +8,7 @@ import { createStatusToken } from './_lib/status-token.js';
 import { validateStripeSecretKey } from './_lib/stripe-config.js';
 import { ORDER_STATUS } from './_lib/order-status.js';
 import { resolvePurchasedTier } from './_lib/tier-mapping.js';
+import { assessPaidOrderLaunchGate } from './_lib/launch-audit.js';
 
 function makeCaseRef() {
   return `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -36,6 +37,14 @@ export default async (event) => {
     const pkg = getPackage(packageId);
     if (!pkg) return jsonWithRequestId(event, 400, { error: 'Invalid package selected.' });
     const inputCriteria = buildInputCriteria(payload);
+    const launchGate = assessPaidOrderLaunchGate(process.env);
+    if (!launchGate.ok) {
+      return jsonWithRequestId(event, 503, {
+        error: launchGate.publicMessage,
+        launchBlocked: true,
+        blockingAreas: launchGate.reasonCodes
+      });
+    }
 
     const stripeConfig = validateStripeSecretKey(process.env.STRIPE_SECRET_KEY);
     if (!stripeConfig.ok) return jsonWithRequestId(event, 500, { error: stripeConfig.message });

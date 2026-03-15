@@ -15,6 +15,7 @@ Everything outside those paths should be treated as support tooling or removable
 - The OSINT helper returns only cited hits that actually came back from providers in the current run.
 - Zero provider hits stays zero hits. The code does not inject fallback directories or placeholder corroboration.
 - Structured public-record evidence comes only from configured connectors or the built-in Texas-first source pack.
+- Paid checkout is launch-gated: if Stripe, delivery, storage, secure tracking, or source coverage is not truly ready, the app refuses new paid orders instead of pretending.
 
 ## Production Path
 

@@ -15,6 +15,16 @@ test('launch audit blocks file storage and missing launch secrets', () => {
     STATUS_TOKEN_SECRET: '',
     QUEUE_CRON_SECRET: '',
     TRACEWORKS_STORAGE_DRIVER: 'file',
+    APPRAISAL_API_URL: 'https://sources.example/appraisal',
+    TAX_COLLECTOR_API_URL: 'https://sources.example/tax',
+    PARCEL_GIS_API_URL: 'https://sources.example/gis',
+    COUNTY_CLERK_API_URL: 'https://sources.example/clerk',
+    GRANTOR_GRANTEE_API_URL: 'https://sources.example/grantor',
+    MORTGAGE_INDEX_API_URL: 'https://sources.example/mortgage',
+    OBITUARY_API_URL: 'https://sources.example/obits',
+    PROBATE_API_URL: 'https://sources.example/probate',
+    PEOPLE_ASSOC_API_URL: '',
+    PEOPLE_ASSOC_LICENSED: 'false',
     PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
       countyProperty: [{ id: 'property', type: 'html' }],
       countyRecorder: [{ id: 'recorder', type: 'html' }],
@@ -27,6 +37,7 @@ test('launch audit blocks file storage and missing launch secrets', () => {
   assert.ok(result.blockingCount >= 4);
   assert.ok(result.checks.some((check) => check.id === 'storage_driver' && check.status === 'fail'));
   assert.ok(result.checks.some((check) => check.id === 'admin_api_key' && check.status === 'fail'));
+  assert.ok(result.checks.some((check) => check.id === 'people_association_source' && check.status === 'fail'));
 });
 
 test('launch audit warns when production still points at netlify and test stripe', () => {
@@ -45,6 +56,16 @@ test('launch audit warns when production still points at netlify and test stripe
     TRACEWORKS_STORAGE_DRIVER: 'kv',
     UPSTASH_REDIS_REST_URL: 'https://kv.example.com',
     UPSTASH_REDIS_REST_TOKEN: 'kv-secret',
+    APPRAISAL_API_URL: 'https://sources.example/appraisal',
+    TAX_COLLECTOR_API_URL: 'https://sources.example/tax',
+    PARCEL_GIS_API_URL: 'https://sources.example/gis',
+    COUNTY_CLERK_API_URL: 'https://sources.example/clerk',
+    GRANTOR_GRANTEE_API_URL: 'https://sources.example/grantor',
+    MORTGAGE_INDEX_API_URL: 'https://sources.example/mortgage',
+    OBITUARY_API_URL: 'https://sources.example/obits',
+    PROBATE_API_URL: 'https://sources.example/probate',
+    PEOPLE_ASSOC_API_URL: 'https://sources.example/people',
+    PEOPLE_ASSOC_LICENSED: 'true',
     PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
       countyProperty: [{ id: 'property', type: 'html' }],
       countyRecorder: [{ id: 'recorder', type: 'browser' }],
@@ -58,4 +79,5 @@ test('launch audit warns when production still points at netlify and test stripe
   assert.ok(result.checks.some((check) => check.id === 'base_url' && check.status === 'warn'));
   assert.ok(result.checks.some((check) => check.id === 'stripe_secret' && check.status === 'warn'));
   assert.ok(result.checks.some((check) => check.id === 'browser_sources' && check.status === 'warn'));
+  assert.ok(result.checks.some((check) => check.id === 'property_source_modules' && check.status === 'pass'));
 });

@@ -11,11 +11,11 @@ test('launch readiness page includes health check hook', async () => {
   const html = await readFile('public/launch-readiness.html', 'utf8');
   assert.ok(html.includes('/api/health'));
   assert.ok(html.includes('/api/launch-audit'));
-  assert.ok(html.includes('What we need from you'));
+  assert.ok(html.includes('Phase One Launch Rules'));
   assert.ok(html.includes('Manual Verification Still Required'));
-  assert.ok(html.includes('REST KV Storage Connected'));
-  assert.ok(html.includes('Netlify Scheduled Worker Active'));
-  assert.ok(html.includes('Stripe live checkout verification'));
-  assert.ok(html.includes('GitHub push readiness'));
-  assert.ok(html.includes('git remote add origin'));
+  assert.ok(html.includes('Paid checkout stays off until the launch audit has zero blockers'));
+  assert.ok(html.includes('Durable storage is non-negotiable'));
+  assert.ok(html.includes('Live Proof Still Required Today'));
+  assert.ok(html.includes('Real end-to-end launch rehearsal'));
+  assert.ok(html.includes('County and provider validation'));
 });
