@@ -82,5 +82,6 @@ Non-empty responses should contain the keys the workflow expects, such as:
 5. Run package/county preflight against the deployed domain before you charge a real customer:
    - `curl -X POST https://your-site.example/api/intake-preflight -H "content-type: application/json" -d "{\"packageId\":\"standard\",\"subjectName\":\"Launch Probe\",\"county\":\"Harris\",\"state\":\"TX\"}"`
 6. Run `npm run live:smoke -- --url https://your-site.example --admin-key YOUR_ADMIN_API_KEY --package-id standard --county Harris --state TX`.
-7. Run one real paid end-to-end order on the deployed domain.
-8. Verify email delivery, status links, queue progression, artifact access, and Netlify logs.
+7. Run a live source proof inside `/launch-readiness.html` with a real package, jurisdiction, and identifier set before taking paid traffic for that workflow.
+8. Run one real paid end-to-end order on the deployed domain.
+9. Verify email delivery, status links, queue progression, artifact access, and Netlify logs.

@@ -6,6 +6,25 @@
     <title>TraceWorks™ — Launch Readiness</title>
     <meta name="theme-color" content="#09090f" />
     <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .input-shell {
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(120, 160, 220, 0.16);
+        background: rgba(7, 12, 22, 0.72);
+        color: var(--text-1);
+        font: inherit;
+        box-sizing: border-box;
+      }
+      .proof-card {
+        border: 1px solid rgba(120, 160, 220, 0.16);
+        border-radius: 16px;
+        padding: 14px 16px;
+        background: rgba(7, 12, 22, 0.72);
+      }
+    </style>
   </head>
   <body>
     <header class="site-header">
@@ -34,9 +53,9 @@
         </div>
         <div class="status-body">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
-            <button type="button" class="btn-outline" id="setAdminKeyBtn">Set ADMIN_API_KEY</button>
-            <button type="button" class="btn-outline" id="clearAdminKeyBtn" style="display:none;">Clear ADMIN_API_KEY</button>
-            <span id="authHint" style="font-size:12px;color:var(--text-3);">Admin key unlocks missing env vars and live queue metrics.</span>
+            <button type="button" class="btn-outline" id="setAdminKeyBtn">Authenticate Admin</button>
+            <button type="button" class="btn-outline" id="clearAdminKeyBtn" style="display:none;">Log Out Admin</button>
+            <span id="authHint" style="font-size:12px;color:var(--text-3);">Admin session unlocks missing env vars, source proofs, and live queue metrics.</span>
           </div>
           <p id="healthSummary" style="font-size:13px; color:var(--text-2);">Querying <code style="font-family:var(--mono); font-size:11px; color:var(--text-3);">/api/health</code>…</p>
           <ul class="env-list" id="missingList"></ul>
@@ -64,6 +83,73 @@
           <div id="manualAuditWrap" style="display:none; margin-top:16px;">
             <p style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); margin-bottom:8px;">Manual Verification Still Required</p>
             <ul class="env-list" id="manualAuditList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-panel">
+        <div class="status-panel-header">
+          <h3>Live Source Proof — /api/source-proof</h3>
+          <span class="status-indicator checking" id="proofStatus">
+            <span class="dot"></span>
+            <span id="proofStatusText">Waiting…</span>
+          </span>
+        </div>
+        <div class="status-body">
+          <p id="proofSummary" style="font-size:13px; color:var(--text-2);">Authenticate admin to run a real source proof against the live workflow using actual identifiers.</p>
+          <form id="sourceProofForm" style="display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-top:16px;">
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              Package
+              <select id="proofPackageId" class="input-shell">
+                <option value="standard">Standard Property Snapshot</option>
+                <option value="ownership_encumbrance">Ownership &amp; Encumbrance</option>
+                <option value="probate_heirship">Probate &amp; Heirship</option>
+                <option value="asset_network">Asset &amp; Property Network</option>
+                <option value="comprehensive">Comprehensive Investigative</option>
+              </select>
+            </label>
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              Subject Name
+              <input id="proofSubjectName" class="input-shell" placeholder="Jane Owner" />
+            </label>
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              Subject Type
+              <select id="proofSubjectType" class="input-shell">
+                <option value="person">Person</option>
+                <option value="property">Property</option>
+                <option value="entity">Entity</option>
+                <option value="estate">Estate</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </label>
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              County
+              <input id="proofCounty" class="input-shell" placeholder="Harris" />
+            </label>
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              State
+              <input id="proofState" class="input-shell" maxlength="2" value="TX" />
+            </label>
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              Address
+              <input id="proofAddress" class="input-shell" placeholder="123 Main St" />
+            </label>
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              Parcel ID
+              <input id="proofParcelId" class="input-shell" placeholder="Parcel / account" />
+            </label>
+            <label style="display:grid; gap:6px; font-size:11px; color:var(--text-3);">
+              Death Year
+              <input id="proofDeathYear" class="input-shell" placeholder="2022" />
+            </label>
+            <div style="display:flex; align-items:end;">
+              <button type="submit" class="btn-outline" id="runProofBtn" style="width:100%;">Run Source Proof</button>
+            </div>
+          </form>
+          <div id="proofResult" style="display:none; margin-top:18px;"></div>
+          <div id="proofHistoryWrap" style="display:none; margin-top:18px;">
+            <p style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); margin-bottom:8px;">Recent Recorded Proofs</p>
+            <div id="proofHistoryList" style="display:grid; gap:10px;"></div>
           </div>
         </div>
       </div>
@@ -158,30 +244,26 @@
       const packageAuditGrid = document.getElementById('packageAuditGrid');
       const manualAuditWrap = document.getElementById('manualAuditWrap');
       const manualAuditList = document.getElementById('manualAuditList');
+      const proofStatus = document.getElementById('proofStatus');
+      const proofStatusText = document.getElementById('proofStatusText');
+      const proofSummary = document.getElementById('proofSummary');
+      const proofForm = document.getElementById('sourceProofForm');
+      const proofResult = document.getElementById('proofResult');
+      const proofHistoryWrap = document.getElementById('proofHistoryWrap');
+      const proofHistoryList = document.getElementById('proofHistoryList');
+      const runProofBtn = document.getElementById('runProofBtn');
       const dotStripe      = document.getElementById('dot-stripe');
       const dotSmtp        = document.getElementById('dot-smtp');
       const setAdminKeyBtn = document.getElementById('setAdminKeyBtn');
       const clearAdminKeyBtn = document.getElementById('clearAdminKeyBtn');
       const authHint = document.getElementById('authHint');
-      const ADMIN_KEY_STORAGE = 'traceworksAdminApiKey';
-
-      function readAdminKey() {
-        try { return localStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch { return ''; }
-      }
-
-      function writeAdminKey(value) {
-        try {
-          if (value) localStorage.setItem(ADMIN_KEY_STORAGE, value.trim());
-          else localStorage.removeItem(ADMIN_KEY_STORAGE);
-        } catch {}
-      }
+      let adminSessionReady = false;
 
       function syncAuthUi() {
-        const hasKey = Boolean(readAdminKey());
-        clearAdminKeyBtn.style.display = hasKey ? '' : 'none';
-        authHint.textContent = hasKey
-          ? 'Admin key detected locally. Detailed environment diagnostics are enabled for this browser.'
-          : 'Admin key unlocks missing env vars and live queue metrics.';
+        clearAdminKeyBtn.style.display = adminSessionReady ? '' : 'none';
+        authHint.textContent = adminSessionReady
+          ? 'Signed admin session is active for this browser. Detailed environment diagnostics and source proofs are enabled.'
+          : 'Admin session unlocks missing env vars, source proofs, and live queue metrics.';
       }
 
       function setStatus(state, text) {
@@ -192,6 +274,36 @@
       function setAuditStatus(state, text) {
         auditStatus.className = 'status-indicator ' + state;
         auditStatusText.textContent = text;
+      }
+
+      function setProofStatus(state, text) {
+        proofStatus.className = 'status-indicator ' + state;
+        proofStatusText.textContent = text;
+      }
+
+      async function authenticateAdmin() {
+        const value = window.prompt('Paste ADMIN_API_KEY');
+        if (!value || !value.trim()) return false;
+
+        const res = await fetch('/api/admin-login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ apiKey: value.trim() })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Admin authentication failed.');
+        adminSessionReady = true;
+        syncAuthUi();
+        return true;
+      }
+
+      async function logoutAdmin() {
+        try {
+          await fetch('/api/admin-logout', { method: 'POST', credentials: 'same-origin' });
+        } catch {}
+        adminSessionReady = false;
+        syncAuthUi();
       }
 
       function metricCard(label, value) {
@@ -206,6 +318,15 @@
         d.appendChild(v);
         d.appendChild(l);
         return d;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
       }
 
       function auditCard(check) {
@@ -233,14 +354,19 @@
         el.style.borderRadius = '16px';
         el.style.padding = '14px 16px';
         el.style.background = 'rgba(7,12,22,0.72)';
+        const detail = escapeHtml(check.detail || '');
+        const action = escapeHtml(check.action || '');
+        const label = escapeHtml(check.label || '');
+        const status = escapeHtml(check.status || '');
+        const severity = escapeHtml(check.severity || '');
         el.innerHTML = `
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
             <div>
-              <div style="font-size:13px;color:var(--text-1);font-weight:600;">${check.label}</div>
-              <div style="margin-top:6px;font-size:12px;color:var(--text-2);line-height:1.6;">${check.detail}</div>
-              ${check.action ? `<div style="margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.6;"><strong style="color:var(--text-2);">Action:</strong> ${check.action}</div>` : ''}
+              <div style="font-size:13px;color:var(--text-1);font-weight:600;">${label}</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--text-2);line-height:1.6;">${detail}</div>
+              ${action ? `<div style="margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.6;"><strong style="color:var(--text-2);">Action:</strong> ${action}</div>` : ''}
             </div>
-            <span style="display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${check.status} · ${check.severity}</span>
+            <span style="display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${status} · ${severity}</span>
           </div>
         `;
         return el;
@@ -253,6 +379,8 @@
         const badgeBg = ready ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)';
         const badgeColor = ready ? '#86efac' : '#fcd34d';
         const required = Array.isArray(pkg.requiredSourceCoverage) ? pkg.requiredSourceCoverage : [];
+        const pkgName = escapeHtml(pkg.name || '');
+        const readiness = escapeHtml(pkg.readinessSummary || '');
 
         el.style.border = `1px solid ${border}`;
         el.style.borderRadius = '16px';
@@ -261,9 +389,9 @@
         el.innerHTML = `
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
             <div>
-              <div style="font-size:13px;color:var(--text-1);font-weight:600;">${pkg.name}</div>
-              <div style="margin-top:6px;font-size:12px;color:var(--text-2);line-height:1.6;">${pkg.readinessSummary || ''}</div>
-              ${required.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.6;">Coverage: ${required.map((item) => `${item.label} (${item.ready ? 'ready' : 'missing'})`).join(' · ')}</div>` : ''}
+              <div style="font-size:13px;color:var(--text-1);font-weight:600;">${pkgName}</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--text-2);line-height:1.6;">${readiness}</div>
+              ${required.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.6;">Coverage: ${required.map((item) => `${escapeHtml(item.label)} (${item.ready ? 'ready' : 'missing'})`).join(' · ')}</div>` : ''}
             </div>
             <span style="display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${ready ? 'ready' : 'blocked'}</span>
           </div>
@@ -271,31 +399,60 @@
         return el;
       }
 
+      function proofHistoryCard(entry) {
+        const el = document.createElement('div');
+        el.className = 'proof-card';
+        const tone = entry.ok ? '#86efac' : entry.launchBlocked ? '#fcd34d' : '#fca5a5';
+        const label = entry.ok ? 'proved' : entry.launchBlocked ? 'blocked' : 'error';
+        const location = [entry.county, entry.state].filter(Boolean).join(', ');
+        const summary = entry.summary || {};
+        const topSources = Array.isArray(entry.topSources) ? entry.topSources : [];
+        const pkgName = escapeHtml(entry.packageName || entry.packageId || 'Proof run');
+        const subjectName = escapeHtml(entry.subjectName || 'Unknown subject');
+        const locationLabel = escapeHtml(location || 'No jurisdiction');
+
+        el.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:13px;color:var(--text-1);font-weight:600;">${pkgName} · ${subjectName}</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--text-3);line-height:1.6;">${locationLabel} · ${escapeHtml(entry.at ? new Date(entry.at).toLocaleString() : 'Unknown time')}</div>
+              <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.6;">Structured evidence: ${summary.totalStructuredEvidence || 0} · Open-web sources: ${summary.totalOpenWebSources || 0} · Providers with hits: ${summary.providersWithHits || 0}</div>
+              ${(summary.publicRecordGaps || []).length ? `<div style="margin-top:8px;font-size:12px;color:#fcd34d;line-height:1.6;">Gaps: ${summary.publicRecordGaps.map((item) => escapeHtml(item)).join(' · ')}</div>` : ''}
+              ${topSources.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.6;">Top sources: ${topSources.map((item) => escapeHtml(item.domain || item.provider || 'source')).join(' · ')}</div>` : ''}
+            </div>
+            <span style="display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:rgba(120,160,220,0.12);color:${tone};font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${label}</span>
+          </div>
+        `;
+        return el;
+      }
+
       async function loadLaunchAudit() {
-        const adminKey = readAdminKey();
         auditChecks.innerHTML = '';
         packageAuditGrid.innerHTML = '';
         packageAuditWrap.style.display = 'none';
         manualAuditList.innerHTML = '';
         manualAuditWrap.style.display = 'none';
 
-        if (!adminKey) {
-          setAuditStatus('warn', 'Admin Required');
-          auditSummary.textContent = 'Provide ADMIN_API_KEY to load the launch audit. This endpoint is intentionally locked because it contains production launch findings.';
-          return;
-        }
-
         try {
-          const res = await fetch('/api/launch-audit', {
-            headers: { Authorization: `Bearer ${adminKey}` }
-          });
+          const res = await fetch('/api/launch-audit', { credentials: 'same-origin' });
           const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            adminSessionReady = false;
+            syncAuthUi();
+            setAuditStatus('warn', 'Admin Required');
+            auditSummary.textContent = 'Authenticate admin to load the full launch audit. This endpoint is intentionally locked because it contains production launch findings.';
+            return;
+          }
 
           if (!res.ok) {
             setAuditStatus('error', 'Audit Error');
             auditSummary.textContent = data.error || 'Launch audit endpoint returned an error.';
             return;
           }
+
+          adminSessionReady = true;
+          syncAuthUi();
 
           const checks = Array.isArray(data.checks) ? data.checks : [];
           const packageReadiness = Array.isArray(data.packageReadiness) ? data.packageReadiness : [];
@@ -338,9 +495,7 @@
 
       async function loadHealth() {
         try {
-          const adminKey = readAdminKey();
-          const headers = adminKey ? { Authorization: `Bearer ${adminKey}` } : {};
-          const res  = await fetch('/api/health', { headers });
+          const res  = await fetch('/api/health', { credentials: 'same-origin' });
           const data = await res.json().catch(() => ({}));
 
           if (!res.ok) {
@@ -364,14 +519,20 @@
           metricsGrid.style.display = 'none';
 
           if (isPublic) {
+            adminSessionReady = false;
+            syncAuthUi();
             setStatus(data.ok ? 'ok' : 'warn', data.ok ? 'Public OK' : 'Public Limited');
             healthSummary.textContent = data.ok
               ? 'Public health check passed. Detailed environment diagnostics are hidden without admin authorization.'
               : 'Public health check is available, but detailed missing-variable diagnostics are hidden without admin authorization.';
           } else if (sourceConfigError) {
+            adminSessionReady = true;
+            syncAuthUi();
             setStatus('error', 'Source Config Error');
             healthSummary.textContent = sourceConfigError;
           } else if (sourceConfigGaps.length > 0) {
+            adminSessionReady = true;
+            syncAuthUi();
             setStatus('error', sourceConfigGaps.length + ' Source Gap' + (sourceConfigGaps.length > 1 ? 's' : ''));
             healthSummary.textContent = 'Source configuration is incomplete for strict fulfillment. The engine will refuse some paid workflows until these source families are configured:';
             sourceGapList.style.display = 'block';
@@ -381,9 +542,13 @@
               sourceGapList.appendChild(li);
             }
           } else if (missing.length === 0) {
+            adminSessionReady = true;
+            syncAuthUi();
             setStatus('ok', 'All Clear');
             healthSummary.textContent = 'All required environment variables detected. System appears ready.';
           } else {
+            adminSessionReady = true;
+            syncAuthUi();
             setStatus('error', missing.length + ' Missing');
             healthSummary.textContent = missing.length + ' required environment variable' + (missing.length > 1 ? 's' : '') + ' not set:';
             for (const name of missing) {
@@ -422,25 +587,157 @@
         }
       }
 
-      setAdminKeyBtn.addEventListener('click', () => {
-        const value = window.prompt('Paste ADMIN_API_KEY');
-        if (!value || !value.trim()) return;
-        writeAdminKey(value.trim());
-        syncAuthUi();
-        loadHealth();
-        loadLaunchAudit();
+      async function loadProofHistory() {
+        proofHistoryList.innerHTML = '';
+        proofHistoryWrap.style.display = 'none';
+
+        if (!adminSessionReady) {
+          setProofStatus('warn', 'Admin Required');
+          proofSummary.textContent = 'Authenticate admin to run or review recorded source proofs.';
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/source-proof?limit=5', { credentials: 'same-origin' });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            adminSessionReady = false;
+            syncAuthUi();
+            setProofStatus('warn', 'Admin Required');
+            proofSummary.textContent = 'Authenticate admin to run or review recorded source proofs.';
+            return;
+          }
+
+          if (!res.ok) {
+            setProofStatus('error', 'Proof Error');
+            proofSummary.textContent = data.error || 'Source proof history could not be loaded.';
+            return;
+          }
+
+          const proofs = Array.isArray(data.proofs) ? data.proofs : [];
+          setProofStatus('ok', proofs.length ? `${proofs.length} Recorded` : 'Ready');
+          proofSummary.textContent = proofs.length
+            ? 'Recent real source-proof runs are listed below. Each entry came from the live workflow and was recorded for operator review.'
+            : 'Admin session is ready. Run a live source proof with real identifiers to record the first validation entry.';
+
+          if (proofs.length) {
+            proofHistoryWrap.style.display = 'block';
+            for (const entry of proofs) {
+              proofHistoryList.appendChild(proofHistoryCard(entry));
+            }
+          }
+        } catch {
+          setProofStatus('warn', 'Unreachable');
+          proofSummary.textContent = 'Source proof history endpoint is unavailable right now.';
+        }
+      }
+
+      async function runSourceProof(event) {
+        event.preventDefault();
+        if (!adminSessionReady) {
+          setProofStatus('warn', 'Admin Required');
+          proofSummary.textContent = 'Authenticate admin before running a live source proof.';
+          return;
+        }
+
+        runProofBtn.disabled = true;
+        runProofBtn.textContent = 'Running…';
+        proofResult.style.display = 'none';
+        proofResult.innerHTML = '';
+
+        const payload = {
+          packageId: document.getElementById('proofPackageId').value,
+          subjectName: document.getElementById('proofSubjectName').value,
+          subjectType: document.getElementById('proofSubjectType').value,
+          county: document.getElementById('proofCounty').value,
+          state: document.getElementById('proofState').value,
+          lastKnownAddress: document.getElementById('proofAddress').value,
+          parcelId: document.getElementById('proofParcelId').value,
+          deathYear: document.getElementById('proofDeathYear').value
+        };
+
+        try {
+          const res = await fetch('/api/source-proof', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            adminSessionReady = false;
+            syncAuthUi();
+            setProofStatus('warn', 'Admin Required');
+            proofSummary.textContent = 'Authenticate admin before running a live source proof.';
+            return;
+          }
+
+          if (res.status === 409) {
+            setProofStatus('warn', 'Blocked');
+            proofSummary.textContent = data.launchMessage || 'The requested source proof is blocked by current launch coverage rules.';
+            proofResult.style.display = 'block';
+            proofResult.className = 'proof-card';
+            proofResult.innerHTML = `<div style="font-size:12px;color:#fcd34d;line-height:1.7;">${(data.blockingDetails || []).map((item) => `${escapeHtml(item.label)}: ${escapeHtml(item.detail)}`).join('<br>') || 'Coverage is not ready for this package and jurisdiction.'}</div>`;
+            await loadProofHistory();
+            return;
+          }
+
+          if (!res.ok) {
+            setProofStatus('error', 'Proof Error');
+            proofSummary.textContent = data.error || (data.errors || []).join(' ') || 'Source proof failed.';
+            return;
+          }
+
+          const summary = data.summary || {};
+          const topSources = Array.isArray(data.topSources) ? data.topSources : [];
+          const providerHealth = Array.isArray(data.providerHealth) ? data.providerHealth : [];
+          setProofStatus('ok', 'Proof Recorded');
+          proofSummary.textContent = `Source proof recorded for ${data.packageName || data.packageId} in ${data.orderCoverage?.locationLabel || [data.input?.county, data.input?.state].filter(Boolean).join(', ')}.`;
+          proofResult.style.display = 'block';
+          proofResult.className = 'proof-card';
+          proofResult.innerHTML = `
+            <div style="font-size:13px;color:var(--text-1);font-weight:600;">${escapeHtml(data.packageName || data.packageId)} · ${escapeHtml(data.input?.subjectName || 'Unknown subject')}</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.7;">Structured evidence: ${summary.totalStructuredEvidence || 0} · Open-web sources: ${summary.totalOpenWebSources || 0} · Providers with hits: ${summary.providersWithHits || 0}</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.7;">${escapeHtml(data.providerNote || 'No provider note returned.')}</div>
+            ${providerHealth.length ? `<div style="margin-top:10px;font-size:12px;color:var(--text-2);line-height:1.7;">Provider health: ${providerHealth.map((item) => `${escapeHtml(item.provider)} (${item.hitCount} hit${item.hitCount === 1 ? '' : 's'})`).join(' · ')}</div>` : ''}
+            ${topSources.length ? `<div style="margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.7;">Top sources: ${topSources.map((item) => escapeHtml(item.domain || item.provider || 'source')).join(' · ')}</div>` : ''}
+            ${(summary.publicRecordGaps || []).length ? `<div style="margin-top:10px;font-size:12px;color:#fcd34d;line-height:1.7;">Gaps: ${summary.publicRecordGaps.map((item) => escapeHtml(item)).join(' · ')}</div>` : ''}
+          `;
+          await loadProofHistory();
+        } catch {
+          setProofStatus('warn', 'Unreachable');
+          proofSummary.textContent = 'Source proof endpoint is unavailable right now.';
+        } finally {
+          runProofBtn.disabled = false;
+          runProofBtn.textContent = 'Run Source Proof';
+        }
+      }
+
+      setAdminKeyBtn.addEventListener('click', async () => {
+        try {
+          const ok = await authenticateAdmin();
+          if (!ok) return;
+          await loadHealth();
+          await loadLaunchAudit();
+          await loadProofHistory();
+        } catch (error) {
+          authHint.textContent = error.message || 'Admin authentication failed.';
+        }
       });
 
-      clearAdminKeyBtn.addEventListener('click', () => {
-        writeAdminKey('');
-        syncAuthUi();
-        loadHealth();
-        loadLaunchAudit();
+      clearAdminKeyBtn.addEventListener('click', async () => {
+        await logoutAdmin();
+        await loadHealth();
+        await loadLaunchAudit();
+        await loadProofHistory();
       });
+
+      proofForm.addEventListener('submit', runSourceProof);
 
       syncAuthUi();
-      loadHealth();
-      loadLaunchAudit();
+      loadHealth().then(loadLaunchAudit).then(loadProofHistory);
     </script>
   </body>
 </html>

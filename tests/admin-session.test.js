@@ -66,3 +66,28 @@ test('admin dashboard uses cookie login flow instead of sessionStorage bearer re
   assert.ok(html.includes("credentials: 'same-origin'"));
   assert.equal(html.includes('sessionStorage'), false);
 });
+
+test('health endpoint exposes admin visibility when a signed admin session cookie is present', async () => {
+  const keys = ['ADMIN_API_KEY', 'ADMIN_SESSION_SECRET'];
+  const snapshot = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  process.env.ADMIN_API_KEY = 'admin-secret';
+  process.env.ADMIN_SESSION_SECRET = 'session-secret';
+
+  try {
+    const session = await import(`../netlify/functions/_lib/admin-session.js?ts=${Date.now()}`);
+    const { default: health } = await import(`../netlify/functions/health.js?ts=${Date.now()}`);
+    const token = session.createAdminSessionToken({ ttlSeconds: 600 });
+
+    const response = await health({
+      httpMethod: 'GET',
+      headers: {
+        cookie: `${session.ADMIN_SESSION_COOKIE}=${encodeURIComponent(token)}`
+      }
+    });
+
+    const body = JSON.parse(response.body);
+    assert.equal(body.visibility, 'admin');
+  } finally {
+    restoreEnv(snapshot, keys);
+  }
+});

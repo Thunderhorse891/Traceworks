@@ -11,6 +11,10 @@ test('launch readiness page includes health check hook', async () => {
   const html = await readFile('public/launch-readiness.html', 'utf8');
   assert.ok(html.includes('/api/health'));
   assert.ok(html.includes('/api/launch-audit'));
+  assert.ok(html.includes('/api/source-proof'));
+  assert.ok(html.includes('/api/admin-login'));
+  assert.ok(html.includes('Live Source Proof'));
+  assert.ok(html.includes('Recent Recorded Proofs'));
   assert.ok(html.includes('Phase One Launch Rules'));
   assert.ok(html.includes('Manual Verification Still Required'));
   assert.ok(html.includes('Paid checkout stays off until the launch audit has zero blockers'));
@@ -19,4 +23,5 @@ test('launch readiness page includes health check hook', async () => {
   assert.ok(html.includes('Real end-to-end launch rehearsal'));
   assert.ok(html.includes('County and provider validation'));
   assert.ok(html.includes('Package Launch Matrix'));
+  assert.equal(html.includes('localStorage.getItem'), false);
 });

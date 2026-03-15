@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { getKvClient, usesKvStorage, withKvLock } from './storage-runtime.js';
 
-const EMPTY = { orders: {}, processedWebhookEvents: [], analytics: [], deadLetters: [], jobs: [], auditLogs: [] };
+const EMPTY = { orders: {}, processedWebhookEvents: [], analytics: [], deadLetters: [], jobs: [], auditLogs: [], launchProofs: [] };
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -155,6 +155,13 @@ export async function recordAuditEvent(entry) {
   await mutateStore(async (store) => {
     store.auditLogs.push({ ...entry, at: new Date().toISOString() });
     if (store.auditLogs.length > 5000) store.auditLogs = store.auditLogs.slice(-5000);
+  });
+}
+
+export async function recordLaunchProof(entry) {
+  await mutateStore(async (store) => {
+    store.launchProofs.push({ ...entry, at: new Date().toISOString() });
+    if (store.launchProofs.length > 250) store.launchProofs = store.launchProofs.slice(-250);
   });
 }
 
@@ -348,10 +355,23 @@ export async function getOperationsSnapshot(limit = 12) {
     .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
     .slice(0, max);
 
+  const recentLaunchProofs = [...store.launchProofs]
+    .sort((a, b) => Date.parse(b.at || 0) - Date.parse(a.at || 0))
+    .slice(0, max);
+
   return {
     recentAuditEvents,
     recentDeadLetters,
     activeJobs,
-    manualReviewOrders
+    manualReviewOrders,
+    recentLaunchProofs
   };
+}
+
+export async function listLaunchProofs(limit = 10) {
+  const store = await loadStore();
+  const max = Math.max(1, Math.min(100, Number(limit) || 10));
+  return [...store.launchProofs]
+    .sort((a, b) => Date.parse(b.at || 0) - Date.parse(a.at || 0))
+    .slice(0, max);
 }

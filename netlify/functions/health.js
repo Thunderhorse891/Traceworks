@@ -1,3 +1,4 @@
+import { isAdminAuthorized } from './_lib/admin-auth.js';
 import { getMetrics } from './_lib/store.js';
 import { missingEmailConfigKeys } from './_lib/email-config.js';
 import { jsonWithRequestId } from './_lib/http.js';
@@ -58,8 +59,6 @@ export default async (event) => {
     sourceConfigError = String(error?.message || error || 'Unknown source config error');
   }
 
-  const auth = event.headers.authorization || '';
-  const key = process.env.ADMIN_API_KEY;
   const launchAudit = auditLaunchReadiness(process.env);
 
   const payload = {
@@ -72,7 +71,7 @@ export default async (event) => {
     version: process.env.COMMIT_REF || 'dev'
   };
 
-  if (!key || auth !== `Bearer ${key}`) {
+  if (!isAdminAuthorized(event)) {
     return jsonWithRequestId(event, 200, { ...payload, visibility: 'public' });
   }
 

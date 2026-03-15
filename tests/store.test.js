@@ -82,11 +82,14 @@ test('operations snapshot exposes manual review orders and active jobs', async (
   await store.upsertOrder('TW-MANUAL', { status: 'manual_review', failure_reason: 'County coverage pending.' });
   await store.enqueueJob({ type: 'fulfillment', payload: { caseRef: 'TW-QUEUE' } });
   await store.recordAuditEvent({ event: 'order_coverage_blocked_fulfillment_job', caseRef: 'TW-MANUAL' });
+  await store.recordLaunchProof({ packageId: 'standard', subjectName: 'Jane Owner', ok: true });
 
   const snapshot = await store.getOperationsSnapshot(10);
   assert.equal(snapshot.manualReviewOrders.length, 1);
   assert.equal(snapshot.activeJobs.length, 1);
   assert.equal(snapshot.recentAuditEvents[0].event, 'order_coverage_blocked_fulfillment_job');
+  assert.equal(snapshot.recentLaunchProofs.length, 1);
+  assert.equal(snapshot.recentLaunchProofs[0].packageId, 'standard');
 
   await rm(dir, { recursive: true, force: true });
 });
