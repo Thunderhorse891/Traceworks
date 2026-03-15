@@ -57,6 +57,10 @@
         <div class="status-body">
           <p id="auditSummary" style="font-size:13px; color:var(--text-2);">Provide ADMIN_API_KEY to load production launch checks.</p>
           <div id="auditChecks" style="display:grid; gap:10px;"></div>
+          <div id="packageAuditWrap" style="display:none; margin-top:16px;">
+            <p style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); margin-bottom:8px;">Package Launch Matrix</p>
+            <div id="packageAuditGrid" style="display:grid; gap:10px;"></div>
+          </div>
           <div id="manualAuditWrap" style="display:none; margin-top:16px;">
             <p style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); margin-bottom:8px;">Manual Verification Still Required</p>
             <ul class="env-list" id="manualAuditList"></ul>
@@ -150,6 +154,8 @@
       const auditStatusText = document.getElementById('auditStatusText');
       const auditSummary = document.getElementById('auditSummary');
       const auditChecks = document.getElementById('auditChecks');
+      const packageAuditWrap = document.getElementById('packageAuditWrap');
+      const packageAuditGrid = document.getElementById('packageAuditGrid');
       const manualAuditWrap = document.getElementById('manualAuditWrap');
       const manualAuditList = document.getElementById('manualAuditList');
       const dotStripe      = document.getElementById('dot-stripe');
@@ -240,9 +246,36 @@
         return el;
       }
 
+      function packageCard(pkg) {
+        const el = document.createElement('div');
+        const ready = pkg.launchReady !== false;
+        const border = ready ? 'rgba(34,197,94,0.24)' : 'rgba(245,158,11,0.24)';
+        const badgeBg = ready ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)';
+        const badgeColor = ready ? '#86efac' : '#fcd34d';
+        const required = Array.isArray(pkg.requiredSourceCoverage) ? pkg.requiredSourceCoverage : [];
+
+        el.style.border = `1px solid ${border}`;
+        el.style.borderRadius = '16px';
+        el.style.padding = '14px 16px';
+        el.style.background = 'rgba(7,12,22,0.72)';
+        el.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:13px;color:var(--text-1);font-weight:600;">${pkg.name}</div>
+              <div style="margin-top:6px;font-size:12px;color:var(--text-2);line-height:1.6;">${pkg.readinessSummary || ''}</div>
+              ${required.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.6;">Coverage: ${required.map((item) => `${item.label} (${item.ready ? 'ready' : 'missing'})`).join(' · ')}</div>` : ''}
+            </div>
+            <span style="display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${ready ? 'ready' : 'blocked'}</span>
+          </div>
+        `;
+        return el;
+      }
+
       async function loadLaunchAudit() {
         const adminKey = readAdminKey();
         auditChecks.innerHTML = '';
+        packageAuditGrid.innerHTML = '';
+        packageAuditWrap.style.display = 'none';
         manualAuditList.innerHTML = '';
         manualAuditWrap.style.display = 'none';
 
@@ -265,6 +298,7 @@
           }
 
           const checks = Array.isArray(data.checks) ? data.checks : [];
+          const packageReadiness = Array.isArray(data.packageReadiness) ? data.packageReadiness : [];
           const blockingCount = Number(data.blockingCount || 0);
           const warningCount = Number(data.warningCount || 0);
           const manualActions = Array.isArray(data.manualActions) ? data.manualActions : [];
@@ -279,6 +313,13 @@
 
           for (const check of checks) {
             auditChecks.appendChild(auditCard(check));
+          }
+
+          if (packageReadiness.length) {
+            packageAuditWrap.style.display = 'block';
+            for (const pkg of packageReadiness) {
+              packageAuditGrid.appendChild(packageCard(pkg));
+            }
           }
 
           if (manualActions.length) {

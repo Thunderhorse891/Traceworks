@@ -43,6 +43,7 @@ The live paid workflows are driven by `netlify/functions/_lib/tier-handlers.js`,
 - Install dependencies: `npm install`
 - Syntax check: `node scripts/check-syntax.mjs`
 - Launch audit: `node scripts/launch-audit.mjs`
+- Live smoke test: `node scripts/live-smoke.mjs --url https://your-deployed-site.example [--admin-key ...]`
 - Tests: `node --test --test-isolation=none --test-concurrency=1`
 - Local dev: `npx netlify dev`
 

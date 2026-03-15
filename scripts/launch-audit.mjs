@@ -15,6 +15,15 @@ for (const check of result.checks) {
   if (check.action) console.log(`  Action: ${check.action}`);
 }
 
+if (Array.isArray(result.packageReadiness) && result.packageReadiness.length) {
+  console.log('');
+  console.log('Package launch matrix:');
+  for (const pkg of result.packageReadiness) {
+    console.log(`- ${pkg.name}: ${pkg.launchReady ? 'READY' : 'BLOCKED'}`);
+    console.log(`  ${pkg.readinessSummary}`);
+  }
+}
+
 console.log('');
 console.log('Manual verification still required:');
 for (const item of result.manualActions) {

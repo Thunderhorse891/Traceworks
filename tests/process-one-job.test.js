@@ -93,13 +93,13 @@ test('processOneFulfillmentJob preserves manual review status written by fulfill
     });
     await store.enqueueJob({
       type: 'fulfillment',
-      payload: { caseRef },
+      payload: { caseRef, packageId: 'standard' },
     });
 
     const result = await processOneFulfillmentJob({
       ownerEmail: 'owner@example.com',
       deps: {
-        assessPaidOrderLaunchGateImpl: () => ({ ok: true, blockingChecks: [], reasonCodes: [], publicMessage: '', internalMessage: '' }),
+        assessPackageLaunchGateImpl: () => ({ launchReady: true, launchBlockingDetails: [] }),
         processFulfillmentJobImpl: async () => {
           await store.upsertOrder(caseRef, {
             status: 'manual_review',
@@ -142,7 +142,7 @@ test('processOneFulfillmentJob routes queued work to manual review when launch g
     });
     await store.enqueueJob({
       type: 'fulfillment',
-      payload: { caseRef },
+      payload: { caseRef, packageId: 'probate_heirship' },
     });
 
     const result = await processOneFulfillmentJob({

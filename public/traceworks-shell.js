@@ -302,13 +302,14 @@ async function renderWorkflows() {
       <tr>
         <td>${escapeHtml(pkg.name || pkg.id || '—')}</td>
         <td>${escapeHtml(money(pkg.amount))}</td>
+        <td><span class="tw-chip ${chipClass(pkg.launchReady === false ? 'manual_review' : 'ok')}">${escapeHtml(pkg.launchReady === false ? 'blocked' : 'ready')}</span></td>
         <td>${escapeHtml(String((pkg.sections || []).length))}</td>
         <td>${escapeHtml(`${pkg.deliveryHours || '—'}h`)}</td>
       </tr>
     `)
     .join('');
 
-  setRows('workflow-defs', html, '<tr><td colspan="4">No package catalog returned.</td></tr>');
+  setRows('workflow-defs', html, '<tr><td colspan="5">No package catalog returned.</td></tr>');
 }
 
 async function renderSources() {

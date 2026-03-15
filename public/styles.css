@@ -1076,6 +1076,64 @@ form { display: grid; gap: 14px; position: relative; z-index: 1; }
   text-transform: uppercase;
 }
 
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-bottom: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.availability-badge.ready {
+  color: #b7f7cf;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+}
+
+.availability-badge.blocked {
+  color: #f5c46b;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.24);
+}
+
+.card.unavailable {
+  border-color: rgba(245, 158, 11, 0.24);
+}
+
+.card.unavailable:hover {
+  border-color: rgba(245, 158, 11, 0.34);
+}
+
+.pkg-availability-copy {
+  margin: 0 0 14px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.select-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+  filter: none;
+  transform: none;
+}
+
+.package-modal-availability {
+  margin: 6px 0 18px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+.package-modal-availability.blocked {
+  color: #f5c46b;
+}
+
 .intake-side-rail {
   display: grid;
   gap: 16px;

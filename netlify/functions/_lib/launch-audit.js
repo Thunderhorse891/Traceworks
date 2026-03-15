@@ -1,9 +1,62 @@
 import { BUSINESS_EMAIL, getBusinessEmail } from './business.js';
+import { PACKAGE_LIST, getPackage } from './packages.js';
 import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig } from './sources/source-config.js';
 import { resolveKvRestConfig, storageDriverName } from './storage-runtime.js';
 import { validateStripeSecretKey, validateStripeWebhookSecret } from './stripe-config.js';
 
 const PUBLIC_GATE_MESSAGE = 'TraceWorks is temporarily not accepting paid orders while launch requirements are being completed. No charge was created.';
+const PACKAGE_SOURCE_PENDING_MESSAGE = 'This package is not live yet because the required source coverage is not fully connected.';
+
+const CUSTOMER_CORE_BLOCKING_IDS = new Set([
+  'base_url',
+  'stripe_secret',
+  'stripe_webhook',
+  'storage_driver',
+  'kv_rest',
+  'smtp',
+  'status_token_secret',
+  'queue_cron_secret',
+  'source_config'
+]);
+
+const PACKAGE_SOURCE_REQUIREMENTS = Object.freeze({
+  standard: [
+    { id: 'APPRAISAL_API_URL', label: 'County appraisal district source' },
+    { id: 'TAX_COLLECTOR_API_URL', label: 'County tax collector source' },
+    { id: 'PARCEL_GIS_API_URL', label: 'County parcel GIS source' }
+  ],
+  ownership_encumbrance: [
+    { id: 'APPRAISAL_API_URL', label: 'County appraisal district source' },
+    { id: 'COUNTY_CLERK_API_URL', label: 'County clerk deed index source' },
+    { id: 'GRANTOR_GRANTEE_API_URL', label: 'Grantor-grantee source' },
+    { id: 'MORTGAGE_INDEX_API_URL', label: 'Mortgage / trust deed source' }
+  ],
+  probate_heirship: [
+    { id: 'OBITUARY_API_URL', label: 'Obituary source' },
+    { id: 'PROBATE_API_URL', label: 'Probate index source' },
+    { id: 'PEOPLE_ASSOC_LICENSED', label: 'Licensed people-association flag', type: 'booleanTrue' },
+    { id: 'PEOPLE_ASSOC_API_URL', label: 'Licensed people-association source' }
+  ],
+  asset_network: [
+    { id: 'APPRAISAL_API_URL', label: 'County appraisal district source' },
+    { id: 'TAX_COLLECTOR_API_URL', label: 'County tax collector source' },
+    { id: 'PARCEL_GIS_API_URL', label: 'County parcel GIS source' },
+    { id: 'COUNTY_CLERK_API_URL', label: 'County clerk deed index source' },
+    { id: 'GRANTOR_GRANTEE_API_URL', label: 'Grantor-grantee source' }
+  ],
+  comprehensive: [
+    { id: 'APPRAISAL_API_URL', label: 'County appraisal district source' },
+    { id: 'TAX_COLLECTOR_API_URL', label: 'County tax collector source' },
+    { id: 'PARCEL_GIS_API_URL', label: 'County parcel GIS source' },
+    { id: 'COUNTY_CLERK_API_URL', label: 'County clerk deed index source' },
+    { id: 'GRANTOR_GRANTEE_API_URL', label: 'Grantor-grantee source' },
+    { id: 'MORTGAGE_INDEX_API_URL', label: 'Mortgage / trust deed source' },
+    { id: 'OBITUARY_API_URL', label: 'Obituary source' },
+    { id: 'PROBATE_API_URL', label: 'Probate index source' },
+    { id: 'PEOPLE_ASSOC_LICENSED', label: 'Licensed people-association flag', type: 'booleanTrue' },
+    { id: 'PEOPLE_ASSOC_API_URL', label: 'Licensed people-association source' }
+  ]
+});
 
 function trim(value) {
   return String(value || '').trim();
@@ -23,6 +76,17 @@ function addCheck(checks, check) {
 
 function makeCheck({ id, label, severity = 'warning', status, detail, action = '' }) {
   return { id, label, severity, status, detail, action };
+}
+
+function envRequirementMissing(requirement, env = process.env) {
+  const value = trim(env[requirement.id]);
+  if (requirement.type === 'booleanTrue') return value.toLowerCase() !== 'true';
+  return !value;
+}
+
+function packageRequirementFailures(packageId, env = process.env) {
+  const requirements = PACKAGE_SOURCE_REQUIREMENTS[packageId] || [];
+  return requirements.filter((requirement) => envRequirementMissing(requirement, env));
 }
 
 function baseUrlCheck(env, checks) {
@@ -419,7 +483,7 @@ function sourceModuleChecks(env, checks) {
   }
 }
 
-export function auditLaunchReadiness(env = process.env) {
+function collectLaunchChecks(env = process.env) {
   const checks = [];
   baseUrlCheck(env, checks);
   stripeChecks(env, checks);
@@ -428,7 +492,11 @@ export function auditLaunchReadiness(env = process.env) {
   secretChecks(env, checks);
   sourceModuleChecks(env, checks);
   sourceChecks(env, checks);
+  return checks;
+}
 
+export function auditLaunchReadiness(env = process.env) {
+  const checks = collectLaunchChecks(env);
   const blockingCount = checks.filter((check) => check.severity === 'blocking' && check.status === 'fail').length;
   const warningCount = checks.filter((check) => check.status === 'warn').length;
   const ok = blockingCount === 0;
@@ -445,6 +513,7 @@ export function auditLaunchReadiness(env = process.env) {
     blockingCount,
     warningCount,
     checks,
+    packageReadiness: listPackageLaunchStatus(env, checks),
     manualActions
   };
 }
@@ -467,8 +536,8 @@ const PUBLIC_REASON_BY_CHECK = Object.freeze({
 });
 
 export function assessPaidOrderLaunchGate(env = process.env) {
-  const audit = auditLaunchReadiness(env);
-  const blockingChecks = audit.checks.filter((check) => check.severity === 'blocking' && check.status === 'fail');
+  const checks = collectLaunchChecks(env);
+  const blockingChecks = checks.filter((check) => check.severity === 'blocking' && check.status === 'fail');
   const reasonCodes = [...new Set(
     blockingChecks.map((check) => PUBLIC_REASON_BY_CHECK[check.id] || 'operations')
   )];
@@ -482,4 +551,56 @@ export function assessPaidOrderLaunchGate(env = process.env) {
       ? `Launch gate blocked automated paid-order flow: ${blockingChecks.map((check) => `${check.label} (${check.id})`).join(', ')}.`
       : ''
   };
+}
+
+export function assessPackageLaunchGate(packageId, env = process.env, existingChecks = null) {
+  const pkg = getPackage(packageId);
+  const checks = existingChecks || collectLaunchChecks(env);
+  const coreBlockingChecks = checks.filter((check) => CUSTOMER_CORE_BLOCKING_IDS.has(check.id) && check.status === 'fail');
+  const missingSourceRequirements = packageRequirementFailures(packageId, env);
+
+  const sourceBlockingDetails = missingSourceRequirements.map((requirement) => ({
+    id: requirement.id,
+    label: requirement.label,
+    detail: requirement.type === 'booleanTrue'
+      ? `${requirement.id} must be set to true.`
+      : `${requirement.id} is missing.`
+  }));
+
+  const blockingAreas = [
+    ...new Set([
+      ...coreBlockingChecks.map((check) => PUBLIC_REASON_BY_CHECK[check.id] || 'operations'),
+      ...(sourceBlockingDetails.length ? ['sources'] : [])
+    ])
+  ];
+
+  const available = coreBlockingChecks.length === 0 && sourceBlockingDetails.length === 0;
+  const readinessSummary = available
+    ? `${pkg?.name || packageId} is launch-ready in the current environment.`
+    : coreBlockingChecks.length
+      ? PUBLIC_GATE_MESSAGE
+      : PACKAGE_SOURCE_PENDING_MESSAGE;
+
+  return {
+    id: packageId,
+    name: pkg?.name || packageId,
+    launchReady: available,
+    launchMessage: readinessSummary,
+    launchBlockingAreas: blockingAreas,
+    launchBlockingDetails: [
+      ...coreBlockingChecks.map((check) => ({ id: check.id, label: check.label, detail: check.detail })),
+      ...sourceBlockingDetails
+    ],
+    readinessSummary,
+    requiredSourceCoverage: (PACKAGE_SOURCE_REQUIREMENTS[packageId] || []).map((requirement) => ({
+      id: requirement.id,
+      label: requirement.label,
+      ready: !envRequirementMissing(requirement, env)
+    }))
+  };
+}
+
+export function listPackageLaunchStatus(env = process.env, existingChecks = null) {
+  const checks = existingChecks || collectLaunchChecks(env);
+  return PACKAGE_LIST.map((pkg) => assessPackageLaunchGate(pkg.id, env, checks));
 }

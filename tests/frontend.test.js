@@ -68,6 +68,8 @@ test('homepage app persists a structured local draft for intake continuity', () 
   assert.ok(js.includes('traceworksCheckoutDraftV1'));
   assert.ok(js.includes('localStorage.setItem'));
   assert.ok(js.includes('Local draft restored.'));
+  assert.ok(js.includes("fetch('/api/packages')"));
+  assert.ok(js.includes('Source Coverage Pending'));
 });
 
 test('success page surfaces stored intake brief details', () => {
@@ -75,4 +77,15 @@ test('success page surfaces stored intake brief details', () => {
   assert.ok(html.includes('id="briefPanel"'));
   assert.ok(html.includes('id="fieldRequestedFindings"'));
   assert.ok(html.includes('id="briefSignalChips"'));
+});
+
+test('packages catalog routes into the real intake flow and loads availability', () => {
+  const html = readFileSync('public/packages.html', 'utf8');
+  const js = readFileSync('public/package-availability.js', 'utf8');
+  assert.ok(html.includes('/?packageId=standard#order'));
+  assert.ok(html.includes('data-package-card'));
+  assert.ok(html.includes('data-package-status'));
+  assert.ok(html.includes('/package-availability.js'));
+  assert.ok(js.includes("fetch('/api/packages')"));
+  assert.ok(js.includes('Source Coverage Pending'));
 });

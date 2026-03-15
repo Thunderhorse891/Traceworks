@@ -34,6 +34,7 @@ const packageModalLabel = document.getElementById('packageModalLabel');
 const packageModalName = document.getElementById('packageModalName');
 const packageModalPrice = document.getElementById('packageModalPrice');
 const packageModalSummary = document.getElementById('packageModalSummary');
+const packageModalAvailability = document.getElementById('packageModalAvailability');
 const packageModalIncluded = document.getElementById('packageModalIncluded');
 const packageModalWorkflow = document.getElementById('packageModalWorkflow');
 const packageModalRequired = document.getElementById('packageModalRequired');
@@ -60,6 +61,15 @@ const FIELD_LABELS = {
 
 let activeModalPackage = null;
 let selectedPackage = null;
+let packageCatalog = clientPackages.map((pkg) => ({
+  ...pkg,
+  launchReady: true,
+  launchBlocked: false,
+  launchMessage: '',
+  launchBlockingAreas: [],
+  launchBlockingDetails: [],
+  readinessSummary: ''
+}));
 let lastDraftSavedAt = 0;
 let draftSaveTimer = null;
 
@@ -80,6 +90,39 @@ function selectedCard() {
 function setList(target, items = []) {
   if (!target) return;
   target.innerHTML = items.map((item) => `<li>${item}</li>`).join('');
+}
+
+function getPackageById(packageId) {
+  return packageCatalog.find((pkg) => pkg.id === packageId) || null;
+}
+
+function packageAvailabilityCopy(pkg) {
+  if (!pkg || pkg.launchReady !== false) return '';
+  return pkg.readinessSummary || pkg.launchMessage || 'This package is not live yet in the current environment.';
+}
+
+async function syncPackageAvailability() {
+  try {
+    const response = await fetch('/api/packages');
+    if (!response.ok) return;
+
+    const data = await response.json().catch(() => ({}));
+    const remoteById = new Map((data.packages || []).map((pkg) => [pkg.id, pkg]));
+
+    packageCatalog = clientPackages.map((pkg) => {
+      const remote = remoteById.get(pkg.id);
+      if (!remote) return { ...pkg, launchReady: true, launchBlocked: false, launchMessage: '', launchBlockingAreas: [], launchBlockingDetails: [], readinessSummary: '' };
+      return {
+        ...pkg,
+        launchReady: remote.launchReady !== false,
+        launchBlocked: remote.launchReady === false,
+        launchMessage: remote.launchMessage || '',
+        launchBlockingAreas: Array.isArray(remote.launchBlockingAreas) ? remote.launchBlockingAreas : [],
+        launchBlockingDetails: Array.isArray(remote.launchBlockingDetails) ? remote.launchBlockingDetails : [],
+        readinessSummary: remote.readinessSummary || ''
+      };
+    });
+  } catch {}
 }
 
 function setFieldVisibility(fieldName, visible) {
@@ -341,6 +384,14 @@ function updateGuidedExperience() {
 }
 
 async function selectPackage(pkg, { shouldScroll = true, source = 'grid', trackSelection = true } = {}) {
+  if (pkg.launchReady === false) {
+    if (statusEl) statusEl.textContent = packageAvailabilityCopy(pkg) || `${pkg.name} is not live yet in the current environment.`;
+    if (trackSelection) {
+      await track('package_blocked', pkg.id);
+    }
+    return;
+  }
+
   document.querySelectorAll('[data-package-id]').forEach((card) => card.classList.remove('selected'));
   const card = document.querySelector(`[data-package-id="${pkg.id}"]`);
   card?.classList.add('selected');
@@ -367,11 +418,19 @@ function fillPackageModal(pkg) {
   if (packageModalName) packageModalName.textContent = pkg.name;
   if (packageModalPrice) packageModalPrice.textContent = pkg.price;
   if (packageModalSummary) packageModalSummary.textContent = pkg.summary || '';
+  if (packageModalAvailability) {
+    packageModalAvailability.textContent = packageAvailabilityCopy(pkg);
+    packageModalAvailability.className = `package-modal-availability${pkg.launchReady === false ? ' blocked' : ' ready'}`;
+  }
   if (packageModalGuidance) packageModalGuidance.textContent = pkg.intake?.guidance || '';
   setList(packageModalIncluded, pkg.includedFindings || []);
   setList(packageModalWorkflow, pkg.workflowScope || pkg.bullets || []);
   setList(packageModalRequired, pkg.intake?.requiredSignals || []);
   setList(packageModalRecommended, pkg.intake?.recommendedSignals || []);
+  if (packageModalSelect) {
+    packageModalSelect.disabled = pkg.launchReady === false;
+    packageModalSelect.textContent = pkg.launchReady === false ? 'Source Coverage Pending' : 'Start Secure Intake';
+  }
 }
 
 function openPackageModal(pkg) {
@@ -392,20 +451,22 @@ function closePackageModal() {
 
 function buildCard(pkg) {
   const el = document.createElement('article');
-  el.className = 'card';
+  el.className = `card${pkg.featured ? ' featured' : ''}${pkg.launchReady === false ? ' unavailable' : ''}`;
   el.dataset.packageId = pkg.id;
   el.innerHTML = `
     <p class="label">${pkg.id.replaceAll('_', ' ').toUpperCase()}</p>
     ${pkg.featured ? '<p class="feature-badge">Most Selected</p>' : ''}
+    ${pkg.launchReady === false ? '<p class="availability-badge blocked">Source Coverage Pending</p>' : '<p class="availability-badge ready">Launch Ready</p>'}
     <h4>${pkg.name}</h4>
     <p class="price">${pkg.price}</p>
     <p class="pkg-meta"><strong>Best for:</strong> ${pkg.bestFor || 'Legal locate intelligence workflows'}</p>
     <p class="pkg-meta">${pkg.summary || ''}</p>
     <p class="pkg-turnaround">${pkg.turnaround || 'Typical delivery: same day to 24h'}</p>
+    ${packageAvailabilityCopy(pkg) ? `<p class="pkg-availability-copy">${packageAvailabilityCopy(pkg)}</p>` : ''}
     <ul>${pkg.bullets.map((item) => `<li>${item}</li>`).join('')}</ul>
     <div class="card-actions">
       <button type="button" class="btn-outline package-detail-btn">View Scope</button>
-      <button type="button" class="select-btn">Start Intake</button>
+      <button type="button" class="select-btn"${pkg.launchReady === false ? ' disabled aria-disabled="true"' : ''}>${pkg.launchReady === false ? 'Unavailable' : 'Start Intake'}</button>
     </div>
   `;
 
@@ -424,7 +485,7 @@ function buildCard(pkg) {
 function renderPackages() {
   if (!packagesGrid) return;
   packagesGrid.innerHTML = '';
-  for (const pkg of clientPackages) {
+  for (const pkg of packageCatalog) {
     packagesGrid.appendChild(buildCard(pkg));
   }
 }
@@ -573,29 +634,36 @@ clearDraftBtn?.addEventListener('click', () => {
   if (statusEl) statusEl.textContent = 'Local draft cleared. Choose a package to start a fresh request.';
 });
 
-renderPackages();
-setDefaultIntakeState();
-const restoredDraft = restoreDraft();
+async function boot() {
+  await syncPackageAvailability();
+  renderPackages();
+  setDefaultIntakeState();
+  const restoredDraft = restoreDraft();
 
-const requestedPackageId = new URLSearchParams(window.location.search).get('packageId');
-if (requestedPackageId) {
-  const pkg = clientPackages.find((item) => item.id === requestedPackageId);
-  if (pkg) void selectPackage(pkg, { shouldScroll: false, source: 'prefill' });
-} else if (restoredDraft) {
-  const pkg = clientPackages.find((item) => item.id === formValue('packageId'));
-  if (pkg) {
-    void selectPackage(pkg, { shouldScroll: false, source: 'restore', trackSelection: false });
-    if (statusEl) statusEl.textContent = 'Local draft restored. Confirm the request details, then proceed to secure checkout.';
+  const requestedPackageId = new URLSearchParams(window.location.search).get('packageId');
+  if (requestedPackageId) {
+    const pkg = getPackageById(requestedPackageId);
+    if (pkg) await selectPackage(pkg, { shouldScroll: false, source: 'prefill' });
+  } else if (restoredDraft) {
+    const pkg = getPackageById(formValue('packageId'));
+    if (pkg) {
+      await selectPackage(pkg, { shouldScroll: false, source: 'restore', trackSelection: false });
+      if (statusEl && pkg.launchReady !== false) {
+        statusEl.textContent = 'Local draft restored. Confirm the request details, then proceed to secure checkout.';
+      }
+    } else {
+      updateGuidedExperience();
+    }
   } else {
     updateGuidedExperience();
   }
-} else {
-  updateGuidedExperience();
+
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+  if (selectedCard() && statusEl && !statusEl.textContent) {
+    statusEl.textContent = 'Package selected. Complete the secure intake form below.';
+  }
 }
 
-const yearEl = document.getElementById('year');
-if (yearEl) yearEl.textContent = String(new Date().getFullYear());
-
-if (selectedCard() && statusEl && !statusEl.textContent) {
-  statusEl.textContent = 'Package selected. Complete the secure intake form below.';
-}
+boot();

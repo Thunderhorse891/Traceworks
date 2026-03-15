@@ -12,7 +12,7 @@ import { buildInputCriteria, normalizeCheckoutPayload } from './_lib/validation.
 import { getPackage } from './_lib/packages.js';
 import { createStatusToken } from './_lib/status-token.js';
 import { sendOrderConfirmationEmail } from './_lib/email.js';
-import { assessPaidOrderLaunchGate } from './_lib/launch-audit.js';
+import { assessPackageLaunchGate } from './_lib/launch-audit.js';
 
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
@@ -158,11 +158,12 @@ export default async (event) => {
     email_delivery_status: 'pending'
   });
 
-  const launchGate = assessPaidOrderLaunchGate(process.env);
-  if (!launchGate.ok) {
+  const packageId = metadata.packageId || existingOrder?.packageId || '';
+  const launchGate = assessPackageLaunchGate(packageId, process.env);
+  if (!launchGate.launchReady) {
     await upsertOrder(caseRef, {
       status: ORDER_STATUS.MANUAL_REVIEW,
-      failure_reason: launchGate.internalMessage,
+      failure_reason: `Launch gate blocked automated paid-order flow for ${packageId || 'unknown package'}: ${launchGate.launchBlockingDetails.map((detail) => `${detail.label} (${detail.id})`).join(', ')}.`,
       payment_confirmation_email_status: 'skipped',
       queuedAt: null,
       retryAt: null
@@ -170,7 +171,8 @@ export default async (event) => {
     await recordAuditEvent({
       event: 'launch_gate_blocked_paid_order',
       caseRef,
-      blockingChecks: launchGate.blockingChecks.map((check) => check.id)
+      packageId,
+      blockingChecks: launchGate.launchBlockingDetails.map((detail) => detail.id)
     });
     await markProcessedWebhookEvent(stripeEvent.id);
     return jsonWithRequestId(event, 200, { ok: true, manualReview: true });

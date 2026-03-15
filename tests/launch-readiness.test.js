@@ -18,4 +18,5 @@ test('launch readiness page includes health check hook', async () => {
   assert.ok(html.includes('Live Proof Still Required Today'));
   assert.ok(html.includes('Real end-to-end launch rehearsal'));
   assert.ok(html.includes('County and provider validation'));
+  assert.ok(html.includes('Package Launch Matrix'));
 });

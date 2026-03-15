@@ -1,28 +1,30 @@
 import { claimJobByCaseRef, claimNextJob, completeJob, failJob, incrementFulfillmentAttempt, recordAuditEvent, recordDeadLetter, upsertOrder } from './store.js';
 import { processFulfillmentJob } from './fulfillment.js';
 import { ORDER_STATUS } from './order-status.js';
-import { assessPaidOrderLaunchGate } from './launch-audit.js';
+import { assessPackageLaunchGate } from './launch-audit.js';
 
 export async function processOneFulfillmentJob({ ownerEmail, maxAttempts = 5, caseRef: requestedCaseRef = null, deps = {} }) {
   const job = requestedCaseRef ? await claimJobByCaseRef('fulfillment', requestedCaseRef) : await claimNextJob('fulfillment');
   if (!job) return { ok: true, message: 'no_jobs' };
 
   const caseRef = job.payload?.caseRef || 'unknown';
-  const evaluateLaunchGate = deps.assessPaidOrderLaunchGateImpl || assessPaidOrderLaunchGate;
-  const launchGate = evaluateLaunchGate(process.env);
-  if (!launchGate.ok) {
+  const packageId = job.payload?.packageId || '';
+  const evaluateLaunchGate = deps.assessPackageLaunchGateImpl || assessPackageLaunchGate;
+  const launchGate = evaluateLaunchGate(packageId, process.env);
+  if (!launchGate.launchReady) {
     await upsertOrder(caseRef, {
       status: ORDER_STATUS.MANUAL_REVIEW,
       lastError: null,
       retryAt: null,
       completed_at: new Date().toISOString(),
-      failure_reason: launchGate.internalMessage
+      failure_reason: `Launch gate blocked automated paid-order flow for ${packageId || 'unknown package'}: ${launchGate.launchBlockingDetails.map((detail) => `${detail.label} (${detail.id})`).join(', ')}.`
     });
     await recordAuditEvent({
       event: 'launch_gate_blocked_fulfillment_job',
       caseRef,
       jobId: job.id,
-      blockingChecks: launchGate.blockingChecks.map((check) => check.id)
+      packageId,
+      blockingChecks: launchGate.launchBlockingDetails.map((detail) => detail.id)
     });
     await completeJob(job.id);
     return { ok: true, message: 'launch_gate_blocked', jobId: job.id, caseRef, manualReview: true };

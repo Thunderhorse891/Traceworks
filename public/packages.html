@@ -162,6 +162,23 @@
       color: #0c0d10;
       transform: translateY(-1px);
     }
+    .pkg-card.unavailable {
+      outline: 1px solid rgba(245,158,11,0.24);
+      outline-offset: -1px;
+    }
+    .pkg-availability {
+      min-height: 36px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-3);
+    }
+    .pkg-availability.blocked { color: #f5c46b; }
+    .pkg-availability.ready { color: #9fd6b1; }
+    .pkg-btn[aria-disabled="true"] {
+      opacity: 0.68;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
     .compare-wrap {
       overflow-x: auto;
       border: 1px solid var(--border-faint);
@@ -247,30 +264,32 @@
     <div class="pkg-grid">
 
       <!-- Tier 01 — Standard -->
-      <div class="pkg-card">
+      <div class="pkg-card" data-package-card data-package-id="standard">
         <div>
           <div class="pkg-tier">Tier 01 &nbsp;&mdash;&nbsp; Standard</div>
           <div class="pkg-name">Standard Property Snapshot</div>
         </div>
         <div class="pkg-price">$99</div>
         <div class="pkg-delivery">24-hour delivery</div>
+        <div class="pkg-availability" data-package-status></div>
         <ul class="pkg-list">
           <li>Property Identification</li>
           <li>Ownership Snapshot</li>
           <li>Value &amp; Tax Summary</li>
           <li>Source Trace Panel</li>
         </ul>
-        <a href="/#order?package=standard" class="pkg-btn">Purchase This Tier</a>
+        <a href="/?packageId=standard#order" class="pkg-btn" data-package-cta>Purchase This Tier</a>
       </div>
 
       <!-- Tier 02 — Ownership & Encumbrance -->
-      <div class="pkg-card">
+      <div class="pkg-card" data-package-card data-package-id="ownership_encumbrance">
         <div>
           <div class="pkg-tier">Tier 02 &nbsp;&mdash;&nbsp; Ownership</div>
           <div class="pkg-name">Ownership &amp; Encumbrance Intelligence Report</div>
         </div>
         <div class="pkg-price">$249</div>
         <div class="pkg-delivery">48-hour delivery</div>
+        <div class="pkg-availability" data-package-status></div>
         <ul class="pkg-list">
           <li>Full Property Identification</li>
           <li>Ownership Evidence &amp; Deed Chain</li>
@@ -279,17 +298,18 @@
           <li>Entity Findings</li>
           <li>Source Trace Panel</li>
         </ul>
-        <a href="/#order?package=ownership_encumbrance" class="pkg-btn">Purchase This Tier</a>
+        <a href="/?packageId=ownership_encumbrance#order" class="pkg-btn" data-package-cta>Purchase This Tier</a>
       </div>
 
       <!-- Tier 03 — Probate -->
-      <div class="pkg-card">
+      <div class="pkg-card" data-package-card data-package-id="probate_heirship">
         <div>
           <div class="pkg-tier">Tier 03 &nbsp;&mdash;&nbsp; Probate</div>
           <div class="pkg-name">Probate &amp; Heirship Investigation Report</div>
         </div>
         <div class="pkg-price">$325</div>
         <div class="pkg-delivery">72-hour delivery</div>
+        <div class="pkg-availability" data-package-status></div>
         <ul class="pkg-list">
           <li>Decedent Search Summary</li>
           <li>Property Connection</li>
@@ -298,17 +318,18 @@
           <li>Contactability Assessment</li>
           <li>Source Trace Panel</li>
         </ul>
-        <a href="/#order?package=probate_heirship" class="pkg-btn">Purchase This Tier</a>
+        <a href="/?packageId=probate_heirship#order" class="pkg-btn" data-package-cta>Purchase This Tier</a>
       </div>
 
       <!-- Tier 04 — Asset Network -->
-      <div class="pkg-card">
+      <div class="pkg-card" data-package-card data-package-id="asset_network">
         <div>
           <div class="pkg-tier">Tier 04 &nbsp;&mdash;&nbsp; Asset Network</div>
           <div class="pkg-name">Asset &amp; Property Network Report</div>
         </div>
         <div class="pkg-price">$399</div>
         <div class="pkg-delivery">72-hour delivery</div>
+        <div class="pkg-availability" data-package-status></div>
         <ul class="pkg-list">
           <li>Owner Normalization</li>
           <li>Property Portfolio Discovery</li>
@@ -317,11 +338,11 @@
           <li>Geographic Distribution</li>
           <li>Source Trace Panel</li>
         </ul>
-        <a href="/#order?package=asset_network" class="pkg-btn">Purchase This Tier</a>
+        <a href="/?packageId=asset_network#order" class="pkg-btn" data-package-cta>Purchase This Tier</a>
       </div>
 
       <!-- Tier 05 — Comprehensive (featured) -->
-      <div class="pkg-card featured">
+      <div class="pkg-card featured" data-package-card data-package-id="comprehensive">
         <div class="pkg-flag">Most Complete</div>
         <div>
           <div class="pkg-tier">Tier 05 &nbsp;&mdash;&nbsp; Comprehensive</div>
@@ -329,6 +350,7 @@
         </div>
         <div class="pkg-price">$549</div>
         <div class="pkg-delivery">96-hour delivery</div>
+        <div class="pkg-availability" data-package-status></div>
         <ul class="pkg-list">
           <li>Executive Summary</li>
           <li>Full Property Snapshot</li>
@@ -340,7 +362,7 @@
           <li>Recommended Next Steps</li>
           <li>Source Trace Panel</li>
         </ul>
-        <a href="/#order?package=comprehensive" class="pkg-btn pkg-btn-gold">Purchase This Tier</a>
+        <a href="/?packageId=comprehensive#order" class="pkg-btn pkg-btn-gold" data-package-cta>Purchase This Tier</a>
       </div>
 
       <!-- Tier 06 — Custom -->
@@ -576,6 +598,7 @@
       © 2025 TraceWorks™. All rights reserved. Lawful investigative research services for licensed professionals only. Not a consumer reporting agency under FCRA.
     </p>
   </footer>
+  <script type="module" src="/package-availability.js"></script>
   <script src="/pwa.js" type="module"></script>
 </body>
 </html>
