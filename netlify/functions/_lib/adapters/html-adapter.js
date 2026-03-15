@@ -1,4 +1,4 @@
-import { SourceAdapterError, buildEvidenceEntry, requireValue } from './base-adapter.js';
+import { SourceAdapterError, buildEvidenceEntry, fetchTextWithPolicy, requireValue } from './base-adapter.js';
 
 function matchAll(text, regex) {
   const out = [];
@@ -16,20 +16,6 @@ function expandTemplate(template, values) {
   });
 }
 
-async function fetchHtml({ url, method = 'GET', headers = {}, body, fetchImpl = fetch }) {
-  const res = await fetchImpl(url, { method, headers, body });
-  const text = await res.text();
-  if (!res.ok) {
-    throw new SourceAdapterError(`HTTP ${res.status} while fetching ${url}`, {
-      status: res.status,
-      url,
-      bodyPreview: text.slice(0, 500)
-    });
-  }
-
-  return { url, html: text };
-}
-
 export async function runHtmlAdapter(config, query, { fetchImpl = fetch } = {}) {
   requireValue('config.id', config.id);
   requireValue('config.name', config.name);
@@ -40,8 +26,19 @@ export async function runHtmlAdapter(config, query, { fetchImpl = fetch } = {}) 
   const method = config.request.method || 'GET';
   const headers = config.request.headers || {};
   const body = config.request.bodyTemplate ? expandTemplate(config.request.bodyTemplate, query) : undefined;
+  const startedAt = Date.now();
 
-  const { html } = await fetchHtml({ url, method, headers, body, fetchImpl });
+  const { res, text, attempts } = await fetchTextWithPolicy({ url, method, headers, body, fetchImpl });
+  if (!res.ok) {
+    throw new SourceAdapterError(`HTTP ${res.status} while fetching ${url}`, {
+      status: res.status,
+      url,
+      bodyPreview: text.slice(0, 500),
+      attempts,
+      classification: [401, 403, 429].includes(res.status) ? 'blocked' : res.status >= 500 ? 'unavailable' : 'error'
+    });
+  }
+  const html = text;
 
   const itemRegex = new RegExp(config.extraction.itemRegex, 'gis');
   const matches = matchAll(html, itemRegex);
@@ -65,7 +62,9 @@ export async function runHtmlAdapter(config, query, { fetchImpl = fetch } = {}) 
       url,
       status: results.length ? 'found' : 'not_found',
       rawCount: matches.length,
-      extractedCount: results.length
+      extractedCount: results.length,
+      attempts,
+      durationMs: Date.now() - startedAt
     })
   };
 }

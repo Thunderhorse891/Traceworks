@@ -33,6 +33,9 @@ function sourceNarrative(source) {
   if (source.status === SOURCE_STATUS.PARTIAL) {
     return `${label} Partial extraction from ${source.sourceLabel}. ${source.errorDetail || 'Automation reached the source but the result shape was incomplete.'}`;
   }
+  if (source.status === SOURCE_STATUS.SKIPPED) {
+    return `[SKIPPED] ${source.sourceLabel} was not queried because the order did not include the identifier type this source requires.`;
+  }
   if (source.status === SOURCE_STATUS.NOT_FOUND) {
     return `[NOT FOUND] ${source.sourceLabel} returned no responsive result for the query issued.`;
   }
@@ -48,12 +51,13 @@ function summarizeSources(sources = []) {
       summary.total += 1;
       if (source.status === SOURCE_STATUS.FOUND) summary.found += 1;
       else if (source.status === SOURCE_STATUS.NOT_FOUND) summary.notFound += 1;
+      else if (source.status === SOURCE_STATUS.SKIPPED) summary.skipped += 1;
       else if (source.status === SOURCE_STATUS.PARTIAL) summary.partial += 1;
       else if (source.status === SOURCE_STATUS.UNAVAILABLE || source.status === SOURCE_STATUS.BLOCKED) summary.manualReview += 1;
       else summary.errors += 1;
       return summary;
     },
-    { total: 0, found: 0, notFound: 0, partial: 0, manualReview: 0, errors: 0 }
+    { total: 0, found: 0, notFound: 0, skipped: 0, partial: 0, manualReview: 0, errors: 0 }
   );
 }
 
@@ -134,6 +138,7 @@ export function dynamicReportToText(report) {
     `- Found: ${sourceSummary.found}`,
     `- Partial: ${sourceSummary.partial}`,
     `- Not Found: ${sourceSummary.notFound}`,
+    `- Skipped: ${sourceSummary.skipped}`,
     `- Manual Review Required: ${sourceSummary.manualReview}`,
     `- Errors: ${sourceSummary.errors}`,
     '',
@@ -423,6 +428,7 @@ export function dynamicReportToHtml(report) {
             <div class="stat"><span class="stat-label">Found</span><div class="stat-value">${escapeHtml(sourceSummary.found)}</div></div>
             <div class="stat"><span class="stat-label">Partial</span><div class="stat-value">${escapeHtml(sourceSummary.partial)}</div></div>
             <div class="stat"><span class="stat-label">Not Found</span><div class="stat-value">${escapeHtml(sourceSummary.notFound)}</div></div>
+            <div class="stat"><span class="stat-label">Skipped</span><div class="stat-value">${escapeHtml(sourceSummary.skipped)}</div></div>
             <div class="stat"><span class="stat-label">Manual Review</span><div class="stat-value">${escapeHtml(sourceSummary.manualReview + sourceSummary.errors)}</div></div>
           </div>
         </section>

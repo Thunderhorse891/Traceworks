@@ -150,3 +150,111 @@ test('gatherPublicRecordIntel records blocked/error sources without aborting ful
   assert.equal(out.sourceHealth.attempted, out.evidence.length);
   assert.ok(out.sourceHealth.blocked >= 1);
 });
+
+test('gatherPublicRecordIntel skips sources when the order lacks the required query signal', async () => {
+  let fetchCount = 0;
+  const env = {
+    PAID_FULFILLMENT_STRICT: 'true',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [
+        {
+          id: 'county_property_address_only',
+          name: 'County Property Address Only',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/property-search?q={address}', method: 'GET' },
+          extraction: {
+            itemRegex: '<tr><td>([^<]*)</td></tr>',
+            map: { owner: 1 }
+          }
+        }
+      ],
+      countyRecorder: [
+        {
+          id: 'county_recorder_address_only',
+          name: 'County Recorder Address Only',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/recorder-search?q={address}', method: 'GET' },
+          extraction: {
+            itemRegex: '<tr><td>([^<]*)</td></tr>',
+            map: { recordingDate: 1 }
+          }
+        }
+      ],
+      probateIndex: [],
+      entitySearch: []
+    })
+  };
+
+  const fetchImpl = async () => {
+    fetchCount += 1;
+    return htmlResponse(200, '<table></table>');
+  };
+
+  const out = await gatherPublicRecordIntel(
+    {
+      packageKey: 'standard',
+      input: { ownerName: 'Jane Owner', address: '' }
+    },
+    { fetchImpl, env }
+  );
+
+  assert.equal(fetchCount, 0);
+  assert.ok(out.sources.some((source) => source.status === 'skipped'));
+  assert.equal(out.sourceHealth.skipped, 2);
+});
+
+test('gatherPublicRecordIntel retries transient source failures before succeeding', async () => {
+  let attempts = 0;
+  const env = {
+    PAID_FULFILLMENT_STRICT: 'true',
+    SOURCE_HTTP_MAX_RETRIES: '1',
+    SOURCE_HTTP_RETRY_DELAY_MS: '1',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [
+        {
+          id: 'county_property_retry_html',
+          name: 'County Property Retry HTML',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/property-search?q={owner}', method: 'GET' },
+          extraction: {
+            itemRegex: '<tr><td>([^<]*)</td><td>([^<]*)</td><td>([^<]*)</td></tr>',
+            map: { owner: 1, address: 2, parcel: 3 }
+          }
+        }
+      ],
+      countyRecorder: [
+        {
+          id: 'county_recorder_address_only',
+          name: 'County Recorder Address Only',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/recorder-search?q={address}', method: 'GET' },
+          extraction: {
+            itemRegex: '<tr><td>([^<]*)</td></tr>',
+            map: { recordingDate: 1 }
+          }
+        }
+      ],
+      probateIndex: [],
+      entitySearch: []
+    })
+  };
+
+  const fetchImpl = async () => {
+    attempts += 1;
+    if (attempts === 1) return { ok: false, status: 503, async text() { return 'temporary outage'; } };
+    return htmlResponse(200, '<table><tr><td>Jane Owner</td><td>100 Main St</td><td>A-1</td></tr></table>');
+  };
+
+  const out = await gatherPublicRecordIntel(
+    {
+      packageKey: 'standard',
+      input: { ownerName: 'Jane Owner' }
+    },
+    { fetchImpl, env }
+  );
+
+  assert.equal(attempts, 2);
+  assert.equal(out.findings.property.length, 1);
+  assert.equal(out.sourceHealth.skipped, 1);
+  assert.ok(out.evidence.some((item) => item.attempts === 2));
+});

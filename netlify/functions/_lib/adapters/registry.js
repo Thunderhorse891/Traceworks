@@ -9,6 +9,12 @@ export async function runConfiguredSource(config, query, opts = {}) {
 
   if (config.type === 'html') return runHtmlAdapter(config, query, opts);
   if (config.type === 'json') return runJsonAdapter(config, query, opts);
+  if (config.type === 'browser') {
+    throw new SourceAdapterError(`Browser-backed source is not available in this runtime: ${config.id || 'unknown_source'}`, {
+      classification: 'unavailable',
+      sourceId: config.id || 'unknown_source'
+    });
+  }
 
   throw new SourceAdapterError(`Unsupported source config type: ${config.type}`);
 }

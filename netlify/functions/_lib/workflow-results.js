@@ -2,6 +2,7 @@ export const SOURCE_STATUS = {
   FOUND: 'found',
   PARTIAL: 'partial',
   NOT_FOUND: 'not_found',
+  SKIPPED: 'skipped',
   UNAVAILABLE: 'unavailable',
   BLOCKED: 'blocked',
   ERROR: 'error'

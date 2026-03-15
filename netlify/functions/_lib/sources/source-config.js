@@ -129,17 +129,50 @@ const TEXAS_FIRST_SOURCE_CONFIG = {
   ]
 };
 
+export const SOURCE_CONFIG_FAMILIES = Object.freeze([
+  'countyProperty',
+  'countyRecorder',
+  'probateIndex',
+  'entitySearch'
+]);
+
+function normalizeSourceConfig(parsed = {}) {
+  return {
+    countyProperty: Array.isArray(parsed.countyProperty) ? parsed.countyProperty : TEXAS_FIRST_SOURCE_CONFIG.countyProperty,
+    countyRecorder: Array.isArray(parsed.countyRecorder) ? parsed.countyRecorder : TEXAS_FIRST_SOURCE_CONFIG.countyRecorder,
+    probateIndex: Array.isArray(parsed.probateIndex) ? parsed.probateIndex : TEXAS_FIRST_SOURCE_CONFIG.probateIndex,
+    entitySearch: Array.isArray(parsed.entitySearch) ? parsed.entitySearch : TEXAS_FIRST_SOURCE_CONFIG.entitySearch
+  };
+}
+
+export function summarizeSourceConfig(config = TEXAS_FIRST_SOURCE_CONFIG) {
+  const families = {};
+  let totalSources = 0;
+  let browserBackedSources = 0;
+
+  for (const family of SOURCE_CONFIG_FAMILIES) {
+    const items = Array.isArray(config?.[family]) ? config[family] : [];
+    families[family] = items.length;
+    totalSources += items.length;
+    browserBackedSources += items.filter((item) => item?.type === 'browser').length;
+  }
+
+  return {
+    families,
+    totalSources,
+    browserBackedSources
+  };
+}
+
+export function findStrictSourceConfigGaps(config = TEXAS_FIRST_SOURCE_CONFIG) {
+  return SOURCE_CONFIG_FAMILIES.filter((family) => !Array.isArray(config?.[family]) || config[family].length === 0);
+}
+
 export function loadSourceConfig(env = process.env) {
   const raw = String(env.PUBLIC_RECORD_SOURCE_CONFIG || '').trim();
   if (!raw) return TEXAS_FIRST_SOURCE_CONFIG;
   try {
-    const parsed = JSON.parse(raw);
-    return {
-      countyProperty: Array.isArray(parsed.countyProperty) ? parsed.countyProperty : TEXAS_FIRST_SOURCE_CONFIG.countyProperty,
-      countyRecorder: Array.isArray(parsed.countyRecorder) ? parsed.countyRecorder : TEXAS_FIRST_SOURCE_CONFIG.countyRecorder,
-      probateIndex: Array.isArray(parsed.probateIndex) ? parsed.probateIndex : TEXAS_FIRST_SOURCE_CONFIG.probateIndex,
-      entitySearch: Array.isArray(parsed.entitySearch) ? parsed.entitySearch : TEXAS_FIRST_SOURCE_CONFIG.entitySearch
-    };
+    return normalizeSourceConfig(JSON.parse(raw));
   } catch {
     throw new Error('PUBLIC_RECORD_SOURCE_CONFIG must be valid JSON.');
   }

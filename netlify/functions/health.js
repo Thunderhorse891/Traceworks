@@ -1,14 +1,16 @@
 import { getMetrics } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { missingKvConfigKeys, storageDriverName } from './_lib/storage-runtime.js';
+import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig } from './_lib/sources/source-config.js';
 
 const startedAt = new Date().toISOString();
 
 export default async (event) => {
   if (event.httpMethod !== 'GET') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
+  const strictFulfillment = String(process.env.PAID_FULFILLMENT_STRICT || 'true').toLowerCase() !== 'false';
   const required = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'ADMIN_API_KEY'];
-  if (String(process.env.PAID_FULFILLMENT_STRICT || 'true').toLowerCase() !== 'false') {
+  if (strictFulfillment) {
     required.push('APPRAISAL_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL', 'COUNTY_CLERK_API_URL', 'GRANTOR_GRANTEE_API_URL', 'OBITUARY_API_URL', 'PROBATE_API_URL', 'PUBLIC_RECORD_SOURCE_CONFIG');
   }
   const storageDriver = storageDriverName();
@@ -16,12 +18,31 @@ export default async (event) => {
     required.push(...missingKvConfigKeys());
   }
   const missing = [...new Set(required.filter((k) => !process.env[k]))];
+  const sourceConfigMode = String(process.env.PUBLIC_RECORD_SOURCE_CONFIG || '').trim() ? 'env' : 'default';
+  let sourceCatalog = null;
+  let sourceConfigGaps = [];
+  let sourceConfigError = null;
+
+  try {
+    const sourceConfig = loadSourceConfig(process.env);
+    sourceCatalog = {
+      mode: sourceConfigMode,
+      ...summarizeSourceConfig(sourceConfig)
+    };
+    if (strictFulfillment) {
+      sourceConfigGaps = findStrictSourceConfigGaps(sourceConfig);
+    }
+  } catch (error) {
+    sourceConfigError = String(error?.message || error || 'Unknown source config error');
+  }
+
   const auth = event.headers.authorization || '';
   const key = process.env.ADMIN_API_KEY;
 
   const payload = {
-    ok: missing.length === 0,
+    ok: missing.length === 0 && !sourceConfigError && sourceConfigGaps.length === 0,
     service: 'traceworks',
+    strictFulfillment,
     storageDriver,
     startedAt,
     now: new Date().toISOString(),
@@ -38,6 +59,9 @@ export default async (event) => {
     ...payload,
     visibility: 'admin',
     envMissing: missing,
-    metrics
+    metrics,
+    sourceCatalog,
+    sourceConfigGaps,
+    sourceConfigError
   });
 };

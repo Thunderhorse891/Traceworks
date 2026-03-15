@@ -33,8 +33,15 @@
           </span>
         </div>
         <div class="status-body">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+            <button type="button" class="btn-outline" id="setAdminKeyBtn">Set ADMIN_API_KEY</button>
+            <button type="button" class="btn-outline" id="clearAdminKeyBtn" style="display:none;">Clear ADMIN_API_KEY</button>
+            <span id="authHint" style="font-size:12px;color:var(--text-3);">Admin key unlocks missing env vars and live queue metrics.</span>
+          </div>
           <p id="healthSummary" style="font-size:13px; color:var(--text-2);">Querying <code style="font-family:var(--mono); font-size:11px; color:var(--text-3);">/api/health</code>…</p>
           <ul class="env-list" id="missingList"></ul>
+          <p id="sourceCatalogSummary" style="display:none; font-size:12px; color:var(--text-3); margin-top:10px;"></p>
+          <ul class="env-list" id="sourceGapList" style="display:none;"></ul>
           <div class="metrics-grid" id="metricsGrid" style="display:none; margin-top:16px;"></div>
         </div>
       </div>
@@ -179,9 +186,34 @@
       const overallTextEl  = document.getElementById('overallStatusText');
       const healthSummary  = document.getElementById('healthSummary');
       const missingEl      = document.getElementById('missingList');
+      const sourceCatalogSummary = document.getElementById('sourceCatalogSummary');
+      const sourceGapList = document.getElementById('sourceGapList');
       const metricsGrid    = document.getElementById('metricsGrid');
       const dotStripe      = document.getElementById('dot-stripe');
       const dotSmtp        = document.getElementById('dot-smtp');
+      const setAdminKeyBtn = document.getElementById('setAdminKeyBtn');
+      const clearAdminKeyBtn = document.getElementById('clearAdminKeyBtn');
+      const authHint = document.getElementById('authHint');
+      const ADMIN_KEY_STORAGE = 'traceworksAdminApiKey';
+
+      function readAdminKey() {
+        try { return localStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch { return ''; }
+      }
+
+      function writeAdminKey(value) {
+        try {
+          if (value) localStorage.setItem(ADMIN_KEY_STORAGE, value.trim());
+          else localStorage.removeItem(ADMIN_KEY_STORAGE);
+        } catch {}
+      }
+
+      function syncAuthUi() {
+        const hasKey = Boolean(readAdminKey());
+        clearAdminKeyBtn.style.display = hasKey ? '' : 'none';
+        authHint.textContent = hasKey
+          ? 'Admin key detected locally. Detailed environment diagnostics are enabled for this browser.'
+          : 'Admin key unlocks missing env vars and live queue metrics.';
+      }
 
       function setStatus(state, text) {
         overallEl.className = 'status-indicator ' + state;
@@ -204,7 +236,9 @@
 
       async function loadHealth() {
         try {
-          const res  = await fetch('/api/health');
+          const adminKey = readAdminKey();
+          const headers = adminKey ? { Authorization: `Bearer ${adminKey}` } : {};
+          const res  = await fetch('/api/health', { headers });
           const data = await res.json().catch(() => ({}));
 
           if (!res.ok) {
@@ -215,8 +249,15 @@
 
           const missing = Array.isArray(data.envMissing) ? data.envMissing : [];
           const isPublic = data.visibility === 'public';
+          const sourceConfigGaps = Array.isArray(data.sourceConfigGaps) ? data.sourceConfigGaps : [];
+          const sourceConfigError = data.sourceConfigError || '';
+          const sourceCatalog = data.sourceCatalog || null;
 
           missingEl.innerHTML = '';
+          sourceGapList.innerHTML = '';
+          sourceGapList.style.display = 'none';
+          sourceCatalogSummary.style.display = 'none';
+          sourceCatalogSummary.textContent = '';
           metricsGrid.innerHTML = '';
           metricsGrid.style.display = 'none';
 
@@ -225,6 +266,18 @@
             healthSummary.textContent = data.ok
               ? 'Public health check passed. Detailed environment diagnostics are hidden without admin authorization.'
               : 'Public health check is available, but detailed missing-variable diagnostics are hidden without admin authorization.';
+          } else if (sourceConfigError) {
+            setStatus('error', 'Source Config Error');
+            healthSummary.textContent = sourceConfigError;
+          } else if (sourceConfigGaps.length > 0) {
+            setStatus('error', sourceConfigGaps.length + ' Source Gap' + (sourceConfigGaps.length > 1 ? 's' : ''));
+            healthSummary.textContent = 'Source configuration is incomplete for strict fulfillment. The engine will refuse some paid workflows until these source families are configured:';
+            sourceGapList.style.display = 'block';
+            for (const family of sourceConfigGaps) {
+              const li = document.createElement('li');
+              li.textContent = family;
+              sourceGapList.appendChild(li);
+            }
           } else if (missing.length === 0) {
             setStatus('ok', 'All Clear');
             healthSummary.textContent = 'All required environment variables detected. System appears ready.';
@@ -242,6 +295,12 @@
           if (dotStripe) dotStripe.className = 'checklist-item-dot ' + (missingSet.has('STRIPE_SECRET_KEY') || missingSet.has('STRIPE_WEBHOOK_SECRET') ? 'error' : 'ok');
           if (dotSmtp)   dotSmtp.className   = 'checklist-item-dot ' + (missingSet.has('SMTP_HOST') || missingSet.has('SMTP_USER') || missingSet.has('SMTP_PASS') ? 'error' : 'ok');
 
+          if (!isPublic && sourceCatalog) {
+            sourceCatalogSummary.style.display = 'block';
+            sourceCatalogSummary.textContent =
+              `Source catalog: ${sourceCatalog.totalSources ?? '—'} configured sources across ${Object.keys(sourceCatalog.families || {}).length || 0} families (${sourceCatalog.mode || 'unknown'} mode), ${sourceCatalog.browserBackedSources ?? 0} browser-backed.`;
+          }
+
           if (!isPublic && data.metrics) {
             metricsGrid.style.display = 'grid';
             const m = data.metrics;
@@ -251,6 +310,8 @@
             metricsGrid.appendChild(metricCard('Failed',         m.byStatus?.failed     ?? '—'));
             metricsGrid.appendChild(metricCard('Dead Letters',   m.deadLetters ?? '—'));
             metricsGrid.appendChild(metricCard('Queue Age (s)',  m.queueOldestMs != null ? Math.round(m.queueOldestMs / 1000) : '—'));
+            metricsGrid.appendChild(metricCard('Configured Sources', sourceCatalog?.totalSources ?? '—'));
+            metricsGrid.appendChild(metricCard('Browser-backed', sourceCatalog?.browserBackedSources ?? '—'));
           }
 
         } catch {
@@ -259,6 +320,21 @@
         }
       }
 
+      setAdminKeyBtn.addEventListener('click', () => {
+        const value = window.prompt('Paste ADMIN_API_KEY');
+        if (!value || !value.trim()) return;
+        writeAdminKey(value.trim());
+        syncAuthUi();
+        loadHealth();
+      });
+
+      clearAdminKeyBtn.addEventListener('click', () => {
+        writeAdminKey('');
+        syncAuthUi();
+        loadHealth();
+      });
+
+      syncAuthUi();
       loadHealth();
     </script>
   </body>

@@ -18,6 +18,7 @@ function requireConfigs(configs, name, env) {
 function evidenceToSourceResult(evidence, dataRows = []) {
   let status = SOURCE_STATUS.NOT_FOUND;
   if (evidence.status === 'found') status = SOURCE_STATUS.FOUND;
+  if (evidence.status === 'skipped') status = SOURCE_STATUS.SKIPPED;
   if (evidence.status === 'blocked') status = SOURCE_STATUS.BLOCKED;
   if (evidence.status === 'unavailable') status = SOURCE_STATUS.UNAVAILABLE;
   if (evidence.status === 'error') status = SOURCE_STATUS.ERROR;
@@ -35,9 +36,10 @@ function evidenceToSourceResult(evidence, dataRows = []) {
 }
 
 function buildHealthSummary(evidence = []) {
-  const summary = { attempted: evidence.length, found: 0, notFound: 0, blocked: 0, unavailable: 0, error: 0 };
+  const summary = { attempted: evidence.length, found: 0, notFound: 0, skipped: 0, blocked: 0, unavailable: 0, error: 0 };
   for (const item of evidence) {
     if (item.status === 'found') summary.found += 1;
+    else if (item.status === 'skipped') summary.skipped += 1;
     else if (item.status === 'blocked') summary.blocked += 1;
     else if (item.status === 'unavailable') summary.unavailable += 1;
     else if (item.status === 'error') summary.error += 1;
@@ -70,7 +72,7 @@ export async function gatherPublicRecordIntel(order, { fetchImpl = fetch, env = 
     evidence: [],
     gaps: [],
     sources: [],
-    sourceHealth: { attempted: 0, found: 0, notFound: 0, blocked: 0, unavailable: 0, error: 0 }
+    sourceHealth: { attempted: 0, found: 0, notFound: 0, skipped: 0, blocked: 0, unavailable: 0, error: 0 }
   };
 
   if (['title', 'title_property', 'comprehensive', 'standard', 'locate'].includes(packageKey)) {

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildReport, reportToHtml } from '../netlify/functions/_lib/report.js';
+import { buildDynamicReportFromWorkflow, dynamicReportToText } from '../netlify/functions/_lib/dynamic-report-builder.js';
+import { CONFIDENCE, SOURCE_STATUS } from '../netlify/functions/_lib/workflow-results.js';
 import { normalizeCheckoutPayload, validateCheckoutPayload } from '../netlify/functions/_lib/validation.js';
 
 const PACKAGE_IDS = ['standard', 'ownership_encumbrance', 'probate_heirship', 'asset_network', 'comprehensive'];
@@ -64,4 +66,51 @@ test('report does not inject fabricated fallback citations when direct hits are 
   assert.equal(report.sources.length, 0);
   assert.equal(report.evidenceMatrix.length, 0);
   assert.ok(lines.some((line) => line.includes('did not return a cited source hit')));
+});
+
+test('dynamic report counts skipped sources separately from errors', () => {
+  const report = buildDynamicReportFromWorkflow(
+    {
+      tier: 'comprehensive',
+      orderId: 'TW-TEST-5',
+      overallStatus: 'partial',
+      inputs: { ownerName: 'Jane Owner' },
+      sources: [
+        {
+          sourceId: 'county_property',
+          sourceLabel: 'County Property',
+          sourceUrl: 'https://example.com/property',
+          queryUsed: '{"owner":"Jane Owner"}',
+          queriedAt: new Date().toISOString(),
+          status: SOURCE_STATUS.SKIPPED,
+          confidence: CONFIDENCE.NOT_VERIFIED,
+          errorDetail: 'No address supplied.',
+          data: []
+        },
+        {
+          sourceId: 'county_recorder',
+          sourceLabel: 'County Recorder',
+          sourceUrl: 'https://example.com/recorder',
+          queryUsed: '{"owner":"Jane Owner"}',
+          queriedAt: new Date().toISOString(),
+          status: SOURCE_STATUS.ERROR,
+          confidence: CONFIDENCE.NOT_VERIFIED,
+          errorDetail: 'Unexpected upstream error.',
+          data: []
+        }
+      ]
+    },
+    {
+      customerName: 'TraceWorks QA',
+      customerEmail: 'qa@example.com',
+      purchased_tier: 'comprehensive'
+    }
+  );
+
+  assert.equal(report.sourceSummary.skipped, 1);
+  assert.equal(report.sourceSummary.errors, 1);
+
+  const text = dynamicReportToText(report);
+  assert.ok(text.includes('- Skipped: 1'));
+  assert.ok(text.includes('- Errors: 1'));
 });
