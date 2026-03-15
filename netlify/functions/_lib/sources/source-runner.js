@@ -34,12 +34,74 @@ function shouldSkipConfig(config, query) {
   return ![...referenced].some((key) => hasMeaningfulValue(query?.[key]));
 }
 
+function normalizeState(value) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+function normalizeCounty(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+county$/i, '')
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeCoverageItems(values, normalizer) {
+  const list = Array.isArray(values) ? values : values ? [values] : [];
+  return list.map((value) => normalizer(value)).filter(Boolean);
+}
+
+function describeCoverage(config) {
+  const states = normalizeCoverageItems(config?.coverage?.states, normalizeState);
+  const counties = normalizeCoverageItems(config?.coverage?.counties, (value) => String(value ?? '').trim());
+  const countyLabel = counties.length
+    ? `${counties.join(', ')}${counties.length === 1 ? ' County' : ' counties'}`
+    : '';
+  const stateLabel = states.length ? states.join(', ') : '';
+  if (countyLabel && stateLabel) return `${countyLabel} in ${stateLabel}`;
+  return countyLabel || stateLabel || 'the configured jurisdiction';
+}
+
+function skipForCoverage(config, query) {
+  const configuredStates = normalizeCoverageItems(config?.coverage?.states, normalizeState);
+  const configuredCounties = normalizeCoverageItems(config?.coverage?.counties, normalizeCounty);
+  const queryState = normalizeState(query?.state);
+  const queryCounty = normalizeCounty(query?.county);
+
+  if (configuredStates.length && queryState && !configuredStates.includes(queryState)) {
+    return `Skipped because this source only covers ${describeCoverage(config)}.`;
+  }
+
+  if (configuredCounties.length && queryCounty && !configuredCounties.includes(queryCounty)) {
+    return `Skipped because this source only covers ${describeCoverage(config)}.`;
+  }
+
+  return '';
+}
+
 export async function runSourceGroup(configs = [], makeQuery, { fetchImpl = fetch } = {}) {
   const allResults = [];
   const evidence = [];
 
   for (const config of configs) {
     const query = makeQuery(config);
+    const coverageSkipReason = skipForCoverage(config, query);
+
+    if (coverageSkipReason) {
+      evidence.push(
+        buildEvidenceEntry({
+          sourceId: config?.id || 'unknown_source',
+          sourceName: config?.name || 'Unknown Source',
+          query,
+          url: config?.request?.urlTemplate || 'n/a',
+          status: 'skipped',
+          notes: coverageSkipReason,
+          rawCount: 0,
+          extractedCount: 0
+        })
+      );
+      continue;
+    }
 
     if (shouldSkipConfig(config, query)) {
       evidence.push(

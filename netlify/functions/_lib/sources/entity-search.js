@@ -1,9 +1,9 @@
 import { runSourceGroup } from './source-runner.js';
 
-export async function searchEntityRegistry({ entityName, configs = [], fetchImpl = fetch }) {
+export async function searchEntityRegistry({ entityName, state, configs = [], fetchImpl = fetch }) {
   return runSourceGroup(
     configs,
-    () => ({ entityName: entityName || '' }),
+    () => ({ entityName: entityName || '', state: state || '' }),
     { fetchImpl }
   );
 }

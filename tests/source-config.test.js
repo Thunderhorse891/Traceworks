@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import {
   findStrictSourceConfigGaps,
   loadSourceConfig,
-  summarizeSourceConfig
+  summarizeSourceConfig,
+  usingBundledSourceConfig
 } from '../netlify/functions/_lib/sources/source-config.js';
 
 test('summarizeSourceConfig counts total and browser-backed sources', () => {
@@ -41,4 +42,9 @@ test('loadSourceConfig rejects invalid JSON', () => {
     () => loadSourceConfig({ PUBLIC_RECORD_SOURCE_CONFIG: '{"countyProperty":[' }),
     /PUBLIC_RECORD_SOURCE_CONFIG must be valid JSON/
   );
+});
+
+test('usingBundledSourceConfig detects when the starter catalog is still active', () => {
+  assert.equal(usingBundledSourceConfig({}), true);
+  assert.equal(usingBundledSourceConfig({ PUBLIC_RECORD_SOURCE_CONFIG: '{"countyProperty":[],"countyRecorder":[],"probateIndex":[],"entitySearch":[]}' }), false);
 });

@@ -100,7 +100,7 @@ export async function runOwnershipEncumbranceReport(order, ctx = {}) {
   const query = makePrimaryQuery(input);
 
   const publicRecords = await gatherPublicRecordIntel(
-    { packageKey: 'title_property', input: makePublicRecordInput(input) },
+    { packageKey: 'ownership_encumbrance', input: makePublicRecordInput(input) },
     { fetchImpl: ctx.fetchImpl }
   );
 
@@ -142,7 +142,7 @@ export async function runProbateHeirshipReport(order, ctx = {}) {
   const decedentName = input.subjectName || '';
 
   const publicRecords = await gatherPublicRecordIntel(
-    { packageKey: 'heir_location', input: makePublicRecordInput({ ...input, subjectName: decedentName }) },
+    { packageKey: 'probate_heirship', input: makePublicRecordInput({ ...input, subjectName: decedentName }) },
     { fetchImpl: ctx.fetchImpl }
   );
 
@@ -183,7 +183,7 @@ export async function runAssetNetworkReport(order, ctx = {}) {
   const query = makePrimaryQuery(input);
 
   const publicRecords = await gatherPublicRecordIntel(
-    { packageKey: 'title_property', input: makePublicRecordInput(input) },
+    { packageKey: 'asset_network', input: makePublicRecordInput(input) },
     { fetchImpl: ctx.fetchImpl }
   );
 

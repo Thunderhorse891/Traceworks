@@ -82,7 +82,7 @@ test('gatherPublicRecordIntel runs config-driven html/json adapters and logs evi
 
   const out = await gatherPublicRecordIntel(
     {
-      packageKey: 'title_property',
+      packageKey: 'asset_network',
       input: { address: '100 Main St', ownerName: 'Jane Owner', entityName: 'Main Holdings LLC' }
     },
     { fetchImpl, env }
@@ -99,7 +99,7 @@ test('gatherPublicRecordIntel runs config-driven html/json adapters and logs evi
 test('gatherPublicRecordIntel fails loudly in strict mode when config is missing', async () => {
   await assert.rejects(
     gatherPublicRecordIntel(
-      { packageKey: 'title_property', input: { ownerName: 'Missing Config' } },
+      { packageKey: 'ownership_encumbrance', input: { ownerName: 'Missing Config' } },
       { env: { PAID_FULFILLMENT_STRICT: 'true', PUBLIC_RECORD_SOURCE_CONFIG: '{"countyProperty":[],"countyRecorder":[],"probateIndex":[],"entitySearch":[]}' } }
     ),
     /Missing required public record source configuration/
@@ -151,6 +151,59 @@ test('gatherPublicRecordIntel records blocked/error sources without aborting ful
   assert.ok(out.sourceHealth.blocked >= 1);
 });
 
+test('gatherPublicRecordIntel keeps the standard package scoped to property sources', async () => {
+  const env = {
+    PAID_FULFILLMENT_STRICT: 'true',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [
+        {
+          id: 'county_property_demo_html',
+          name: 'County Property Search Demo',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/property-search?q={owner}', method: 'GET' },
+          extraction: {
+            itemRegex: '<tr><td>([^<]*)</td></tr>',
+            map: { owner: 1 }
+          }
+        }
+      ],
+      countyRecorder: [
+        {
+          id: 'county_recorder_demo_html',
+          name: 'County Recorder Demo',
+          type: 'html',
+          request: { urlTemplate: 'https://example.com/recorder-search?name={owner}' },
+          extraction: {
+            itemRegex: '<tr><td>([^<]*)</td></tr>',
+            map: { recordingDate: 1 }
+          }
+        }
+      ],
+      probateIndex: [],
+      entitySearch: []
+    })
+  };
+
+  const fetchImpl = async (url) => {
+    if (url.includes('/property-search')) {
+      return htmlResponse(200, '<table><tr><td>Jane Owner</td></tr></table>');
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  const out = await gatherPublicRecordIntel(
+    {
+      packageKey: 'standard',
+      input: { ownerName: 'Jane Owner' }
+    },
+    { fetchImpl, env }
+  );
+
+  assert.deepEqual(out.requestedFamilies, ['countyProperty']);
+  assert.deepEqual(out.executedFamilies, ['countyProperty']);
+  assert.equal(Array.isArray(out.findings.recorder), false);
+});
+
 test('gatherPublicRecordIntel skips sources when the order lacks the required query signal', async () => {
   let fetchCount = 0;
   const env = {
@@ -200,7 +253,49 @@ test('gatherPublicRecordIntel skips sources when the order lacks the required qu
 
   assert.equal(fetchCount, 0);
   assert.ok(out.sources.some((source) => source.status === 'skipped'));
-  assert.equal(out.sourceHealth.skipped, 2);
+  assert.equal(out.sourceHealth.skipped, 1);
+});
+
+test('gatherPublicRecordIntel skips county-scoped sources outside their configured jurisdiction', async () => {
+  let fetchCount = 0;
+  const env = {
+    PAID_FULFILLMENT_STRICT: 'true',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [
+        {
+          id: 'harris_property_only',
+          name: 'Harris County Property Search',
+          type: 'html',
+          coverage: { states: ['TX'], counties: ['Harris'] },
+          request: { urlTemplate: 'https://example.com/property-search?q={owner}', method: 'GET' },
+          extraction: {
+            itemRegex: '<tr><td>([^<]*)</td></tr>',
+            map: { owner: 1 }
+          }
+        }
+      ],
+      countyRecorder: [],
+      probateIndex: [],
+      entitySearch: []
+    })
+  };
+
+  const fetchImpl = async () => {
+    fetchCount += 1;
+    return htmlResponse(200, '<table><tr><td>Jane Owner</td></tr></table>');
+  };
+
+  const out = await gatherPublicRecordIntel(
+    {
+      packageKey: 'standard',
+      input: { ownerName: 'Jane Owner', county: 'Dallas', state: 'TX' }
+    },
+    { fetchImpl, env }
+  );
+
+  assert.equal(fetchCount, 0);
+  assert.equal(out.sourceHealth.skipped, 1);
+  assert.ok(out.evidence[0].notes.includes('only covers Harris County in TX'));
 });
 
 test('gatherPublicRecordIntel retries transient source failures before succeeding', async () => {
@@ -255,6 +350,6 @@ test('gatherPublicRecordIntel retries transient source failures before succeedin
 
   assert.equal(attempts, 2);
   assert.equal(out.findings.property.length, 1);
-  assert.equal(out.sourceHealth.skipped, 1);
+  assert.equal(out.sourceHealth.skipped, 0);
   assert.ok(out.evidence.some((item) => item.attempts === 2));
 });

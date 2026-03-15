@@ -1,7 +1,7 @@
 import { BUSINESS_EMAIL, getBusinessEmail } from './business.js';
 import { resolveEmailSettings } from './email-config.js';
 import { PACKAGE_LIST, getPackage } from './packages.js';
-import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig } from './sources/source-config.js';
+import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig, usingBundledSourceConfig } from './sources/source-config.js';
 import { resolveKvRestConfig, storageDriverName } from './storage-runtime.js';
 import { validateStripeSecretKey, validateStripeWebhookSecret } from './stripe-config.js';
 
@@ -359,6 +359,25 @@ function sourceChecks(env, checks) {
         severity: 'warning',
         status: 'pass',
         detail: `Source catalog includes ${summary.totalSources} configured sources across ${Object.keys(summary.families).length} families.`
+      }));
+    }
+
+    if (usingBundledSourceConfig(env)) {
+      addCheck(checks, makeCheck({
+        id: 'bundled_source_catalog',
+        label: 'Bundled source catalog',
+        severity: 'warning',
+        status: 'warn',
+        detail: 'TraceWorks is using the built-in Texas-first source catalog. Coverage is jurisdiction-limited until you provide a production PUBLIC_RECORD_SOURCE_CONFIG.',
+        action: 'Provide an explicit PUBLIC_RECORD_SOURCE_CONFIG when you need broader or non-Texas county coverage.'
+      }));
+    } else {
+      addCheck(checks, makeCheck({
+        id: 'bundled_source_catalog',
+        label: 'Bundled source catalog',
+        severity: 'warning',
+        status: 'pass',
+        detail: 'A custom PUBLIC_RECORD_SOURCE_CONFIG is configured for this environment.'
       }));
     }
 

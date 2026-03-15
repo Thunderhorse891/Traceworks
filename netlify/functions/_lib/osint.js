@@ -1,11 +1,5 @@
 import { gatherPublicRecordIntel } from './public-records.js';
-
-const PACKAGE_KEYWORDS = {
-  locate: ["current address", "phone", "alias", "contact"],
-  comprehensive: ["assets", "property", "employment", "business filings"],
-  title: ["title", "deed", "lien", "operator", "royalty"],
-  heir: ["probate", "heir", "beneficiary", "next of kin"]
-};
+import { canonicalPackageId, openWebKeywordsForPackage } from './package-contract.js';
 
 function domainOf(url) {
   try {
@@ -143,8 +137,8 @@ async function fromRobin(query, fetchImpl, env) {
 }
 
 function buildQueries(query, packageId) {
-  const base = (query || "subject locate public records").trim();
-  const extras = PACKAGE_KEYWORDS[packageId] || [];
+  const base = (query || 'subject public records').trim();
+  const extras = openWebKeywordsForPackage(packageId);
   const queries = [base, ...extras.map((k) => `${base} ${k}`)];
   return [...new Set(queries)].slice(0, 6);
 }
@@ -219,7 +213,7 @@ function buildProviders(env) {
 export async function gatherOsint(query, opts = {}) {
   const fetchImpl = opts.fetchImpl || fetch;
   const env = opts.env || process.env;
-  const packageId = opts.packageId || "locate";
+  const packageId = canonicalPackageId(opts.packageId || 'standard') || 'standard';
   const queries = buildQueries(query, packageId);
   const providers = buildProviders(env);
 
@@ -244,7 +238,13 @@ export async function gatherOsint(query, opts = {}) {
 
   let publicRecords = null;
   if (opts.publicRecordOrder) {
-    publicRecords = await gatherPublicRecordIntel(opts.publicRecordOrder, { fetchImpl, env });
+    publicRecords = await gatherPublicRecordIntel(
+      {
+        ...opts.publicRecordOrder,
+        packageKey: canonicalPackageId(opts.publicRecordOrder.packageKey || opts.publicRecordOrder.packageId || packageId) || packageId
+      },
+      { fetchImpl, env }
+    );
   }
 
   const providerNoteParts = [];
@@ -259,11 +259,14 @@ export async function gatherOsint(query, opts = {}) {
 
   return {
     query: queries[0],
+    packageId,
     queryPlan: queries,
     providerHealth: health,
     providerNote: providerNoteParts.join(" "),
     coverage: {
-      totalSources: aggregated.length,
+      totalSources: aggregated.length + (publicRecords?.evidence?.length || 0),
+      totalOpenWebSources: aggregated.length,
+      totalStructuredEvidence: publicRecords?.evidence?.length || 0,
       distinctDomains: new Set(aggregated.map((s) => s.domain || domainOf(s.url))).size,
       providersWithHits: healthyProviders.size
     },
