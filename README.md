@@ -41,6 +41,7 @@ The live paid workflows are driven by `netlify/functions/_lib/tier-handlers.js`,
 
 - Install dependencies: `npm install`
 - Syntax check: `node scripts/check-syntax.mjs`
+- Launch audit: `node scripts/launch-audit.mjs`
 - Tests: `node --test --test-isolation=none --test-concurrency=1`
 - Local dev: `npx netlify dev`
 
