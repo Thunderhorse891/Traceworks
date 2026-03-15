@@ -89,3 +89,15 @@ test('packages catalog routes into the real intake flow and loads availability',
   assert.ok(js.includes("fetch('/api/packages')"));
   assert.ok(js.includes('Source Coverage Pending'));
 });
+
+test('admin dashboard exposes operator visibility panels for live launch monitoring', () => {
+  const html = readFileSync('public/admin-dashboard.html', 'utf8');
+  assert.ok(html.includes('Manual Review Queue'));
+  assert.ok(html.includes('Active Queue Work'));
+  assert.ok(html.includes('Recent Audit Timeline'));
+  assert.ok(html.includes('Dead Letters'));
+  assert.ok(html.includes('manualReviewRows'));
+  assert.ok(html.includes('activeJobRows'));
+  assert.ok(html.includes('auditEventRows'));
+  assert.ok(html.includes('deadLetterRows'));
+});

@@ -49,6 +49,10 @@ test('store persists order/events/deadletters and queue jobs with backoff', asyn
   assert.equal(metrics.auditLogEvents >= 1, true);
   assert.equal(metrics.queueOldestMs >= 0, true);
 
+  const snapshot = await store.getOperationsSnapshot(5);
+  assert.equal(snapshot.recentDeadLetters.length >= 1, true);
+  assert.equal(snapshot.recentAuditEvents.length >= 1, true);
+
   await rm(dir, { recursive: true, force: true });
 });
 
@@ -66,6 +70,23 @@ test('store can claim a due job by caseRef without claiming unrelated jobs', asy
 
   const next = await store.claimNextJob('fulfillment');
   assert.equal(next.id, jobA.id);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('operations snapshot exposes manual review orders and active jobs', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'tw-store-ops-'));
+  process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
+
+  const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+  await store.upsertOrder('TW-MANUAL', { status: 'manual_review', failure_reason: 'County coverage pending.' });
+  await store.enqueueJob({ type: 'fulfillment', payload: { caseRef: 'TW-QUEUE' } });
+  await store.recordAuditEvent({ event: 'order_coverage_blocked_fulfillment_job', caseRef: 'TW-MANUAL' });
+
+  const snapshot = await store.getOperationsSnapshot(10);
+  assert.equal(snapshot.manualReviewOrders.length, 1);
+  assert.equal(snapshot.activeJobs.length, 1);
+  assert.equal(snapshot.recentAuditEvents[0].event, 'order_coverage_blocked_fulfillment_job');
 
   await rm(dir, { recursive: true, force: true });
 });

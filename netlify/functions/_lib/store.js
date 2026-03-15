@@ -283,3 +283,34 @@ export async function getMetrics() {
     jobsByStatus
   };
 }
+
+export async function getOperationsSnapshot(limit = 12) {
+  const store = await loadStore();
+  const max = Math.max(1, Math.min(100, Number(limit) || 12));
+  const orders = Object.values(store.orders);
+
+  const recentAuditEvents = [...store.auditLogs]
+    .sort((a, b) => Date.parse(b.at || 0) - Date.parse(a.at || 0))
+    .slice(0, max);
+
+  const recentDeadLetters = [...store.deadLetters]
+    .sort((a, b) => Date.parse(b.at || 0) - Date.parse(a.at || 0))
+    .slice(0, max);
+
+  const activeJobs = [...store.jobs]
+    .filter((job) => ['queued', 'retry', 'processing'].includes(job.status))
+    .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
+    .slice(0, max);
+
+  const manualReviewOrders = [...orders]
+    .filter((order) => order.status === 'manual_review')
+    .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
+    .slice(0, max);
+
+  return {
+    recentAuditEvents,
+    recentDeadLetters,
+    activeJobs,
+    manualReviewOrders
+  };
+}

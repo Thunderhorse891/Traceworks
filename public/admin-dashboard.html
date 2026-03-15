@@ -106,6 +106,30 @@
       </div>
     </div>
 
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+      <div class="panel">
+        <div class="section-header"><h3>Manual Review Queue</h3><span id="manualReviewCount" style="font-size:11px;color:var(--text-4);"></span></div>
+        <div id="manualReviewRows"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-header"><h3>Active Queue Work</h3><span id="activeJobCount" style="font-size:11px;color:var(--text-4);"></span></div>
+        <div id="activeJobRows"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+      <div class="panel">
+        <div class="section-header"><h3>Recent Audit Timeline</h3><span id="auditEventCount" style="font-size:11px;color:var(--text-4);"></span></div>
+        <div id="auditEventRows"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-header"><h3>Dead Letters</h3><span id="deadLetterCount" style="font-size:11px;color:var(--text-4);"></span></div>
+        <div id="deadLetterRows"></div>
+      </div>
+    </div>
+
     <!-- Orders table -->
     <div class="panel">
       <div class="section-header">
@@ -152,6 +176,8 @@
         paid:'Payment Confirmed',
         queued:'Queued',
         running:'Research Running',
+        processing:'Processing',
+        retry:'Retry Scheduled',
         completed:'Completed',
         manual_review:'Manual Review',
         failed:'Failed',
@@ -159,7 +185,8 @@
         refunded:'Refunded',
         canceled:'Canceled'
       };
-      return `<span class="status-badge s-${status}">${labels[status] || status}</span>`;
+      const tone = status === 'retry' ? 'retrying' : status;
+      return `<span class="status-badge s-${tone}">${labels[status] || status}</span>`;
     }
 
     function fmtDate(iso) {
@@ -170,6 +197,14 @@
     function fmtAmt(cents) {
       if (!cents) return '—';
       return '$' + (Number(cents) / 100).toFixed(2);
+    }
+
+    function renderInfoRows(targetId, rows, emptyText, formatter) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      target.innerHTML = rows.length
+        ? rows.map(formatter).join('')
+        : `<p style="font-size:12px;color:var(--text-4);">${emptyText}</p>`;
     }
 
     async function loadData() {
@@ -221,6 +256,66 @@
         document.getElementById('byStatusRows').innerHTML = Object.entries(bs).length
           ? Object.entries(bs).map(([s, n]) => `<div class="health-row"><span>${statusBadge(s)}</span><span style="color:var(--text-1);font-weight:700;">${n}</span></div>`).join('')
           : '<p style="font-size:12px;color:var(--text-4);">No orders.</p>';
+
+        const ops = metrics.operations || {};
+        const manualReviewOrders = Array.isArray(ops.manualReviewOrders) ? ops.manualReviewOrders : [];
+        const activeJobs = Array.isArray(ops.activeJobs) ? ops.activeJobs : [];
+        const auditEvents = Array.isArray(ops.recentAuditEvents) ? ops.recentAuditEvents : [];
+        const deadLetters = Array.isArray(ops.recentDeadLetters) ? ops.recentDeadLetters : [];
+
+        document.getElementById('manualReviewCount').textContent = `${manualReviewOrders.length} visible`;
+        renderInfoRows('manualReviewRows', manualReviewOrders, 'No orders are currently in manual review.', (order) => `
+          <div class="health-row" style="display:block;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+              <div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${order.caseRef || order.order_id || '—'}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${order.packageId || order.purchased_tier || 'unknown package'} · ${fmtDate(order.updatedAt || order.completed_at || order.createdAt)}</div>
+              </div>
+              <span>${statusBadge(order.status || 'manual_review')}</span>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${order.failure_reason || 'Manual review required.'}</div>
+          </div>
+        `);
+
+        document.getElementById('activeJobCount').textContent = `${activeJobs.length} active`;
+        renderInfoRows('activeJobRows', activeJobs, 'No queued, retrying, or processing jobs right now.', (job) => `
+          <div class="health-row" style="display:block;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+              <div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${job.payload?.caseRef || job.id}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${job.type || 'job'} · attempts ${job.attempts || 0} · next ${fmtDate(job.nextAttemptAt || job.updatedAt || job.createdAt)}</div>
+              </div>
+              <span>${statusBadge(job.status || 'queued')}</span>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${job.lastError || 'Awaiting worker action.'}</div>
+          </div>
+        `);
+
+        document.getElementById('auditEventCount').textContent = `${auditEvents.length} recent`;
+        renderInfoRows('auditEventRows', auditEvents, 'No recent audit events recorded yet.', (entry) => `
+          <div class="health-row" style="display:block;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+              <div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${entry.event || 'audit_event'}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${entry.caseRef || entry.orderId || 'system'} · ${fmtDate(entry.at)}</div>
+              </div>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${entry.error || entry.status || entry.packageId || entry.tier || 'Recorded in audit log.'}</div>
+          </div>
+        `);
+
+        document.getElementById('deadLetterCount').textContent = `${deadLetters.length} recent`;
+        renderInfoRows('deadLetterRows', deadLetters, 'No dead letters recorded.', (entry) => `
+          <div class="health-row" style="display:block;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+              <div>
+                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${entry.caseRef || entry.jobId || 'dead_letter'}</div>
+                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${entry.source || 'queue'} · ${fmtDate(entry.at)}</div>
+              </div>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:#f0a3a3;line-height:1.5;">${entry.error || 'Unknown queue failure.'}</div>
+          </div>
+        `);
 
         // Orders table
         const rows = orders.orders || [];

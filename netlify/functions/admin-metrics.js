@@ -1,4 +1,4 @@
-import { getMetrics } from './_lib/store.js';
+import { getMetrics, getOperationsSnapshot } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 
@@ -15,7 +15,18 @@ export default async (event) => {
   if (auth !== `Bearer ${key}`) return jsonWithRequestId(event, 401, { error: 'Unauthorized' });
 
   const metrics = await getMetrics();
+  const operations = await getOperationsSnapshot(10);
   const threshold = Math.max(60_000, Number(process.env.QUEUE_LAG_ALERT_MS || 15 * 60_000));
-  const degraded = metrics.queueOldestMs >= threshold || Number(metrics.jobsByStatus?.failed || 0) > 0;
-  return jsonWithRequestId(event, 200, { ok: true, degraded, metrics, queueLagAlertMs: threshold });
+  const degraded =
+    metrics.queueOldestMs >= threshold ||
+    Number(metrics.jobsByStatus?.failed || 0) > 0 ||
+    operations.recentDeadLetters.length > 0;
+
+  return jsonWithRequestId(event, 200, {
+    ok: true,
+    degraded,
+    metrics,
+    operations,
+    queueLagAlertMs: threshold
+  });
 };
