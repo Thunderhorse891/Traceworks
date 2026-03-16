@@ -132,7 +132,7 @@ function renderHeroCommandCenter() {
   if (heroCoverageSummary) {
     heroCoverageSummary.textContent = ready.length
       ? `${ready.length}/${packageCatalog.length} packages live`
-      : 'Source coverage pending';
+      : 'Coverage review in progress';
   }
 
   if (!heroPackageMatrix) return;
@@ -321,7 +321,7 @@ function applyPackageToForm(pkg) {
   if (selectedPackageTurnaround) selectedPackageTurnaround.textContent = `${pkg.turnaround} · ${pkg.price}`;
   if (selectedPackageGuidance) selectedPackageGuidance.textContent = pkg.intake?.guidance || pkg.summary || '';
   if (packageSelectionHelp) {
-    packageSelectionHelp.textContent = `Required: ${(pkg.intake?.requiredSignals || []).join(' · ')}. Recommended: ${(pkg.intake?.recommendedSignals || []).join(' · ')}.`;
+    packageSelectionHelp.textContent = `Essentials: ${(pkg.intake?.requiredSignals || []).join(' · ')}. Helpful identifiers: ${(pkg.intake?.recommendedSignals || []).join(' · ')}.`;
   }
   if (intakeGuidance) {
     intakeGuidance.textContent = pkg.intake?.guidance || 'More identifiers improve match quality and reduce manual review.';
@@ -411,8 +411,8 @@ function updateGuidedExperience() {
     if (intakeProgressHeading) intakeProgressHeading.textContent = 'Step 1 of 4 - Choose a package';
     if (intakeProgressText) intakeProgressText.textContent = 'Select a report tier above and the intake will guide you toward the strongest identifiers for that workflow.';
     if (intakeProgressFill) intakeProgressFill.style.width = '0%';
-    if (requiredSignalsStatus) requiredSignalsStatus.textContent = 'Required signals: 0 / 0';
-    if (recommendedSignalsStatus) recommendedSignalsStatus.textContent = 'Recommended identifiers: 0 / 0';
+    if (requiredSignalsStatus) requiredSignalsStatus.textContent = 'Essential inputs: 0 / 0';
+    if (recommendedSignalsStatus) recommendedSignalsStatus.textContent = 'Helpful identifiers: 0 / 0';
     renderSignalChips(null, { completed: [], total: 0 }, { completed: [], total: 0 });
     updateBriefCard(null, { completed: [], total: 0 }, { completed: [], total: 0 });
     syncDraftStatus();
@@ -445,8 +445,8 @@ function updateGuidedExperience() {
   if (intakeProgressHeading) intakeProgressHeading.textContent = heading;
   if (intakeProgressText) intakeProgressText.textContent = copy;
   if (intakeProgressFill) intakeProgressFill.style.width = `${progress}%`;
-  if (requiredSignalsStatus) requiredSignalsStatus.textContent = `Required signals: ${requiredGroups.completed.length} / ${requiredGroups.total}`;
-  if (recommendedSignalsStatus) recommendedSignalsStatus.textContent = `Recommended identifiers: ${recommendedFields.completed.length} / ${recommendedFields.total}`;
+  if (requiredSignalsStatus) requiredSignalsStatus.textContent = `Essential inputs: ${requiredGroups.completed.length} / ${requiredGroups.total}`;
+  if (recommendedSignalsStatus) recommendedSignalsStatus.textContent = `Helpful identifiers: ${recommendedFields.completed.length} / ${recommendedFields.total}`;
 
   renderSignalChips(pkg, requiredGroups, recommendedFields);
   updateBriefCard(pkg, requiredGroups, recommendedFields);
@@ -535,7 +535,7 @@ function buildCard(pkg) {
         <h4>${pkg.name}</h4>
       </div>
       <div class="package-card-badges">
-        ${pkg.featured ? '<p class="feature-badge">Most Selected</p>' : ''}
+        ${pkg.featured ? '<p class="feature-badge">Common choice</p>' : ''}
         ${pkg.launchReady === false ? '<p class="availability-badge blocked">Source Coverage Pending</p>' : '<p class="availability-badge ready">Launch Ready</p>'}
       </div>
     </div>
@@ -555,11 +555,11 @@ function buildCard(pkg) {
         <strong>${workflowCount}</strong>
       </div>
       <div class="package-stat">
-        <span>Required signals</span>
+        <span>Essential inputs</span>
         <strong>${intakeGroupCount}</strong>
       </div>
       <div class="package-stat">
-        <span>Recommended IDs</span>
+        <span>Helpful identifiers</span>
         <strong>${recommendedCount}</strong>
       </div>
     </div>
