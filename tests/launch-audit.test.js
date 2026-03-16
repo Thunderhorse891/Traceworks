@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { assessOrderLaunchGate, assessPackageLaunchGate, auditLaunchReadiness } from '../netlify/functions/_lib/launch-audit.js';
+import { assessOrderLaunchGate, assessPackageLaunchGate, assessSourceProofGate, auditLaunchReadiness } from '../netlify/functions/_lib/launch-audit.js';
 
 test('launch audit blocks file storage and missing launch secrets', () => {
   const result = auditLaunchReadiness({
@@ -37,7 +37,8 @@ test('launch audit blocks file storage and missing launch secrets', () => {
   assert.ok(result.blockingCount >= 4);
   assert.ok(result.checks.some((check) => check.id === 'storage_driver' && check.status === 'fail'));
   assert.ok(result.checks.some((check) => check.id === 'admin_api_key' && check.status === 'fail'));
-  assert.ok(result.checks.some((check) => check.id === 'people_association_source' && check.status === 'fail'));
+  assert.ok(result.checks.some((check) => check.id === 'admin_session_secret' && check.status === 'warn'));
+  assert.ok(result.checks.some((check) => check.id === 'people_association_source' && check.status === 'warn'));
   assert.equal(Array.isArray(result.packageReadiness), true);
 });
 
@@ -52,6 +53,7 @@ test('launch audit warns when production still points at netlify and test stripe
     EMAIL_FROM: 'TraceWorks <ops@example.com>',
     OWNER_EMAIL: 'ops@example.com',
     ADMIN_API_KEY: 'admin',
+    ADMIN_SESSION_SECRET: 'admin-session',
     STATUS_TOKEN_SECRET: 'status',
     QUEUE_CRON_SECRET: 'queue',
     TRACEWORKS_STORAGE_DRIVER: 'kv',
@@ -82,6 +84,7 @@ test('launch audit warns when production still points at netlify and test stripe
   assert.ok(result.checks.some((check) => check.id === 'premium_osint' && check.status === 'warn'));
   assert.ok(result.checks.some((check) => check.id === 'browser_sources' && check.status === 'warn'));
   assert.ok(result.checks.some((check) => check.id === 'bundled_source_catalog' && check.status === 'pass'));
+  assert.ok(result.checks.some((check) => check.id === 'admin_session_secret' && check.status === 'pass'));
   assert.ok(result.checks.some((check) => check.id === 'property_source_modules' && check.status === 'pass'));
 });
 
@@ -154,6 +157,41 @@ test('launch audit passes premium OSINT checks when Firecrawl is configured', ()
   assert.ok(result.checks.some((check) => check.id === 'premium_osint' && check.status === 'pass'));
 });
 
+test('launch audit accepts Netlify Blobs as a durable storage driver', () => {
+  const result = auditLaunchReadiness({
+    URL: 'https://traceworks.app',
+    STRIPE_SECRET_KEY: 'sk_live_123',
+    STRIPE_WEBHOOK_SECRET: 'whsec_123',
+    SMTP_HOST: 'smtp-mail.outlook.com',
+    SMTP_USER: 'traceworks@example.com',
+    SMTP_PASS: 'secret',
+    EMAIL_FROM: 'TraceWorks <ops@example.com>',
+    OWNER_EMAIL: 'ops@example.com',
+    ADMIN_API_KEY: 'admin',
+    STATUS_TOKEN_SECRET: 'status',
+    QUEUE_CRON_SECRET: 'queue',
+    TRACEWORKS_STORAGE_DRIVER: 'blobs',
+    APPRAISAL_API_URL: 'https://sources.example/appraisal',
+    TAX_COLLECTOR_API_URL: 'https://sources.example/tax',
+    PARCEL_GIS_API_URL: 'https://sources.example/gis',
+    COUNTY_CLERK_API_URL: 'https://sources.example/clerk',
+    GRANTOR_GRANTEE_API_URL: 'https://sources.example/grantor',
+    MORTGAGE_INDEX_API_URL: 'https://sources.example/mortgage',
+    OBITUARY_API_URL: 'https://sources.example/obits',
+    PROBATE_API_URL: 'https://sources.example/probate',
+    PEOPLE_ASSOC_API_URL: 'https://sources.example/people',
+    PEOPLE_ASSOC_LICENSED: 'true',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [{ id: 'property', type: 'html' }],
+      countyRecorder: [{ id: 'recorder', type: 'html' }],
+      probateIndex: [{ id: 'probate', type: 'html' }],
+      entitySearch: [{ id: 'entity', type: 'json' }]
+    })
+  });
+
+  assert.ok(result.checks.some((check) => check.id === 'storage_driver' && check.status === 'pass'));
+});
+
 test('package launch gate blocks only packages whose source coverage is missing', () => {
   const env = {
     URL: 'https://traceworks.app',
@@ -188,6 +226,30 @@ test('package launch gate blocks only packages whose source coverage is missing'
   assert.equal(probate.launchReady, false);
   assert.ok(probate.launchBlockingAreas.includes('sources'));
   assert.ok(probate.launchBlockingDetails.some((detail) => detail.id === 'OBITUARY_API_URL'));
+});
+
+test('standard package can be launch-ready from configured source families without legacy module URLs', () => {
+  const env = {
+    URL: 'https://traceworks.app',
+    STRIPE_SECRET_KEY: 'sk_live_123',
+    STRIPE_WEBHOOK_SECRET: 'whsec_123',
+    SMTP_HOST: 'smtp-mail.outlook.com',
+    SMTP_USER: 'traceworks@example.com',
+    SMTP_PASS: 'secret',
+    STATUS_TOKEN_SECRET: 'status',
+    QUEUE_CRON_SECRET: 'queue',
+    TRACEWORKS_STORAGE_DRIVER: 'blobs',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [{ id: 'property', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      countyRecorder: [{ id: 'recorder', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      probateIndex: [{ id: 'probate', type: 'html' }],
+      entitySearch: [{ id: 'entity', type: 'json' }]
+    })
+  };
+
+  const standard = assessPackageLaunchGate('standard', env);
+  assert.equal(standard.launchReady, true);
+  assert.ok(standard.requiredSourceCoverage.some((detail) => detail.id === 'countyProperty_source_family' && detail.ready));
 });
 
 test('order launch gate blocks a package when the requested county is outside configured coverage', () => {
@@ -266,4 +328,39 @@ test('order launch gate warns when in-scope coverage is browser-backed only', ()
   assert.equal(gate.launchReady, true);
   assert.equal(gate.manualReviewLikely, true);
   assert.ok(gate.manualReviewDetails.some((detail) => detail.id === 'countyRecorder_manual_review'));
+});
+
+test('source proof gate ignores paid-launch blockers but still blocks unsupported jurisdictions', () => {
+  const env = {
+    URL: 'https://traceworks.app',
+    TRACEWORKS_STORAGE_DRIVER: 'file',
+    PUBLIC_RECORD_SOURCE_CONFIG: JSON.stringify({
+      countyProperty: [{ id: 'property', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      countyRecorder: [{ id: 'recorder', type: 'html', coverage: { states: ['TX'], counties: ['Harris'] } }],
+      probateIndex: [{ id: 'probate', type: 'html' }],
+      entitySearch: [{ id: 'entity', type: 'json' }]
+    })
+  };
+
+  const standard = assessSourceProofGate('standard', {
+    packageId: 'standard',
+    subjectType: 'property',
+    subjectName: 'Jane Owner',
+    county: 'Harris',
+    state: 'TX'
+  }, env);
+
+  const blocked = assessSourceProofGate('standard', {
+    packageId: 'standard',
+    subjectType: 'property',
+    subjectName: 'Jane Owner',
+    county: 'Dallas',
+    state: 'TX'
+  }, env);
+
+  assert.equal(standard.launchReady, true);
+  assert.ok(Array.isArray(standard.operationalBlockingDetails));
+  assert.ok(standard.operationalBlockingDetails.some((detail) => detail.id === 'stripe_secret'));
+  assert.equal(blocked.launchReady, false);
+  assert.ok(blocked.launchBlockingAreas.includes('jurisdiction'));
 });

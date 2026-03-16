@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
-import { getKvClient, usesKvStorage, withKvLock } from './storage-runtime.js';
+import { dirname, join } from 'node:path';
+import { getBlobsClient, getKvClient, usesBlobStorage, usesKvStorage, withKvLock } from './storage-runtime.js';
 
 const EMPTY = { orders: {}, processedWebhookEvents: [], analytics: [], deadLetters: [], jobs: [], auditLogs: [], launchProofs: [] };
 
@@ -8,8 +8,27 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function useRuntimeTempRoot() {
+  return Boolean(
+    process.env.NETLIFY
+    || process.env.DEPLOY_ID
+    || process.env.AWS_LAMBDA_FUNCTION_NAME
+    || process.env.LAMBDA_TASK_ROOT
+    || process.env.AWS_EXECUTION_ENV
+    || process.env.AWS_REGION
+  );
+}
+
+function runtimeDataRoot() {
+  if (process.env.TRACEWORKS_DATA_ROOT) return process.env.TRACEWORKS_DATA_ROOT;
+  if (useRuntimeTempRoot()) {
+    return join(process.env.TMPDIR || process.env.TEMP || process.env.TMP || '/tmp', 'traceworks');
+  }
+  return '.data';
+}
+
 function storePath() {
-  return process.env.TRACEWORKS_STORE_PATH || '.data/traceworks-store.json';
+  return process.env.TRACEWORKS_STORE_PATH || join(runtimeDataRoot(), 'traceworks-store.json');
 }
 
 function storeKey() {
@@ -33,6 +52,12 @@ async function loadStore(kv = null) {
     return normalizeStore(raw);
   }
 
+  if (usesBlobStorage()) {
+    const client = kv || (await getBlobsClient());
+    const raw = await client.get(storeKey(), { type: 'json' });
+    return normalizeStore(raw);
+  }
+
   try {
     const raw = await readFile(storePath(), 'utf8');
     return normalizeStore(raw);
@@ -45,6 +70,12 @@ async function saveStore(store, kv = null) {
   if (usesKvStorage()) {
     const client = kv || (await getKvClient());
     await client.set(storeKey(), JSON.stringify(store));
+    return;
+  }
+
+  if (usesBlobStorage()) {
+    const client = kv || (await getBlobsClient());
+    await client.setJSON(storeKey(), store);
     return;
   }
 
@@ -72,6 +103,31 @@ async function mutateStore(mutator) {
       await saveStore(store, kv);
       return result;
     });
+  }
+
+  if (usesBlobStorage()) {
+    const blobs = await getBlobsClient();
+    let lastError = null;
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const entry = await blobs.getWithMetadata(storeKey(), { type: 'json' });
+      const store = normalizeStore(entry?.data);
+      const result = await mutator(store);
+      const write = await blobs.setJSON(
+        storeKey(),
+        store,
+        entry?.etag ? { onlyIfMatch: entry.etag } : { onlyIfNew: true }
+      );
+
+      if (write?.modified) {
+        return result;
+      }
+
+      lastError = new Error('TraceWorks blob-store write was superseded by another update.');
+      await sleep(20 * (attempt + 1));
+    }
+
+    throw lastError || new Error('TraceWorks blob-store write failed.');
   }
 
   const store = await loadStore();

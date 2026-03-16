@@ -27,6 +27,12 @@ function requireConfiguredSources(keys, env = process.env) {
   if (missing.length) throw new Error(`Missing required source configuration: ${missing.join(', ')}`);
 }
 
+function missingConfiguredSources(keys, env = process.env) {
+  const strict = String(env.PAID_FULFILLMENT_STRICT || 'true').toLowerCase() !== 'false';
+  if (!strict) return [];
+  return keys.filter((key) => !String(env[key] || '').trim());
+}
+
 function overallFromSources(sources) {
   if (sources.some((source) => source.status === SOURCE_STATUS.ERROR)) return 'failed';
   if (sources.some((source) => [SOURCE_STATUS.PARTIAL, SOURCE_STATUS.UNAVAILABLE, SOURCE_STATUS.BLOCKED].includes(source.status))) return 'partial';
@@ -129,25 +135,45 @@ function mkWorkflow(order, tier, sources, input, extra = {}) {
 }
 
 export async function runStandardReport(order, ctx = {}) {
-  requireConfiguredSources(['APPRAISAL_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL']);
+  const env = ctx.env || process.env;
   const input = resolveInvestigationInput(order);
   const query = makePrimaryQuery(input);
+  const missingModuleKeys = missingConfiguredSources(['APPRAISAL_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL'], env);
 
   const publicRecords = await gatherPublicRecordIntel(
     { packageKey: 'standard', input: makePublicRecordInput(input) },
-    { fetchImpl: ctx.fetchImpl }
+    { fetchImpl: ctx.fetchImpl, env }
   );
 
-  const s1 = await appraisalDistrictScraper({ county: input.county, state: input.state, query, fetchImpl: ctx.fetchImpl });
-  const parcelId = input.parcelId || s1?.data?.parcelId || s1?.data?.apn || '';
-  const s2 = await taxCollectorScraper({ county: input.county, state: input.state, parcelId, fetchImpl: ctx.fetchImpl });
-  const s3 = await parcelGisLookup({ county: input.county, state: input.state, query: input.lastKnownAddress || query, fetchImpl: ctx.fetchImpl });
-  const osint = await gatherWorkflowOsint(order, { ...input, parcelId }, 'standard', ctx);
+  const primaryPropertyHit = Array.isArray(publicRecords?.findings?.property) ? publicRecords.findings.property[0] : null;
+  const fallbackParcelId = input.parcelId
+    || primaryPropertyHit?.parcelId
+    || primaryPropertyHit?.apn
+    || primaryPropertyHit?.parcel
+    || primaryPropertyHit?.account
+    || '';
 
-  return mkWorkflow(order, 'standard', [...publicRecords.sources, s1, s2, s3], input, {
+  let workflowSources = [...(publicRecords.sources || [])];
+  let parcelIdForOsint = fallbackParcelId;
+
+  if (!missingModuleKeys.length) {
+    const s1 = await appraisalDistrictScraper({ county: input.county, state: input.state, query, fetchImpl: ctx.fetchImpl, env });
+    const parcelId = input.parcelId || s1?.data?.parcelId || s1?.data?.apn || fallbackParcelId;
+    const s2 = await taxCollectorScraper({ county: input.county, state: input.state, parcelId, fetchImpl: ctx.fetchImpl, env });
+    const s3 = await parcelGisLookup({ county: input.county, state: input.state, query: input.lastKnownAddress || query, fetchImpl: ctx.fetchImpl, env });
+    workflowSources = [...workflowSources, s1, s2, s3];
+    parcelIdForOsint = parcelId;
+  } else if (!workflowSources.length) {
+    requireConfiguredSources(['APPRAISAL_API_URL', 'TAX_COLLECTOR_API_URL', 'PARCEL_GIS_API_URL'], env);
+  }
+
+  const osint = await gatherWorkflowOsint(order, { ...input, parcelId: parcelIdForOsint }, 'standard', { ...ctx, env });
+
+  return mkWorkflow(order, 'standard', workflowSources, input, {
     startedAt: ctx.startedAt,
     publicRecords,
     osint,
+    moduleFallback: missingModuleKeys.length > 0 && workflowSources.length > 0,
   });
 }
 

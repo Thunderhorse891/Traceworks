@@ -22,11 +22,31 @@ const CUSTOMER_CORE_BLOCKING_IDS = new Set([
   'source_config'
 ]);
 
+const SOURCE_PROOF_IGNORED_BLOCKING_IDS = new Set([
+  'base_url',
+  'stripe_secret',
+  'stripe_webhook',
+  'storage_driver',
+  'kv_rest',
+  'smtp',
+  'admin_api_key',
+  'status_token_secret',
+  'queue_cron_secret',
+  'APPRAISAL_API_URL',
+  'TAX_COLLECTOR_API_URL',
+  'PARCEL_GIS_API_URL',
+  'COUNTY_CLERK_API_URL',
+  'GRANTOR_GRANTEE_API_URL',
+  'MORTGAGE_INDEX_API_URL',
+  'OBITUARY_API_URL',
+  'PROBATE_API_URL',
+  'PEOPLE_ASSOC_LICENSED',
+  'PEOPLE_ASSOC_API_URL'
+]);
+
 const PACKAGE_SOURCE_REQUIREMENTS = Object.freeze({
   standard: [
-    { id: 'APPRAISAL_API_URL', label: 'County appraisal district source' },
-    { id: 'TAX_COLLECTOR_API_URL', label: 'County tax collector source' },
-    { id: 'PARCEL_GIS_API_URL', label: 'County parcel GIS source' }
+    { id: 'countyProperty_source_family', family: 'countyProperty', label: 'County property source family', type: 'sourceFamily' }
   ],
   ownership_encumbrance: [
     { id: 'APPRAISAL_API_URL', label: 'County appraisal district source' },
@@ -82,6 +102,16 @@ function makeCheck({ id, label, severity = 'warning', status, detail, action = '
 }
 
 function envRequirementMissing(requirement, env = process.env) {
+  if (requirement.type === 'sourceFamily') {
+    try {
+      const sourceConfig = loadSourceConfig(env);
+      const configs = Array.isArray(sourceConfig?.[requirement.family]) ? sourceConfig[requirement.family] : [];
+      return configs.length === 0;
+    } catch {
+      return true;
+    }
+  }
+
   const value = trim(env[requirement.id]);
   if (requirement.type === 'booleanTrue') return value.toLowerCase() !== 'true';
   return !value;
@@ -214,6 +244,17 @@ function stripeChecks(env, checks) {
 
 function storageChecks(env, checks) {
   const driver = storageDriverName(env);
+  if (driver === 'blobs') {
+    addCheck(checks, makeCheck({
+      id: 'storage_driver',
+      label: 'Durable storage driver',
+      severity: 'warning',
+      status: 'pass',
+      detail: 'Netlify Blobs storage is configured for orders, queue state, and artifacts.'
+    }));
+    return;
+  }
+
   if (driver !== 'kv') {
     addCheck(checks, makeCheck({
       id: 'storage_driver',
@@ -336,6 +377,24 @@ function secretChecks(env, checks) {
           action: `Set ${key} before launch.`
         }));
   }
+
+  const adminSessionSecret = trim(env.ADMIN_SESSION_SECRET);
+  addCheck(checks, adminSessionSecret
+    ? makeCheck({
+        id: 'admin_session_secret',
+        label: 'Admin browser session signing',
+        severity: 'warning',
+        status: 'pass',
+        detail: 'ADMIN_SESSION_SECRET is configured separately from the admin API key.'
+      })
+    : makeCheck({
+        id: 'admin_session_secret',
+        label: 'Admin browser session signing',
+        severity: 'warning',
+        status: 'warn',
+        detail: 'ADMIN_SESSION_SECRET is not set, so signed admin browser sessions fall back to ADMIN_API_KEY.',
+        action: 'Set ADMIN_SESSION_SECRET to keep browser-session signing isolated from the admin bearer secret.'
+      }));
 }
 
 function premiumOsintChecks(env, checks) {
@@ -496,10 +555,10 @@ function sourceModuleChecks(env, checks) {
       addCheck(checks, makeCheck({
         id: requirement.id,
         label: requirement.label,
-        severity: 'blocking',
-        status: 'fail',
-        detail: `${requirement.description} Missing: ${missing.join(', ')}.`,
-        action: `Set ${missing.join(', ')} before taking paid orders for these workflows.`
+        severity: 'warning',
+        status: 'warn',
+        detail: `${requirement.description} Missing: ${missing.join(', ')}. Affected packages stay locked until these connectors are configured or replaced by an equivalent production source flow.`,
+        action: `Set ${missing.join(', ')} before taking paid orders for the affected workflows.`
       }));
       continue;
     }
@@ -522,9 +581,9 @@ function sourceModuleChecks(env, checks) {
     addCheck(checks, makeCheck({
       id: 'people_association_source',
       label: 'Licensed people-association source',
-      severity: 'blocking',
-      status: 'fail',
-      detail: `Probate and comprehensive workflows include a licensed people-association lookup. Missing: ${missing.join(', ')}.`,
+      severity: 'warning',
+      status: 'warn',
+      detail: `Probate and comprehensive workflows include a licensed people-association lookup. Missing: ${missing.join(', ')}. Those packages should remain locked until the licensed connector is actually available.`,
       action: 'Set PEOPLE_ASSOC_LICENSED=true and PEOPLE_ASSOC_API_URL only when the licensed connector is actually available.'
     }));
   } else {
@@ -713,5 +772,57 @@ export function assessOrderLaunchGate(packageId, input = {}, env = process.env, 
     orderCoverage,
     manualReviewLikely: manualReviewDetails.length > 0,
     manualReviewDetails
+  };
+}
+
+export function assessSourceProofGate(packageId, input = {}, env = process.env, existingChecks = null) {
+  const packageGate = assessPackageLaunchGate(packageId, env, existingChecks);
+  const orderCoverage = assessPackageJurisdictionCoverage({ packageId, input, env });
+
+  const packageBlockingDetails = packageGate.launchBlockingDetails
+    .filter((detail) => !SOURCE_PROOF_IGNORED_BLOCKING_IDS.has(detail.id));
+  const operationalBlockingDetails = packageGate.launchBlockingDetails
+    .filter((detail) => SOURCE_PROOF_IGNORED_BLOCKING_IDS.has(detail.id));
+
+  const jurisdictionBlockingDetails = orderCoverage.blockingFamilies.map((family) => ({
+    id: `${family.family}_coverage`,
+    label: `${family.label} coverage`,
+    detail: family.detail
+  }));
+
+  const manualReviewDetails = orderCoverage.manualReviewFamilies.map((family) => ({
+    id: `${family.family}_manual_review`,
+    label: `${family.label} automation boundary`,
+    detail: family.detail
+  }));
+
+  const blockingDetails = [...packageBlockingDetails, ...jurisdictionBlockingDetails];
+  const launchReady = blockingDetails.length === 0;
+  const blockingAreas = [...new Set([
+    ...packageGate.launchBlockingAreas.filter((area) => area === 'sources'),
+    ...(jurisdictionBlockingDetails.length ? ['jurisdiction'] : [])
+  ])];
+
+  const readinessSummary = launchReady
+    ? operationalBlockingDetails.length
+      ? `${packageGate.name} can run live source proof for ${orderCoverage.locationLabel}, but paid launch is still blocked by non-source operations.`
+      : `${packageGate.name} can run live source proof for ${orderCoverage.locationLabel}.`
+    : `${packageGate.name} cannot run live source proof for ${orderCoverage.locationLabel} until source coverage blockers are resolved.`;
+
+  return {
+    ...packageGate,
+    launchReady,
+    launchMessage: launchReady
+      ? packageGate.launchMessage
+      : jurisdictionBlockingDetails.length
+        ? `${JURISDICTION_SOURCE_PENDING_MESSAGE} Requested location: ${orderCoverage.locationLabel}.`
+        : PACKAGE_SOURCE_PENDING_MESSAGE,
+    launchBlockingAreas: blockingAreas,
+    launchBlockingDetails: blockingDetails,
+    readinessSummary,
+    orderCoverage,
+    manualReviewLikely: manualReviewDetails.length > 0,
+    manualReviewDetails,
+    operationalBlockingDetails
   };
 }

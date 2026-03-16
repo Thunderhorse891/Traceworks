@@ -4,6 +4,61 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+function makeBlobModule() {
+  const entries = new Map();
+  let version = 0;
+
+  function nextEtag() {
+    version += 1;
+    return `etag-${version}`;
+  }
+
+  function makeStore() {
+    return {
+      async get(key, options = {}) {
+        const entry = entries.get(key);
+        if (!entry) return null;
+        return options.type === 'json' ? JSON.parse(entry.value) : entry.value;
+      },
+      async getWithMetadata(key, options = {}) {
+        const entry = entries.get(key);
+        if (!entry) return null;
+        return {
+          data: options.type === 'json' ? JSON.parse(entry.value) : entry.value,
+          etag: entry.etag,
+          metadata: {}
+        };
+      },
+      async set(key, value) {
+        const etag = nextEtag();
+        entries.set(String(key), { value: String(value), etag });
+        return { etag, modified: true };
+      },
+      async setJSON(key, value, options = {}) {
+        const current = entries.get(String(key));
+        if (options.onlyIfNew && current) {
+          return { etag: current.etag, modified: false };
+        }
+        if (options.onlyIfMatch && (!current || current.etag !== options.onlyIfMatch)) {
+          return { etag: current?.etag, modified: false };
+        }
+        const etag = nextEtag();
+        entries.set(String(key), { value: JSON.stringify(value), etag });
+        return { etag, modified: true };
+      },
+      async delete(key) {
+        entries.delete(String(key));
+      }
+    };
+  }
+
+  return {
+    getStore() {
+      return makeStore();
+    }
+  };
+}
+
 test('store persists order/events/deadletters and queue jobs with backoff', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'tw-store-'));
   process.env.TRACEWORKS_STORE_PATH = join(dir, 'store.json');
@@ -115,4 +170,60 @@ test('requeueCaseJob creates one new queued job and blocks duplicate active retr
   assert.equal(second.previousJob.id, claimed.id);
 
   await rm(dir, { recursive: true, force: true });
+});
+
+test('store defaults to the runtime temp directory on Netlify file storage', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'tw-store-netlify-'));
+  const previous = {
+    NETLIFY: process.env.NETLIFY,
+    DEPLOY_ID: process.env.DEPLOY_ID,
+    AWS_LAMBDA_FUNCTION_NAME: process.env.AWS_LAMBDA_FUNCTION_NAME,
+    TMPDIR: process.env.TMPDIR,
+    TRACEWORKS_STORE_PATH: process.env.TRACEWORKS_STORE_PATH
+  };
+
+  delete process.env.NETLIFY;
+  delete process.env.DEPLOY_ID;
+  process.env.AWS_LAMBDA_FUNCTION_NAME = 'traceworks-source-proof';
+  process.env.TMPDIR = dir;
+  delete process.env.TRACEWORKS_STORE_PATH;
+
+  try {
+    const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+    await store.upsertOrder('TW-TMP', { status: 'manual_review' });
+    const order = await store.getOrder('TW-TMP');
+    assert.equal(order.status, 'manual_review');
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('store persists through the blobs storage driver', async () => {
+  const previousDriver = process.env.TRACEWORKS_STORAGE_DRIVER;
+  const previousModule = globalThis.__traceworksBlobsModule;
+  process.env.TRACEWORKS_STORAGE_DRIVER = 'blobs';
+  globalThis.__traceworksBlobsModule = makeBlobModule();
+
+  try {
+    const store = await import(`../netlify/functions/_lib/store.js?ts=${Date.now()}`);
+    await store.upsertOrder('TW-BLOB', { status: 'queued', customerEmail: 'blob@example.com' });
+    await store.recordLaunchProof({ packageId: 'standard', subjectName: 'Blob Proof', ok: true });
+
+    const order = await store.getOrder('TW-BLOB');
+    const proofs = await store.listLaunchProofs(5);
+
+    assert.equal(order.status, 'queued');
+    assert.equal(proofs.length, 1);
+    assert.equal(proofs[0].subjectName, 'Blob Proof');
+  } finally {
+    if (previousDriver === undefined) delete process.env.TRACEWORKS_STORAGE_DRIVER;
+    else process.env.TRACEWORKS_STORAGE_DRIVER = previousDriver;
+
+    if (previousModule === undefined) delete globalThis.__traceworksBlobsModule;
+    else globalThis.__traceworksBlobsModule = previousModule;
+  }
 });

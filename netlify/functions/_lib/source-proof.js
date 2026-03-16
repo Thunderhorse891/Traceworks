@@ -1,4 +1,4 @@
-import { assessOrderLaunchGate } from './launch-audit.js';
+import { assessSourceProofGate } from './launch-audit.js';
 import { gatherOsint } from './osint.js';
 import { getPackage } from './packages.js';
 import { buildInputCriteria, normalizeCheckoutPayload, validateCheckoutPayload } from './validation.js';
@@ -89,7 +89,7 @@ export async function runSourceProof(rawPayload, { fetchImpl = fetch, env = proc
   }
 
   const inputCriteria = buildInputCriteria(payload);
-  const evaluateOrderGate = deps.assessOrderLaunchGateImpl || assessOrderLaunchGate;
+  const evaluateOrderGate = deps.assessSourceProofGateImpl || assessSourceProofGate;
   const gate = evaluateOrderGate(payload.packageId, inputCriteria, env);
   if (!gate.launchReady) {
     return {

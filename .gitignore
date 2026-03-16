@@ -21,6 +21,8 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify/
+.netlify-*.log
+.netlify-env-values.txt
 .next/
 dist/
 build/

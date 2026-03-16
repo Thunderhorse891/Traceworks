@@ -1,6 +1,7 @@
 import { buildInputCriteria, normalizeCheckoutPayload, validateCheckoutPayload } from './_lib/validation.js';
 import { assessOrderLaunchGate } from './_lib/launch-audit.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 
 function normalizePreflightPayload(raw = {}) {
@@ -28,7 +29,7 @@ function normalizePreflightPayload(raw = {}) {
   });
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
@@ -70,4 +71,6 @@ export default async (event) => {
     manualReviewDetails: launchGate.manualReviewDetails || [],
     coverage: launchGate.orderCoverage || null
   });
-};
+}
+
+export default createModernHandler(handler);

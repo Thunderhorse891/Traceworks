@@ -2,7 +2,7 @@ import { mkdir, writeFile, access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { dynamicReportToHtml, dynamicReportToText } from './dynamic-report-builder.js';
 import { reportTextToPdfBuffer } from './pdf.js';
-import { getKvClient, makeKvUri, parseKvUri, usesKvStorage } from './storage-runtime.js';
+import { getBlobsClient, getKvClient, makeBlobUri, makeKvUri, parseBlobUri, parseKvUri, usesBlobStorage, usesKvStorage } from './storage-runtime.js';
 
 const ARTIFACT_TYPES = {
   html: {
@@ -32,8 +32,23 @@ const ARTIFACT_TYPES = {
   }
 };
 
+function useRuntimeTempRoot() {
+  return Boolean(
+    process.env.NETLIFY
+    || process.env.DEPLOY_ID
+    || process.env.AWS_LAMBDA_FUNCTION_NAME
+    || process.env.LAMBDA_TASK_ROOT
+    || process.env.AWS_EXECUTION_ENV
+    || process.env.AWS_REGION
+  );
+}
+
 function artifactRoot() {
-  return process.env.REPORT_ARTIFACT_ROOT || '.data/reports';
+  if (process.env.REPORT_ARTIFACT_ROOT) return process.env.REPORT_ARTIFACT_ROOT;
+  if (useRuntimeTempRoot()) {
+    return join(process.env.TMPDIR || process.env.TEMP || process.env.TMP || '/tmp', 'traceworks', 'reports');
+  }
+  return '.data/reports';
 }
 
 function artifactPrefix() {
@@ -69,6 +84,26 @@ export async function saveReportArtifacts(report) {
     };
   }
 
+  if (usesBlobStorage()) {
+    const blobs = await getBlobsClient();
+    const htmlKey = artifactKey(report.orderId, 'html');
+    const textKey = artifactKey(report.orderId, 'txt');
+    const pdfKey = artifactKey(report.orderId, 'pdf');
+    const jsonKey = artifactKey(report.orderId, 'json');
+
+    await blobs.set(htmlKey, html);
+    await blobs.set(textKey, text);
+    await blobs.set(pdfKey, Buffer.from(pdf).toString('base64'));
+    await blobs.setJSON(jsonKey, report);
+
+    return {
+      htmlPath: makeBlobUri(htmlKey),
+      textPath: makeBlobUri(textKey),
+      pdfPath: makeBlobUri(pdfKey),
+      jsonPath: makeBlobUri(jsonKey)
+    };
+  }
+
   const dir = join(artifactRoot(), report.orderId);
   await mkdir(dir, { recursive: true });
 
@@ -94,6 +129,14 @@ export async function assertArtifactExists(path) {
     return true;
   }
 
+  const blobKey = parseBlobUri(path);
+  if (blobKey) {
+    const blobs = await getBlobsClient();
+    const value = await blobs.get(blobKey);
+    if (value == null) throw new Error(`Artifact does not exist: ${path}`);
+    return true;
+  }
+
   await access(path);
   return true;
 }
@@ -110,6 +153,18 @@ export async function readArtifact(orderId, kind = 'html') {
     if (value == null) throw new Error(`Artifact does not exist: ${orderId}/${kind}`);
     return {
       ...spec.fromStoredValue(value),
+      contentType: spec.contentType,
+      filename: spec.filename(orderId)
+    };
+  }
+
+  if (usesBlobStorage()) {
+    const blobs = await getBlobsClient();
+    const key = artifactKey(orderId, kind);
+    const value = await blobs.get(key, { type: kind === 'json' ? 'json' : 'text' });
+    if (value == null) throw new Error(`Artifact does not exist: ${orderId}/${kind}`);
+    return {
+      ...spec.fromStoredValue(kind === 'json' ? JSON.stringify(value) : value),
       contentType: spec.contentType,
       filename: spec.filename(orderId)
     };

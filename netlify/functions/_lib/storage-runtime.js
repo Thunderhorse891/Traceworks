@@ -2,6 +2,7 @@ function configuredDriver(env = process.env) {
   const explicit = String(env.TRACEWORKS_STORAGE_DRIVER || '').trim().toLowerCase();
   if (explicit === 'file') return 'file';
   if (explicit === 'kv') return 'kv';
+  if (explicit === 'blobs') return 'blobs';
 
   const hasKvRestConfig = resolveKvRestConfig(env).configured;
   return hasKvRestConfig ? 'kv' : 'file';
@@ -9,6 +10,8 @@ function configuredDriver(env = process.env) {
 
 let cachedKvClient = null;
 let cachedKvSignature = '';
+let cachedBlobsClient = null;
+let cachedBlobsSignature = '';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,6 +19,10 @@ function sleep(ms) {
 
 function trimEnv(value) {
   return String(value || '').trim();
+}
+
+function blobsStoreName(env = process.env) {
+  return trimEnv(env.TRACEWORKS_BLOBS_STORE || 'traceworks');
 }
 
 export function resolveKvRestConfig(env = process.env) {
@@ -103,12 +110,52 @@ function createKvClient(env = process.env) {
   };
 }
 
+async function resolveBlobsModule() {
+  if (globalThis.__traceworksBlobsModule) return globalThis.__traceworksBlobsModule;
+  return import('@netlify/blobs');
+}
+
+async function createBlobsClient(env = process.env) {
+  const { getStore } = await resolveBlobsModule();
+  const store = getStore(blobsStoreName(env));
+  const defaultConsistency = 'strong';
+
+  return {
+    async get(key, options = {}) {
+      return store.get(String(key), {
+        type: options.type || 'text',
+        consistency: options.consistency || defaultConsistency
+      });
+    },
+    async getWithMetadata(key, options = {}) {
+      return store.getWithMetadata(String(key), {
+        type: options.type || 'json',
+        consistency: options.consistency || defaultConsistency,
+        ...(options.etag ? { etag: String(options.etag) } : {})
+      });
+    },
+    async set(key, value, options = {}) {
+      return store.set(String(key), String(value), options);
+    },
+    async setJSON(key, value, options = {}) {
+      return store.setJSON(String(key), value, options);
+    },
+    async del(key) {
+      return store.delete(String(key));
+    }
+  };
+}
+
 export function storageDriverName(env = process.env) {
   return configuredDriver(env);
 }
 
 export function usesKvStorage(env = process.env) {
   return configuredDriver(env) === 'kv';
+}
+
+export function usesBlobStorage(env = process.env) {
+  return configuredDriver(env) === 'blobs';
 }
 
 export async function getKvClient(env = process.env) {
@@ -126,6 +173,18 @@ export async function getKvClient(env = process.env) {
   }
 
   return cachedKvClient;
+}
+
+export async function getBlobsClient(env = process.env) {
+  if (!usesBlobStorage(env)) return null;
+
+  const signature = blobsStoreName(env);
+  if (!cachedBlobsClient || cachedBlobsSignature !== signature) {
+    cachedBlobsSignature = signature;
+    cachedBlobsClient = await createBlobsClient(env);
+  }
+
+  return cachedBlobsClient;
 }
 
 export async function withKvLock(
@@ -166,4 +225,13 @@ export function makeKvUri(key) {
 export function parseKvUri(value) {
   const input = String(value || '');
   return input.startsWith('kv://') ? input.slice(5) : null;
+}
+
+export function makeBlobUri(key) {
+  return `blob://${key}`;
+}
+
+export function parseBlobUri(value) {
+  const input = String(value || '');
+  return input.startsWith('blob://') ? input.slice(7) : null;
 }

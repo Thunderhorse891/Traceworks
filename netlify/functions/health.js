@@ -2,13 +2,14 @@ import { isAdminAuthorized } from './_lib/admin-auth.js';
 import { getMetrics } from './_lib/store.js';
 import { missingEmailConfigKeys } from './_lib/email-config.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { missingKvConfigKeys, storageDriverName } from './_lib/storage-runtime.js';
 import { findStrictSourceConfigGaps, loadSourceConfig, summarizeSourceConfig } from './_lib/sources/source-config.js';
 import { auditLaunchReadiness } from './_lib/launch-audit.js';
 
 const startedAt = new Date().toISOString();
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'GET') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   const strictFulfillment = String(process.env.PAID_FULFILLMENT_STRICT || 'true').toLowerCase() !== 'false';
@@ -86,4 +87,6 @@ export default async (event) => {
     sourceConfigGaps,
     sourceConfigError
   });
-};
+}
+
+export default createModernHandler(handler);

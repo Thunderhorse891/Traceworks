@@ -1,11 +1,53 @@
 import { requireAdmin } from './_lib/admin-auth.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { listLaunchProofs, recordLaunchProof } from './_lib/store.js';
 import { runSourceProof } from './_lib/source-proof.js';
 
 function clean(value) {
   return String(value || '').trim();
+}
+
+function errorDetail(error) {
+  return clean(error?.message || error);
+}
+
+function sanitizeInput(input = {}) {
+  return {
+    subjectName: input.subjectName || '',
+    subjectType: input.subjectType || '',
+    county: input.county || '',
+    state: input.state || '',
+    lastKnownAddress: input.lastKnownAddress || '',
+    parcelId: input.parcelId || '',
+    websiteProfile: input.websiteProfile || ''
+  };
+}
+
+function sanitizeProviderHealth(providerHealth = []) {
+  return Array.isArray(providerHealth)
+    ? providerHealth.slice(0, 12).map((item) => ({
+        provider: item?.provider || '',
+        ok: Boolean(item?.ok),
+        hitCount: Number(item?.hitCount || 0),
+        attempts: Number(item?.attempts || 0),
+        error: item?.error ? String(item.error) : null
+      }))
+    : [];
+}
+
+function sanitizeTopSources(topSources = []) {
+  return Array.isArray(topSources)
+    ? topSources.slice(0, 5).map((source) => ({
+        title: source?.title || '',
+        url: source?.url || '',
+        sourceType: source?.sourceType || '',
+        confidence: source?.confidence || '',
+        provider: source?.provider || '',
+        domain: source?.domain || ''
+      }))
+    : [];
 }
 
 function proofSnapshot(result) {
@@ -20,9 +62,9 @@ function proofSnapshot(result) {
     state: result.input?.state || '',
     query: result.query || '',
     summary: result.summary || null,
-    providerHealth: result.providerHealth || [],
+    providerHealth: sanitizeProviderHealth(result.providerHealth),
     providerNote: result.providerNote || '',
-    topSources: Array.isArray(result.topSources) ? result.topSources.slice(0, 5) : [],
+    topSources: sanitizeTopSources(result.topSources),
     publicRecordGaps: result.summary?.publicRecordGaps || [],
     orderCoverage: result.orderCoverage || null,
     errors: result.errors || [],
@@ -31,9 +73,22 @@ function proofSnapshot(result) {
   };
 }
 
-export default async (event) => {
+function proofResponse(result) {
+  return {
+    ...proofSnapshot(result),
+    startedAt: result.startedAt || null,
+    completedAt: result.completedAt || null,
+    launchMessage: result.launchMessage || '',
+    input: sanitizeInput(result.input),
+    orderCoverage: result.orderCoverage || null
+  };
+}
+
+export async function handler(event) {
   return handleSourceProof(event);
-};
+}
+
+export default createModernHandler(handler);
 
 export async function handleSourceProof(event, deps = {}) {
   const auth = requireAdmin(event);
@@ -60,17 +115,33 @@ export async function handleSourceProof(event, deps = {}) {
   }
 
   const runProof = deps.runSourceProofImpl || runSourceProof;
-  const result = await runProof(body);
+  let result;
+  try {
+    result = await runProof(body);
+  } catch (error) {
+    return jsonWithRequestId(event, 500, {
+      error: 'Source proof execution failed.',
+      detail: errorDetail(error)
+    });
+  }
+
   const saveProof = deps.recordLaunchProofImpl || recordLaunchProof;
-  await saveProof(proofSnapshot(result));
+  try {
+    await saveProof(proofSnapshot(result));
+  } catch (error) {
+    return jsonWithRequestId(event, 500, {
+      error: 'Source proof persistence failed.',
+      detail: errorDetail(error)
+    });
+  }
 
   if (!result.ok && !result.launchBlocked) {
-    return jsonWithRequestId(event, 400, result);
+    return jsonWithRequestId(event, 400, proofResponse(result));
   }
 
   if (!result.ok && result.launchBlocked) {
-    return jsonWithRequestId(event, 409, result);
+    return jsonWithRequestId(event, 409, proofResponse(result));
   }
 
-  return jsonWithRequestId(event, 200, result);
+  return jsonWithRequestId(event, 200, proofResponse(result));
 }

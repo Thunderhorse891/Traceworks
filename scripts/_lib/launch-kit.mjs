@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 export const LAUNCH_SECRET_KEYS = Object.freeze([
   'ADMIN_API_KEY',
+  'ADMIN_SESSION_SECRET',
   'STATUS_TOKEN_SECRET',
   'QUEUE_CRON_SECRET'
 ]);
@@ -101,6 +102,7 @@ export function generateOpaqueSecret(bytes = 32) {
 export function generateLaunchSecrets() {
   return {
     ADMIN_API_KEY: generateOpaqueSecret(24),
+    ADMIN_SESSION_SECRET: generateOpaqueSecret(32),
     STATUS_TOKEN_SECRET: generateOpaqueSecret(32),
     QUEUE_CRON_SECRET: generateOpaqueSecret(24)
   };
@@ -110,7 +112,7 @@ export function buildNetlifyEnvTemplate({
   siteUrl = 'https://traceworks.example.com',
   ownerEmail = 'traceworks.tx@outlook.com',
   emailFrom = ownerEmail,
-  storageDriver = 'kv',
+  storageDriver = 'blobs',
   secrets = generateLaunchSecrets()
 } = {}) {
   const lines = [
@@ -129,11 +131,18 @@ export function buildNetlifyEnvTemplate({
     '',
     '# Durable storage',
     `TRACEWORKS_STORAGE_DRIVER=${storageDriver}`,
-    'UPSTASH_REDIS_REST_URL=<upstash-rest-url>',
-    'UPSTASH_REDIS_REST_TOKEN=<upstash-rest-token>',
+    ...(storageDriver === 'kv'
+      ? [
+          'UPSTASH_REDIS_REST_URL=<upstash-rest-url>',
+          'UPSTASH_REDIS_REST_TOKEN=<upstash-rest-token>'
+        ]
+      : [
+          '# Netlify Blobs requires no extra credentials in the linked production site.'
+        ]),
     '',
     '# Runtime secrets',
     `ADMIN_API_KEY=${wrapValue(secrets.ADMIN_API_KEY)}`,
+    `ADMIN_SESSION_SECRET=${wrapValue(secrets.ADMIN_SESSION_SECRET)}`,
     `STATUS_TOKEN_SECRET=${wrapValue(secrets.STATUS_TOKEN_SECRET)}`,
     `QUEUE_CRON_SECRET=${wrapValue(secrets.QUEUE_CRON_SECRET)}`,
     '',
