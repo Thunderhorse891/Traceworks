@@ -1,9 +1,10 @@
 import { getOrder } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { verifyStatusToken } from './_lib/status-token.js';
 
-export default async (event) => {
+export async function handler(event) {
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
   const limit = hitRateLimit({ key: `get-order:${ip}`, windowMs: 60_000, max: 60 });
   if (limit.limited) return jsonWithRequestId(event, 429, { error: 'Too many requests. Try again shortly.' });
@@ -63,4 +64,6 @@ export default async (event) => {
     fulfillmentAttempts: order.fulfillmentAttempts || 0,
     input_criteria: order.input_criteria || null
   });
-};
+}
+
+export default createModernHandler(handler);

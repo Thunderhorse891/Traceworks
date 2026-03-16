@@ -1,5 +1,6 @@
 import { readArtifact } from './_lib/artifacts.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { getOrder } from './_lib/store.js';
 import { verifyStatusToken } from './_lib/status-token.js';
@@ -51,7 +52,7 @@ async function authorizeCustomer(order, params) {
   return { ok: true };
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'GET') {
     return jsonWithRequestId(event, 405, { error: 'Method not allowed.' });
   }
@@ -114,4 +115,6 @@ export default async (event) => {
   } catch (error) {
     return jsonWithRequestId(event, 404, { error: error?.message || 'Artifact not found.' });
   }
-};
+}
+
+export default createModernHandler(handler);

@@ -1,12 +1,13 @@
 import { recordAnalytics } from './_lib/store.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 
 function safe(v, max = 200) {
   return String(v || '').trim().slice(0, max);
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
@@ -29,4 +30,6 @@ export default async (event) => {
   });
 
   return jsonWithRequestId(event, 200, { ok: true });
-};
+}
+
+export default createModernHandler(handler);

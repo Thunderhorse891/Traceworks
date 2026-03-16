@@ -1,9 +1,10 @@
 import { requireAdmin } from './_lib/admin-auth.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { listOrders } from './_lib/store.js';
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'GET') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
@@ -50,4 +51,6 @@ export default async (event) => {
     },
     orders: page
   });
-};
+}
+
+export default createModernHandler(handler);

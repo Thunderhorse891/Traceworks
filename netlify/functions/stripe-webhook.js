@@ -13,10 +13,11 @@ import { getPackage } from './_lib/packages.js';
 import { createStatusToken } from './_lib/status-token.js';
 import { sendOrderConfirmationEmail } from './_lib/email.js';
 import { assessPackageLaunchGate } from './_lib/launch-audit.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   const body = event.body || '';
@@ -240,4 +241,6 @@ export default async (event) => {
   await markProcessedWebhookEvent(stripeEvent.id);
 
   return jsonWithRequestId(event, 200, { ok: true });
-};
+}
+
+export default createModernHandler(handler);

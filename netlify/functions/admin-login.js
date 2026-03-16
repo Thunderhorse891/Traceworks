@@ -1,12 +1,13 @@
 import { buildAdminSessionCookie, createAdminSessionToken } from './_lib/admin-session.js';
 import { jsonWithRequestId } from './_lib/http.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 
 function clean(value) {
   return String(value || '').trim();
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
@@ -31,4 +32,6 @@ export default async (event) => {
   return jsonWithRequestId(event, 200, { ok: true }, {
     'set-cookie': buildAdminSessionCookie(token, event)
   });
-};
+}
+
+export default createModernHandler(handler);

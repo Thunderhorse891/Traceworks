@@ -1,5 +1,6 @@
 import { jsonWithRequestId } from './_lib/http.js';
 import { runScheduledQueueWorker } from './_lib/process-queue-worker.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 
 function authorized(event) {
   const secret = process.env.QUEUE_CRON_SECRET;
@@ -11,7 +12,7 @@ function authorized(event) {
     : { ok: false, statusCode: 401, error: 'Unauthorized' };
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
     return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
   }
@@ -23,4 +24,6 @@ export default async (event) => {
 
   const result = await runScheduledQueueWorker();
   return jsonWithRequestId(event, 200, result);
-};
+}
+
+export default createModernHandler(handler);

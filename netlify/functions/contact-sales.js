@@ -2,6 +2,7 @@ import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { sendLeadNotificationEmail } from './_lib/email.js';
 import { getBusinessEmail } from './_lib/business.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -9,7 +10,7 @@ function safe(value, max = 200) {
   return String(value || '').trim().slice(0, max);
 }
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   if (Buffer.byteLength(event.body || '', 'utf8') > 100_000) {
@@ -49,4 +50,6 @@ export default async (event) => {
   await sendLeadNotificationEmail({ ownerEmail, lead: payload });
 
   return jsonWithRequestId(event, 200, { ok: true, message: 'Lead submitted. We will respond shortly.' });
-};
+}
+
+export default createModernHandler(handler);

@@ -7,6 +7,7 @@ import { processOneFulfillmentJob } from './_lib/process-one-job.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { getOrder, recordAuditEvent, requeueCaseJob, upsertOrder } from './_lib/store.js';
 import { resolveInvestigationInput } from './_lib/validation.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 
 function clean(value) {
   return String(value || '').trim();
@@ -25,9 +26,9 @@ function buildJobPayload(order, input) {
   };
 }
 
-export default async (event) => {
+export async function handler(event) {
   return handleAdminAction(event);
-};
+}
 
 export async function handleAdminAction(event, deps = {}) {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
@@ -159,3 +160,5 @@ export async function handleAdminAction(event, deps = {}) {
 
   return jsonWithRequestId(event, 400, { error: 'Unsupported admin action.' });
 }
+
+export default createModernHandler(handler);

@@ -10,12 +10,13 @@ import { ORDER_STATUS } from './_lib/order-status.js';
 import { resolvePurchasedTier } from './_lib/tier-mapping.js';
 import { assessOrderLaunchGate } from './_lib/launch-audit.js';
 import { buildCheckoutSessionPayload } from './_lib/stripe-checkout.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 
 function makeCaseRef() {
   return `TW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-export default async (event) => {
+export async function handler(event) {
   try {
     if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
@@ -119,4 +120,6 @@ export default async (event) => {
   } catch (error) {
     return jsonWithRequestId(event, 500, { error: error.message });
   }
-};
+}
+
+export default createModernHandler(handler);

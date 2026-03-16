@@ -3,8 +3,9 @@ import { jsonWithRequestId } from './_lib/http.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
 import { processOneFulfillmentJob } from './_lib/process-one-job.js';
 import { getBusinessEmail } from './_lib/business.js';
+import { createModernHandler } from './_lib/netlify-modern.js';
 
-export default async (event) => {
+export async function handler(event) {
   if (event.httpMethod !== 'POST') return jsonWithRequestId(event, 405, { error: 'Method not allowed' });
 
   const auth = requireAdmin(event);
@@ -31,4 +32,6 @@ export default async (event) => {
   }
 
   return jsonWithRequestId(event, 200, { ok: true, jobId: result.jobId, caseRef: result.caseRef });
-};
+}
+
+export default createModernHandler(handler);
