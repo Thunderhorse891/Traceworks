@@ -16,7 +16,7 @@ test('repo ships GitHub Actions CI and stable local verification scripts', async
   const pkg = JSON.parse(await readFile('package.json', 'utf8'));
   const ciWorkflow = await readFile('.github/workflows/ci.yml', 'utf8');
 
-  assert.equal(pkg.scripts.test, 'node --test --test-isolation=none --test-concurrency=1');
+  assert.equal(pkg.scripts.test, 'node --experimental-test-isolation=none --test --test-concurrency=1');
   assert.equal(pkg.scripts.ci, 'npm run check');
   assert.ok(ciWorkflow.includes('npm ci'));
   assert.ok(ciWorkflow.includes('npm run ci'));

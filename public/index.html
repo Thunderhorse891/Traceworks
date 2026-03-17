@@ -523,7 +523,7 @@
                 <div class="field-group">
                   <span class="field-group-label">Service Selection</span>
                   <label>Selected Package
-                    <input id="packageId" name="packageId" readonly required placeholder="Select a tier above" />
+                    <input id="packageId" name="packageId" readonly required placeholder="Select a tier above" aria-describedby="packageSelectionHelp" />
                   </label>
                   <p class="field-help" id="packageSelectionHelp">Start with a package above to unlock the recommended intake fields for that workflow.</p>
                 </div>
@@ -623,7 +623,7 @@
             </div>
             <div class="form-submit">
               <button type="submit" form="checkoutForm">Proceed to Secure Checkout</button>
-              <p id="status"></p>
+              <p id="status" role="alert" aria-live="polite" aria-atomic="true"></p>
             </div>
           </div>
 
@@ -664,7 +664,7 @@
             </div>
             <div class="form-submit">
               <button type="submit" form="salesForm">Request Enterprise Call</button>
-              <p id="salesStatus"></p>
+              <p id="salesStatus" role="alert" aria-live="polite" aria-atomic="true"></p>
             </div>
           </div>
         </div>

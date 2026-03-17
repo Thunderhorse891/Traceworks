@@ -191,7 +191,10 @@ async function syncPackageAvailability() {
         readinessSummary: remote.readinessSummary || ''
       };
     });
-  } catch {}
+  } catch (err) {
+    // API unreachable — packages fall back to client defaults. Log for visibility.
+    console.warn('[TraceWorks] Package availability sync failed:', err?.message || err);
+  }
 }
 
 function setFieldVisibility(fieldName, visible) {
