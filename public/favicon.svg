@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" fill="#09090f" rx="4"/>
+  <!-- Gold top accent bar -->
+  <rect width="32" height="2" fill="#c9a84c"/>
+  <!-- Gold bottom accent bar -->
+  <rect y="30" width="32" height="2" fill="#c9a84c"/>
+  <!-- T letter -->
+  <rect x="4" y="8" width="10" height="2.5" fill="#c9a84c"/>
+  <rect x="8.25" y="8" width="2.5" height="15" fill="#c9a84c"/>
+  <!-- W letter -->
+  <line x1="18" y1="8" x2="20.5" y2="23" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="20.5" y1="23" x2="23" y2="15" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="23" y1="15" x2="25.5" y2="23" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="25.5" y1="23" x2="28" y2="8" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

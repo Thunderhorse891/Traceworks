@@ -1,0 +1,34 @@
+User-agent: *
+Allow: /
+
+# Public customer-facing pages
+Allow: /index.html
+Allow: /packages.html
+Allow: /enterprise.html
+Allow: /contact-sales.html
+Allow: /order-status.html
+Allow: /success.html
+Allow: /terms.html
+Allow: /privacy.html
+Allow: /refund-policy.html
+
+# Block admin and internal tooling
+Disallow: /admin.html
+Disallow: /admin-dashboard.html
+Disallow: /admin-orders.html
+Disallow: /launch-readiness.html
+
+# Block console shell pages
+Disallow: /console.html
+Disallow: /cases.html
+Disallow: /reports.html
+Disallow: /billing.html
+Disallow: /search.html
+Disallow: /sources.html
+Disallow: /workflows.html
+
+# Block report templates (generated content, not for indexing)
+Disallow: /reports/
+
+# Sitemap
+Sitemap: https://traceworks.example.com/sitemap.xml

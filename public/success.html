@@ -4,8 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TraceWorks™ — Order Confirmed</title>
+    <meta name="description" content="Your TraceWorks investigative report request has been confirmed. You will receive your report by email when research is complete." />
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TraceWorks" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+    <script src="/error-handler.js"></script>
     <link rel="stylesheet" href="/styles.css" />
     <style>
       .success-wrap {
@@ -269,10 +281,12 @@
     </style>
   </head>
   <body>
-    <header class="site-header">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="offline-indicator" role="status" aria-live="polite">No connection</div>
+    <header class="site-header" role="banner">
       <div class="topbar">
         <h1>Trace<span>Works™</span></h1>
-        <nav class="topbar-nav">
+        <nav class="topbar-nav" aria-label="Main navigation">
           <a href="/">Home</a>
           <a href="/packages.html">Reports</a>
           <a href="/dashboard.html">My Orders</a>
@@ -281,6 +295,7 @@
       </div>
     </header>
 
+    <main id="main-content">
     <div class="success-wrap">
       <div class="confirm-badge">
         <span class="dot"></span>

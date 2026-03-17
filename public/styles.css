@@ -3,7 +3,11 @@
    Restrained, premium, evidence-first presentation
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/*
+ * Google Fonts are loaded via <link> tags in each HTML page's <head>
+ * (with preconnect hints) rather than via @import here, to avoid
+ * render-blocking behaviour. See index.html for the pattern.
+ */
 
 /* ── DESIGN TOKENS ─────────────────────────────────────────── */
 :root {
@@ -3436,4 +3440,101 @@ textarea {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* ── Skip Navigation Link ───────────────────────────────────────────────────
+   Allows keyboard users to skip the header/nav on every page.            */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 10px 18px;
+  background: var(--gold);
+  color: var(--bg-void);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 0 0 6px 0;
+  transition: top 0.1s ease;
+  white-space: nowrap;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid var(--gold-600);
+  outline-offset: 2px;
+}
+
+/* ── Focus Visible ──────────────────────────────────────────────────────────
+   Visible keyboard focus rings on the dark background.                   */
+:focus-visible {
+  outline: 2px solid var(--gold-500, #c99a1a);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+a:focus-visible {
+  outline: 2px solid var(--gold-500, #c99a1a);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+button:focus-visible {
+  outline: 2px solid var(--gold-500, #c99a1a);
+  outline-offset: 3px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--gold-500, #c99a1a);
+  outline-offset: 0;
+}
+
+/* ── Offline Connection Indicator ───────────────────────────────────────────
+   Fixed badge visible only when body has .is-offline (set by error-handler.js). */
+.offline-indicator {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 8888;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--bg-overlay);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  pointer-events: none;
+  user-select: none;
+}
+.offline-indicator::before {
+  content: '';
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  background: #d67a7a;
+  border-radius: 50%;
+  animation: offlinePulse 2s ease-in-out infinite;
+}
+@keyframes offlinePulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+body.is-offline .offline-indicator {
+  display: flex;
+}
+
+/* ── Wide breakpoint (1400px+) ──────────────────────────────────────────────
+   Prevent content from becoming too sparse on ultra-wide displays.       */
+@media (min-width: 1400px) {
+  .section-block,
+  .hero-grid {
+    max-width: 1320px;
+  }
 }

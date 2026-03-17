@@ -1,3 +1,9 @@
+/**
+ * pwa.js — TraceWorks PWA bootstrapper
+ * Handles: service worker registration, install prompt, install button sync.
+ * Note: window.onerror / offline indicator are in error-handler.js (loads earlier).
+ */
+
 let deferredPrompt = null;
 
 function installButton() {
@@ -16,7 +22,6 @@ function syncInstallButton() {
 
 async function triggerInstall() {
   if (!deferredPrompt) return false;
-
   deferredPrompt.prompt();
   const choice = await deferredPrompt.userChoice.catch(() => null);
   deferredPrompt = null;
@@ -24,16 +29,25 @@ async function triggerInstall() {
   return choice?.outcome === 'accepted';
 }
 
+// Expose for programmatic use (e.g. banner buttons)
 window.triggerInstall = () => {
-  triggerInstall().catch(() => {
-    syncInstallButton();
-  });
+  triggerInstall().catch(() => syncInstallButton());
 };
 
+// Bind install button via event listener so CSP can drop 'unsafe-inline' in future
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = installButton();
+  if (btn) {
+    btn.removeAttribute('onclick'); // remove any inline handler from HTML
+    btn.addEventListener('click', () => window.triggerInstall());
+  }
+});
+
+// Service worker registration
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Ignore registration failures and keep the site usable.
+      // Registration failures are non-fatal — keep the site usable
     });
   });
 }

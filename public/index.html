@@ -5,34 +5,167 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TraceWorks™ | Investigative Property Reports</title>
     <meta name="description" content="Automated public-record OSINT reports for real estate attorneys, probate investors, title researchers, and asset recovery firms. Texas property, ownership, probate, and entity research." />
+    <link rel="canonical" href="https://traceworks.example.com/" />
+
+    <!-- ─ PWA / Manifest ─────────────────────────────────────────────────── -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090f" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TraceWorks" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
-    <meta property="og:title" content="TraceWorks™ — Investigative Property Reports" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
+
+    <!-- ─ Favicon ────────────────────────────────────────────────────────── -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+
+    <!-- ─ Open Graph ─────────────────────────────────────────────────────── -->
+    <meta property="og:title"       content="TraceWorks™ — Investigative Property Reports" />
     <meta property="og:description" content="Evidence-grade public-record reports for legal professionals. Property, ownership, probate, and entity research." />
-    <meta property="og:type" content="website" />
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://traceworks.example.com/" />
+    <meta property="og:image"       content="https://traceworks.example.com/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name"   content="TraceWorks™" />
+    <meta property="og:locale"      content="en_US" />
+
+    <!-- ─ Twitter / X Card ──────────────────────────────────────────────── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="TraceWorks™ — Investigative Property Reports" />
+    <meta name="twitter:description" content="Evidence-grade public-record reports for legal professionals. Property, ownership, probate, and entity research." />
+    <meta name="twitter:image"       content="https://traceworks.example.com/og-image.svg" />
+
+    <!-- ─ Google Fonts (non-render-blocking) ────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+
+    <!-- ─ Preconnect for Stripe ─────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://js.stripe.com" />
+
     <link rel="stylesheet" href="/styles.css" />
+
+    <!-- ─ JSON-LD Structured Data ───────────────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://traceworks.example.com/#organization",
+          "name": "TraceWorks™",
+          "url": "https://traceworks.example.com/",
+          "logo": "https://traceworks.example.com/icons/icon-512.png",
+          "description": "Automated public-record OSINT investigative reports for real estate attorneys, probate investors, title researchers, and asset recovery firms.",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "sales",
+            "url": "https://traceworks.example.com/contact-sales.html",
+            "availableLanguage": "English"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://traceworks.example.com/#website",
+          "url": "https://traceworks.example.com/",
+          "name": "TraceWorks™",
+          "publisher": { "@id": "https://traceworks.example.com/#organization" }
+        },
+        {
+          "@type": "Service",
+          "name": "Investigative Property Reports",
+          "provider": { "@id": "https://traceworks.example.com/#organization" },
+          "serviceType": "Public Record Research",
+          "description": "Evidence-grade public-record OSINT reports covering Texas property ownership, probate filings, entity research, deed history, and lien data.",
+          "areaServed": {
+            "@type": "State",
+            "name": "Texas",
+            "sameAs": "https://www.wikidata.org/wiki/Q1439"
+          },
+          "audience": {
+            "@type": "Audience",
+            "audienceType": "Legal professionals, real estate attorneys, title researchers, asset recovery firms, probate investors"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What's included in every TraceWorks report?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Every report includes a Source Trace Panel — a table of every source queried, the exact query used, the timestamp, and the result status (Found, Not Found, Unavailable, or Error). No source is silently omitted."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How long does report delivery take?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Most reports complete within 10–45 minutes of confirmed payment. Complex subjects or unavailable county portals may extend this. Comprehensive tier reports may take up to 90 minutes."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is the refund policy?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No refunds after research begins — which occurs immediately after payment confirmation. If findings are incomplete due to source unavailability, we run a redo pass on the same scope at no charge."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Who is TraceWorks for?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "TraceWorks is for licensed legal professionals, real estate attorneys, probate investors, title researchers, process servers, and asset recovery firms. It is not a consumer reporting service under FCRA."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What happens if a source is unavailable?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Sources that require browser authentication are documented as Unavailable — Manual Review Required with a direct link to the source for human follow-up. We never fabricate data when automation fails."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <!-- ─ Error Handler (loads early) ───────────────────────────────────── -->
+    <script src="/error-handler.js"></script>
   </head>
 
   <body>
+    <!-- ─ Skip Navigation (keyboard accessibility) ─────────────────── -->
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <!-- ─ Offline Indicator ────────────────────────────────────────── -->
+    <div class="offline-indicator" role="status" aria-live="polite" aria-label="Connection status">No connection</div>
 
     <!-- ─ Header ──────────────────────────────────────────────────── -->
-    <header class="site-header">
+    <header class="site-header" role="banner">
       <div class="topbar">
         <h1>Trace<span>Works™</span></h1>
-        <nav class="topbar-nav">
+        <nav class="topbar-nav" aria-label="Main navigation">
           <a href="/packages.html">Reports</a>
           <a href="#process">How It Works</a>
           <a href="/enterprise.html">Enterprise</a>
           <a href="/dashboard.html">My Orders</a>
-          <button id="installBtn" hidden onclick="triggerInstall()" class="btn-outline" style="font-size:12px; padding:6px 14px; cursor:pointer;">Install App</button>
+          <button id="installBtn" hidden class="btn-outline" style="font-size:12px; padding:6px 14px; cursor:pointer;" aria-label="Install TraceWorks app">Install App</button>
           <a href="#order" class="btn-primary">Submit a Request</a>
         </nav>
       </div>
     </header>
+
+    <!-- ─ Main Content ───────────────────────────────────────────── -->
+    <main id="main-content">
 
     <!-- ─ Hero ────────────────────────────────────────────────────── -->
     <section class="hero">
@@ -575,9 +708,11 @@
       </div>
     </section>
 
-      <footer class="footer">
+    </main><!-- /#main-content -->
+
+      <footer class="footer" role="contentinfo">
         <p>© <span id="year"></span> TraceWorks™</p>
-        <nav>
+        <nav aria-label="Footer navigation">
           <a href="/terms.html">Terms</a>
           <a href="/privacy.html">Privacy</a>
           <a href="/refund-policy.html">Refund Policy</a>
