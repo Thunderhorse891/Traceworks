@@ -16,6 +16,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+    <script src="/error-handler.js"></script>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -34,7 +35,7 @@
       </p>
 
       <div style="display:flex; flex-direction:column; gap:12px; align-items:center; margin-bottom:40px;">
-        <button onclick="location.reload()" class="btn-primary" style="width:220px;">Try Again</button>
+        <button id="retryBtn" class="btn-primary" style="width:220px;">Try Again</button>
         <a href="/" class="btn-outline" style="width:220px; text-align:center;">Go to Home</a>
       </div>
 
@@ -50,7 +51,7 @@
     </div>
 
     <script>
-      // Auto-reload when connection returns
+      document.getElementById('retryBtn').addEventListener('click', () => location.reload());
       window.addEventListener('online', () => location.reload());
     </script>
   </body>

@@ -28,6 +28,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" />
   <script src="/error-handler.js"></script>
+  <script src="/pwa.js" type="module"></script>
   <link rel="stylesheet" href="/styles.css" />
   <style>
     .ent-hero { padding: 80px 24px 64px; text-align: center; max-width: 760px; margin: 0 auto; }
@@ -64,6 +65,37 @@
     .faq-ent-q { font-size: 15px; font-weight: 600; color: var(--text-1); margin: 0 0 8px; }
     .faq-ent-a { font-size: 14px; color: var(--text-2); line-height: 1.7; margin: 0; }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "TraceWorks Enterprise Intelligence",
+    "url": "https://traceworks.example.com/enterprise.html",
+    "description": "Volume investigative report plans for law firms, title companies, asset recovery funds, and licensed investigators. Includes dedicated support, custom source connectors, and priority fulfillment.",
+    "provider": {
+      "@type": "Organization",
+      "name": "TraceWorks™",
+      "url": "https://traceworks.example.com/",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "sales",
+        "url": "https://traceworks.example.com/contact-sales.html",
+        "availableLanguage": "English"
+      }
+    },
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Law firms, title companies, asset recovery funds, private investigators"
+    },
+    "areaServed": { "@type": "State", "name": "Texas" },
+    "offers": {
+      "@type": "AggregateOffer",
+      "priceCurrency": "USD",
+      "offerCount": "3",
+      "description": "Volume pricing tiers starting at $750/month. Custom enterprise contracts available."
+    }
+  }
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
