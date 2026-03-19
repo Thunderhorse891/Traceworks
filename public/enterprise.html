@@ -192,7 +192,7 @@
       <div id="formSuccess" class="success-msg">
         <strong>Message received.</strong> Our team will follow up within one business day.
       </div>
-      <form id="salesForm" onsubmit="submitSales(event)">
+      <form id="salesForm">
         <div class="field-row">
           <div class="field-group"><label>First Name</label><input type="text" name="firstName" required /></div>
           <div class="field-group"><label>Last Name</label><input type="text" name="lastName" required /></div>
@@ -245,39 +245,6 @@
   </footer>
 
   <script src="/pwa.js" type="module"></script>
-  <script>
-    async function submitSales(e) {
-      e.preventDefault();
-      const form = e.target;
-      const btn = document.getElementById('salesBtn');
-      const errEl = document.getElementById('salesError');
-      errEl.style.display = 'none';
-      btn.textContent = 'Sending…';
-      btn.disabled = true;
-
-      const body = {};
-      new FormData(form).forEach((v, k) => { if (k !== '_hp') body[k] = v; });
-      body.name = `${body.firstName || ''} ${body.lastName || ''}`.trim();
-      body.source = 'enterprise-page';
-
-      try {
-        const res = await fetch('/api/contact-sales', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        form.style.display = 'none';
-        document.getElementById('formSuccess').style.display = '';
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.style.display = '';
-      } finally {
-        btn.textContent = 'Send Message';
-        btn.disabled = false;
-      }
-    }
-  </script>
+  <script src="/enterprise-sales.js" type="module"></script>
 </body>
 </html>

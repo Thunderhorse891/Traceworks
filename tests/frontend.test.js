@@ -165,3 +165,13 @@ test('offline fallback removes inline retry handlers and loads shared recovery c
   assert.ok(html.includes('/error-handler.js'));
   assert.ok(html.includes('/pwa.js'));
 });
+
+test('sales pages use external scripts instead of inline form handlers', () => {
+  const contactSales = readFileSync('public/contact-sales.html', 'utf8');
+  const enterprise = readFileSync('public/enterprise.html', 'utf8');
+
+  assert.equal(contactSales.includes('onsubmit="submitForm(event)"'), false);
+  assert.equal(enterprise.includes('onsubmit="submitSales(event)"'), false);
+  assert.ok(contactSales.includes('/contact-sales.js'));
+  assert.ok(enterprise.includes('/enterprise-sales.js'));
+});

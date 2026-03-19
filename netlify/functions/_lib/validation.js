@@ -3,6 +3,32 @@ import { VALID_PACKAGE_IDS } from './packages.js';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SUBJECT_TYPES = new Set(['property', 'person', 'entity', 'estate', 'mixed']);
+const PROHIBITED_USE_RULES = [
+  {
+    pattern: /\b(employment screening|employment decision|hiring decision|pre[- ]employment|job applicant|background check)\b/i,
+    message: 'TraceWorks cannot be used for employment screening or hiring decisions.'
+  },
+  {
+    pattern: /\b(tenant screening|tenant check|renter screening|lease approval|housing decision|landlord screening)\b/i,
+    message: 'TraceWorks cannot be used for tenant screening or housing decisions.'
+  },
+  {
+    pattern: /\b(credit check|credit decision|loan underwriting|loan approval|insurance underwriting|insurance eligibility)\b/i,
+    message: 'TraceWorks cannot be used for credit, lending, or insurance underwriting decisions.'
+  },
+  {
+    pattern: /\b(student screening|admission decision|school admission)\b/i,
+    message: 'TraceWorks cannot be used for student screening or admissions decisions.'
+  },
+  {
+    pattern: /\b(stalk|harass|intimidat|doxx|spy on|unlawful surveillance|track my ex|find my ex)\b/i,
+    message: 'TraceWorks cannot be used for stalking, harassment, unlawful surveillance, or personal targeting.'
+  },
+  {
+    pattern: /\b(identity theft|impersonat|social engineering|fraud)\b/i,
+    message: 'TraceWorks cannot be used for identity theft, impersonation, fraud, or social engineering.'
+  }
+];
 
 function clean(value) {
   return String(value ?? '').trim();
@@ -83,6 +109,17 @@ function normalizeAddressAndProfile(raw) {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean).map((value) => String(value).trim()).filter(Boolean))];
+}
+
+function prohibitedPurposeErrors(payload) {
+  const purposeText = [payload.goals, payload.requestedFindings].filter(Boolean).join(' ');
+  if (!purposeText) return [];
+
+  return unique(
+    PROHIBITED_USE_RULES
+      .filter((rule) => rule.pattern.test(purposeText))
+      .map((rule) => rule.message)
+  );
 }
 
 export function normalizeCheckoutPayload(raw) {
@@ -172,6 +209,7 @@ export function validateCheckoutPayload(payload) {
 
   if (payload.goals && payload.goals.length > 1400) errors.push('Case objective is too long.');
   if (payload.requestedFindings && payload.requestedFindings.length > 1400) errors.push('Requested findings are too long.');
+  errors.push(...prohibitedPurposeErrors(payload));
 
   if (payload.packageId === 'probate_heirship' && secondaryProbateSignals(payload).length === 0) {
     errors.push('Probate research requires at least one additional identifier such as death year, date of birth, address, alias, phone, or email.');

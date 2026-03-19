@@ -45,6 +45,33 @@ test('probate intake requires a secondary identifier for precision', () => {
   assert.ok(validateCheckoutPayload(payload).some((e) => e.includes('additional identifier')));
 });
 
+test('validation blocks prohibited screening and harassment purposes', () => {
+  const screeningPayload = normalizeCheckoutPayload({
+    packageId: 'standard',
+    customerName: 'Law Office',
+    customerEmail: 'x@y.com',
+    subjectName: 'Jane Doe',
+    county: 'Harris',
+    goals: 'Run a tenant screening background check before lease approval',
+    legalConsent: 'true',
+    tosConsent: 'true'
+  });
+
+  const harassmentPayload = normalizeCheckoutPayload({
+    packageId: 'standard',
+    customerName: 'Law Office',
+    customerEmail: 'x@y.com',
+    subjectName: 'Jane Doe',
+    county: 'Harris',
+    requestedFindings: 'Help me find my ex so I can stalk them',
+    legalConsent: 'true',
+    tosConsent: 'true'
+  });
+
+  assert.ok(validateCheckoutPayload(screeningPayload).some((e) => e.includes('tenant screening')));
+  assert.ok(validateCheckoutPayload(harassmentPayload).some((e) => e.includes('stalking')));
+});
+
 test('input criteria preserves structured investigation seeds', () => {
   const payload = normalizeCheckoutPayload({
     packageId: 'asset_network',
