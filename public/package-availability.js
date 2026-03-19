@@ -34,7 +34,9 @@ async function annotatePackageAvailability() {
         cta.removeAttribute('href');
       }
     }
-  } catch {}
+  } catch (error) {
+    console.warn('TraceWorks package availability sync failed.', error);
+  }
 }
 
 annotatePackageAvailability();

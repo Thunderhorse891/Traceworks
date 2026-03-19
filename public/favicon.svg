@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TraceWorks">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1624"/>
+      <stop offset="100%" stop-color="#04080f"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5d87a"/>
+      <stop offset="100%" stop-color="#c99a1a"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="none" stroke="#c99a1a" stroke-width="2"/>
+  <path d="M18 18H46V23H34V37H29V23H18V18Z" fill="url(#gold)"/>
+  <path d="M18 29L24 46L32 34L40 46L46 29H41L37 40L32 32L27 40L23 29H18Z" fill="url(#gold)"/>
+</svg>

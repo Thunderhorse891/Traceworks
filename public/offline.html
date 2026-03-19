@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TraceWorks™ — No Connection</title>
+    <meta name="description" content="TraceWorks is offline. Return when your connection is available to submit or track investigations." />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090f" />
+    <link rel="canonical" href="/offline.html" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <script src="/error-handler.js" defer></script>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -23,7 +30,7 @@
       </p>
 
       <div style="display:flex; flex-direction:column; gap:12px; align-items:center; margin-bottom:40px;">
-        <button onclick="location.reload()" class="btn-primary" style="width:220px;">Try Again</button>
+        <button id="retryConnectionBtn" class="btn-primary" style="width:220px;">Try Again</button>
         <a href="/" class="btn-outline" style="width:220px; text-align:center;">Go to Home</a>
       </div>
 
@@ -39,8 +46,10 @@
     </div>
 
     <script>
+      document.getElementById('retryConnectionBtn')?.addEventListener('click', () => location.reload());
       // Auto-reload when connection returns
       window.addEventListener('online', () => location.reload());
     </script>
+    <script src="/pwa.js" type="module"></script>
   </body>
 </html>

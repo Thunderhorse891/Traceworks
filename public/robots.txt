@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin-dashboard.html
+Disallow: /admin-orders.html
+Disallow: /billing.html
+Disallow: /cases.html
+Disallow: /console.html
+Disallow: /launch-readiness.html
+Disallow: /reports.html
+Disallow: /reports/
+Disallow: /search.html
+Disallow: /sources.html
+Disallow: /workflows.html

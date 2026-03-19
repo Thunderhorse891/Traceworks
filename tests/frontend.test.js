@@ -105,3 +105,63 @@ test('admin dashboard exposes operator visibility panels for live launch monitor
   assert.ok(html.includes("data-admin-action=\"${escapeHtml(action)}\""));
   assert.ok(html.includes('function escapeHtml'));
 });
+
+test('manifest ships installable PNG icons and screenshots', () => {
+  const manifest = JSON.parse(readFileSync('public/manifest.json', 'utf8'));
+  const pngIcons = manifest.icons.filter((icon) => icon.type === 'image/png');
+  const purposes = new Set(pngIcons.map((icon) => icon.purpose));
+
+  assert.ok(pngIcons.some((icon) => icon.src === '/icons/icon-192.png'));
+  assert.ok(pngIcons.some((icon) => icon.src === '/icons/icon-512.png'));
+  assert.ok(purposes.has('any'));
+  assert.ok(purposes.has('maskable'));
+  assert.ok(Array.isArray(manifest.screenshots) && manifest.screenshots.length >= 2);
+});
+
+test('public entry pages wire pwa bootstrap, metadata, and error handling consistently', () => {
+  const pages = [
+    'public/index.html',
+    'public/packages.html',
+    'public/enterprise.html',
+    'public/contact-sales.html',
+    'public/cancel.html',
+    'public/terms.html',
+    'public/privacy.html',
+    'public/refund-policy.html',
+  ];
+
+  for (const file of pages) {
+    const html = readFileSync(file, 'utf8');
+    assert.ok(html.includes('<link rel="manifest" href="/manifest.json"'), `${file} should link the manifest`);
+    assert.ok(html.includes('/favicon.svg'), `${file} should expose the favicon`);
+    assert.ok(html.includes('/error-handler.js'), `${file} should load the shared error handler`);
+    assert.ok(html.includes('/pwa.js') || file.endsWith('index.html') || file.endsWith('packages.html'), `${file} should load or already include the PWA bootstrap`);
+  }
+});
+
+test('key customer pages expose richer social metadata', () => {
+  const pages = [
+    'public/index.html',
+    'public/packages.html',
+    'public/enterprise.html',
+    'public/contact-sales.html',
+    'public/dashboard.html',
+    'public/order-status.html',
+    'public/success.html',
+  ];
+
+  for (const file of pages) {
+    const html = readFileSync(file, 'utf8');
+    assert.ok(html.includes('og:image'), `${file} should define og:image`);
+    assert.ok(html.includes('twitter:card'), `${file} should define twitter:card`);
+    assert.ok(html.includes('rel="canonical"'), `${file} should define a canonical link`);
+  }
+});
+
+test('offline fallback removes inline retry handlers and loads shared recovery code', () => {
+  const html = readFileSync('public/offline.html', 'utf8');
+  assert.equal(html.includes('onclick="location.reload()"'), false);
+  assert.ok(html.includes('retryConnectionBtn'));
+  assert.ok(html.includes('/error-handler.js'));
+  assert.ok(html.includes('/pwa.js'));
+});

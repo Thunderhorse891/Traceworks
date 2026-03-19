@@ -7,13 +7,21 @@
     <meta name="description" content="Automated public-record OSINT reports for real estate attorneys, probate investors, title researchers, and asset recovery firms. Texas property, ownership, probate, and entity research." />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090f" />
+    <link rel="canonical" href="/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TraceWorks" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <meta property="og:title" content="TraceWorks™ — Investigative Property Reports" />
     <meta property="og:description" content="Evidence-grade public-record reports for legal professionals. Property, ownership, probate, and entity research." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/og-image.svg" />
+    <script src="/error-handler.js" defer></script>
     <link rel="stylesheet" href="/styles.css" />
   </head>
 
@@ -23,12 +31,12 @@
     <header class="site-header">
       <div class="topbar">
         <h1>Trace<span>Works™</span></h1>
-        <nav class="topbar-nav">
+        <nav class="topbar-nav" aria-label="Main navigation">
           <a href="/packages.html">Reports</a>
           <a href="#process">How It Works</a>
           <a href="/enterprise.html">Enterprise</a>
           <a href="/dashboard.html">My Orders</a>
-          <button id="installBtn" hidden onclick="triggerInstall()" class="btn-outline" style="font-size:12px; padding:6px 14px; cursor:pointer;">Install App</button>
+          <button id="installBtn" hidden class="btn-outline" style="font-size:12px; padding:6px 14px; cursor:pointer;">Install App</button>
           <a href="#order" class="btn-primary">Submit a Request</a>
         </nav>
       </div>

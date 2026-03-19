@@ -7,6 +7,30 @@
   <meta name="description" content="Contact the TraceWorks sales team for enterprise pricing, custom connectors, and volume investigation plans." />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#09090f" />
+  <link rel="canonical" href="/contact-sales.html" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <meta property="og:title" content="Contact TraceWorks Sales" />
+  <meta property="og:description" content="Speak with TraceWorks about enterprise pricing, connector builds, and multi-county investigative workflows." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/og-image.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="/og-image.svg" />
+  <script src="/error-handler.js" defer></script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ContactPage",
+      "name": "TraceWorks Contact Sales",
+      "mainEntity": {
+        "@type": "Organization",
+        "name": "TraceWorks",
+        "email": "traceworks.tx@outlook.com"
+      }
+    }
+  </script>
   <link rel="stylesheet" href="/styles.css" />
   <style>
     .cs-layout { max-width: 960px; margin: 0 auto; padding: 64px 24px 80px; display: grid; grid-template-columns: 1fr 360px; gap: 48px; }
@@ -39,7 +63,7 @@
   <header class="site-header">
     <div class="topbar">
       <a href="/" style="text-decoration:none;"><h1 style="margin:0;font-size:20px;">Trace<span style="color:var(--gold);">Works™</span></h1></a>
-      <nav class="topbar-nav">
+      <nav class="topbar-nav" aria-label="Main navigation">
         <a href="/packages.html">Reports</a>
         <a href="/enterprise.html">Enterprise</a>
         <a href="/dashboard.html">My Orders</a>
@@ -141,6 +165,7 @@
     <p style="font-size:12px;color:var(--text-4);">© 2025 TraceWorks™. All rights reserved. &nbsp;|&nbsp; <a href="/terms.html" style="color:var(--text-4);">Terms</a> &nbsp;|&nbsp; <a href="/privacy.html" style="color:var(--text-4);">Privacy</a> &nbsp;|&nbsp; <a href="/refund-policy.html" style="color:var(--text-4);">Refunds</a></p>
   </footer>
 
+  <script src="/pwa.js" type="module"></script>
   <script>
     async function submitForm(e) {
       e.preventDefault();

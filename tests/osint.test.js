@@ -210,3 +210,72 @@ test('gatherOsint adds Apify actor hits when configured', async () => {
   assert.ok(result.sources.some((source) => source.provider === 'apify'));
   assert.ok(result.providerHealth.some((provider) => provider.provider === 'apify' && provider.hitCount >= 1));
 });
+
+test('gatherOsint ranks higher-trust provider evidence ahead of weaker open-web ties', async () => {
+  const result = await gatherOsint('jordan mercer texas', {
+    packageId: 'standard',
+    env: {
+      FIRECRAWL_API_KEY: 'firecrawl-secret',
+      APIFY_API_TOKEN: 'apify-secret'
+    },
+    fetchImpl: async (url) => {
+      if (url.includes('duckduckgo.com')) {
+        return {
+          ok: true,
+          json: async () => ({
+            RelatedTopics: [{ FirstURL: 'https://generic.example/open-web', Text: 'Generic web result' }]
+          })
+        };
+      }
+      if (url.includes('wikipedia.org')) {
+        return { ok: true, json: async () => ({ query: { search: [{ title: 'Jordan Mercer' }] } }) };
+      }
+      if (url.includes('reddit.com')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { children: [{ data: { title: 'Community thread', permalink: '/r/example' } }] } })
+        };
+      }
+      if (url.includes('opencorporates.com')) {
+        return { ok: true, json: async () => ({ results: { companies: [] } }) };
+      }
+      if (url.includes('firecrawl.dev')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              web: [
+                {
+                  title: 'County dossier lead',
+                  url: 'https://premium.example/dossier',
+                  markdown: '# Dossier'
+                }
+              ]
+            }
+          })
+        };
+      }
+      if (url.includes('api.apify.com')) {
+        return {
+          ok: true,
+          json: async () => ([
+            {
+              nonPromotedSearchResults: [
+                {
+                  title: 'Structured search lead',
+                  url: 'https://search.example/lead',
+                  description: 'Structured search result'
+                }
+              ]
+            }
+          ])
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    }
+  });
+
+  assert.equal(result.sources[0].provider, 'firecrawl');
+  assert.equal(result.sources[1].provider, 'apify');
+  assert.equal(result.sources.at(-1).provider, 'reddit');
+});

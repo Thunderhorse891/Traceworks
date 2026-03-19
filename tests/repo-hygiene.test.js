@@ -32,6 +32,9 @@ test('repo hygiene stays aligned with the Netlify-only production path', async (
   assert.equal(await exists('vercel.json'), false);
   assert.equal(await exists('app.js'), false);
   assert.equal(zipFiles.length, 0);
+  assert.equal(await exists('public/robots.txt'), true);
+  assert.equal(await exists('public/favicon.svg'), true);
+  assert.equal(await exists('public/error-handler.js'), true);
 });
 
 test('Netlify function entrypoints use the modern adapter or return native Responses', async () => {

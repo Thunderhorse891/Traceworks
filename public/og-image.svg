@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="TraceWorks social preview">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a1420"/>
+      <stop offset="100%" stop-color="#04080f"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5d87a"/>
+      <stop offset="100%" stop-color="#c99a1a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="210" cy="110" r="210" fill="rgba(212,168,39,0.12)"/>
+  <rect x="56" y="56" width="1088" height="518" rx="28" fill="rgba(7,14,24,0.92)" stroke="rgba(212,168,39,0.28)" stroke-width="2"/>
+  <rect x="88" y="92" width="240" height="22" rx="11" fill="#d4a827"/>
+  <rect x="910" y="84" width="180" height="36" rx="18" fill="rgba(212,168,39,0.18)" stroke="rgba(212,168,39,0.40)"/>
+  <g transform="translate(88 166)">
+    <text x="0" y="0" fill="#edf2fc" font-size="66" font-family="'Libre Baskerville', Georgia, serif" font-weight="700">TraceWorks</text>
+    <text x="0" y="62" fill="#b8c6e0" font-size="28" font-family="'Inter', system-ui, sans-serif">Investigative property intelligence for legal and recovery workflows.</text>
+  </g>
+  <g transform="translate(88 290)">
+    <rect width="510" height="220" rx="22" fill="rgba(11,20,32,1)" stroke="rgba(120,160,220,0.18)"/>
+    <rect x="30" y="30" width="182" height="18" rx="9" fill="#d4a827"/>
+    <rect x="30" y="74" width="420" height="14" rx="7" fill="#edf2fc"/>
+    <rect x="30" y="102" width="310" height="11" rx="5.5" fill="#7a8fad"/>
+    <rect x="30" y="152" width="140" height="32" rx="16" fill="rgba(212,168,39,0.16)" stroke="rgba(212,168,39,0.36)"/>
+    <rect x="188" y="152" width="168" height="32" rx="16" fill="rgba(120,160,220,0.10)" stroke="rgba(120,160,220,0.22)"/>
+  </g>
+  <g transform="translate(650 242)">
+    <rect width="462" height="112" rx="22" fill="rgba(15,28,46,0.96)" stroke="rgba(120,160,220,0.18)"/>
+    <rect x="26" y="24" width="126" height="14" rx="7" fill="#d4a827"/>
+    <rect x="26" y="54" width="356" height="11" rx="5.5" fill="#edf2fc"/>
+    <rect x="26" y="76" width="278" height="10" rx="5" fill="#7a8fad"/>
+  </g>
+  <g transform="translate(650 382)">
+    <rect width="220" height="128" rx="22" fill="rgba(15,28,46,0.96)" stroke="rgba(120,160,220,0.18)"/>
+    <rect x="26" y="26" width="96" height="14" rx="7" fill="#d4a827"/>
+    <rect x="26" y="58" width="160" height="11" rx="5.5" fill="#edf2fc"/>
+    <rect x="26" y="82" width="128" height="10" rx="5" fill="#7a8fad"/>
+  </g>
+  <g transform="translate(892 382)">
+    <rect width="220" height="128" rx="22" fill="rgba(15,28,46,0.96)" stroke="rgba(120,160,220,0.18)"/>
+    <rect x="26" y="26" width="104" height="14" rx="7" fill="#d4a827"/>
+    <rect x="26" y="58" width="150" height="11" rx="5.5" fill="#edf2fc"/>
+    <rect x="26" y="82" width="122" height="10" rx="5" fill="#7a8fad"/>
+  </g>
+</svg>

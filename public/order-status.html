@@ -6,6 +6,16 @@
   <title>Track Your Order — TraceWorks™</title>
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#09090f" />
+  <link rel="canonical" href="/order-status.html" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <meta property="og:title" content="TraceWorks™ Order Tracking" />
+  <meta property="og:description" content="Track the status of your TraceWorks investigation and access completed report artifacts when available." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/og-image.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="/og-image.svg" />
+  <script src="/error-handler.js" defer></script>
   <link rel="stylesheet" href="/styles.css" />
   <style>
     .status-page { max-width: 640px; margin: 0 auto; padding: 64px 24px 80px; }
@@ -44,7 +54,7 @@
   <header class="site-header">
     <div class="topbar">
       <a href="/" style="text-decoration:none;"><h1 style="margin:0;font-size:20px;">Trace<span style="color:var(--gold);">Works™</span></h1></a>
-      <nav class="topbar-nav">
+      <nav class="topbar-nav" aria-label="Main navigation">
         <a href="/">Home</a>
         <a href="/packages.html">Reports</a>
         <a href="/dashboard.html">My Orders</a>

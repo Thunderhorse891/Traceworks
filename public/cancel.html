@@ -4,7 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TraceWorks™ — Checkout Canceled</title>
+    <meta name="description" content="Your TraceWorks checkout was canceled before payment completed. No charge was made." />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090f" />
+    <link rel="canonical" href="/cancel.html" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta property="og:title" content="TraceWorks™ — Checkout Canceled" />
+    <meta property="og:description" content="No charge was made. Return to TraceWorks whenever you are ready to submit your investigation." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/og-image.svg" />
+    <script src="/error-handler.js" defer></script>
     <link rel="stylesheet" href="/styles.css" />
     <style>
       .cancel-wrap {
@@ -58,7 +71,7 @@
     <header class="site-header">
       <div class="topbar">
         <h1>Trace<span>Works™</span></h1>
-        <nav class="topbar-nav">
+        <nav class="topbar-nav" aria-label="Main navigation">
           <a href="/">Home</a>
           <a href="/packages.html">Reports</a>
           <a href="/#order" class="btn-primary">Submit a Request</a>
@@ -81,5 +94,6 @@
         &nbsp;·&nbsp; <a href="/privacy.html">Privacy</a>
       </p>
     </div>
+    <script src="/pwa.js" type="module"></script>
   </body>
 </html>

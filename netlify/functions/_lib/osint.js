@@ -16,6 +16,42 @@ function confidenceScore(label) {
   return 1;
 }
 
+function sourceTypeScore(type) {
+  if (type === 'official-record') return 7;
+  if (type === 'legal-intel') return 6;
+  if (type === 'business-registry') return 5;
+  if (type === 'search-scrape') return 4;
+  if (type === 'search-index') return 3;
+  if (type === 'open-web') return 2;
+  if (type === 'knowledge-base') return 1;
+  if (type === 'community-intel') return 0;
+  return 1;
+}
+
+function providerScore(provider) {
+  if (provider === 'firecrawl') return 6;
+  if (provider === 'apify') return 5;
+  if (provider === 'robin') return 4;
+  if (provider === 'opencorporates') return 3;
+  if (provider === 'duckduckgo') return 2;
+  if (provider === 'wikipedia') return 1;
+  if (provider === 'reddit') return 0;
+  return 1;
+}
+
+function compareRecordQuality(left, right) {
+  const confidenceDiff = confidenceScore(left.confidence) - confidenceScore(right.confidence);
+  if (confidenceDiff !== 0) return confidenceDiff;
+
+  const typeDiff = sourceTypeScore(left.sourceType) - sourceTypeScore(right.sourceType);
+  if (typeDiff !== 0) return typeDiff;
+
+  const providerDiff = providerScore(left.provider) - providerScore(right.provider);
+  if (providerDiff !== 0) return providerDiff;
+
+  return right.domain.localeCompare(left.domain);
+}
+
 async function fetchJson(url, fetchImpl, timeoutMs = 9000, init = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -301,15 +337,15 @@ function dedupeAndRank(records) {
       byUrl.set(key, record);
       continue;
     }
-    if (confidenceScore(record.confidence) > confidenceScore(existing.confidence)) {
+    if (compareRecordQuality(record, existing) > 0) {
       byUrl.set(key, record);
     }
   }
 
   return [...byUrl.values()]
     .sort((a, b) => {
-      const scoreDiff = confidenceScore(b.confidence) - confidenceScore(a.confidence);
-      if (scoreDiff !== 0) return scoreDiff;
+      const qualityDiff = compareRecordQuality(b, a);
+      if (qualityDiff !== 0) return qualityDiff;
       return a.domain.localeCompare(b.domain);
     })
     .slice(0, 18);
