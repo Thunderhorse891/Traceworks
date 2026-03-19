@@ -63,13 +63,13 @@
     </div>
   </header>
 
-  <div class="status-page">
+  <main class="status-page">
     <span class="eyebrow">Order Tracking</span>
     <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,38px);color:var(--text-1);margin:12px 0 8px;">Track Your Investigation</h2>
     <p style="color:var(--text-2);font-size:15px;margin:0 0 32px;">Enter your Case Reference and email address to check the status of your report.</p>
 
     <div class="lookup-wrap">
-      <form id="lookupForm" onsubmit="lookupOrder(event)">
+      <form id="lookupForm">
         <div class="field-group">
           <label for="caseRef">Case Reference</label>
           <input type="text" id="caseRef" name="caseRef" placeholder="TW-XXXXXXXX" required autocomplete="off" spellcheck="false" />
@@ -79,7 +79,7 @@
           <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" />
         </div>
         <button type="submit" class="btn-primary" id="lookupBtn" style="width:100%;padding:12px;font-size:14px;">Check Status</button>
-        <div id="lookupError" class="error-msg" style="display:none;"></div>
+        <div id="lookupError" class="error-msg" role="alert" aria-live="polite" style="display:none;"></div>
       </form>
     </div>
 
@@ -147,258 +147,13 @@
       </div>
       <p style="font-size:12px;color:var(--text-4);margin-top:16px;text-align:center;">Status refreshes automatically every 30 seconds while your investigation is running.</p>
     </div>
-  </div>
+  </main>
 
-  <footer style="border-top:1px solid rgba(255,255,255,.07);padding:40px 24px;text-align:center;">
+  <footer role="contentinfo" style="border-top:1px solid rgba(255,255,255,.07);padding:40px 24px;text-align:center;">
     <p style="font-size:12px;color:var(--text-4);">© 2025 TraceWorks™ &nbsp;|&nbsp; <a href="/terms.html" style="color:var(--text-4);">Terms</a> &nbsp;|&nbsp; <a href="/privacy.html" style="color:var(--text-4);">Privacy</a></p>
   </footer>
 
   <script src="/pwa.js" type="module"></script>
-  <script>
-    const TERMINAL = new Set(['completed', 'manual_review', 'failed', 'delivery_failed', 'refunded', 'canceled']);
-    const ARTIFACT_READY = new Set(['completed', 'manual_review', 'delivery_failed']);
-    let pollTimer = null;
-    let currentCaseRef = '';
-    let currentEmail = '';
-    let currentStatusToken = '';
-
-    const STATUS_LABELS = {
-      pending_payment: 'Payment Pending',
-      paid: 'Payment Confirmed',
-      queued: 'Queued',
-      running: 'Research Running',
-      completed: 'Completed',
-      manual_review: 'Manual Review',
-      failed: 'Failed',
-      delivery_failed: 'Delivery Failed',
-      refunded: 'Refunded',
-      canceled: 'Canceled'
-    };
-
-    const STATUS_CLASS = {
-      pending_payment: 'queued',
-      paid: 'queued',
-      queued: 'queued',
-      running: 'processing',
-      completed: 'completed',
-      manual_review: 'retrying',
-      failed: 'failed',
-      delivery_failed: 'failed',
-      refunded: 'failed',
-      canceled: 'failed'
-    };
-
-    function statusBadgeHtml(status) {
-      const label = STATUS_LABELS[status] || status;
-      const badgeClass = STATUS_CLASS[status] || 'queued';
-      return `<span class="status-badge status-${badgeClass}">${label}</span>`;
-    }
-
-    function timelineHtml(status) {
-      const steps = [
-        { key: 'paid', label: 'Payment Confirmed', sub: 'Stripe checkout completed' },
-        { key: 'queued', label: 'Queued for Investigation', sub: 'Job added to processing queue' },
-        { key: 'running', label: 'Research Running', sub: 'Connectors active — querying public records' },
-        { key: 'delivered', label: 'Report Delivered', sub: 'Results emailed to your inbox' },
-      ];
-      const states = {
-        pending_payment: { done: [], active: -1 },
-        paid: { done: [0], active: 1 },
-        queued: { done: [0], active: 1 },
-        running: { done: [0, 1], active: 2 },
-        completed: { done: [0, 1, 2, 3], active: -1 },
-        manual_review: { done: [0, 1, 2], active: -1 },
-        delivery_failed: { done: [0, 1, 2], active: -1 },
-        failed: { done: [0, 1], active: -1 },
-        refunded: { done: [0], active: -1 },
-        canceled: { done: [], active: -1 }
-      };
-      const state = states[status] || { done: [], active: -1 };
-
-      return steps.map((step, i) => {
-        let dotClass = 'pending';
-        if (state.done.includes(i)) dotClass = 'done';
-        else if (state.active === i) dotClass = 'active';
-        return `<div class="tl-step"><div class="tl-dot ${dotClass}"></div><div><div class="tl-label">${step.label}</div><div class="tl-sub">${step.sub}</div></div></div>`;
-      }).join('');
-    }
-
-    function renderOrder(data) {
-      document.getElementById('resCaseRef').textContent = data.caseRef || '';
-      document.getElementById('resBadge').innerHTML = statusBadgeHtml(data.status || 'unknown');
-      document.getElementById('resPackage').textContent = data.packageName || data.packageId || data.tier || '—';
-      document.getElementById('resSubject').textContent = data.subjectName || '—';
-      document.getElementById('resJurisdiction').textContent = [data.county, data.state].filter(Boolean).join(', ') || '—';
-      document.getElementById('resCreated').textContent = data.createdAt ? new Date(data.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-      document.getElementById('resConfirmation').textContent =
-        data.payment_confirmation_email_status === 'sent'
-          ? 'Sent'
-          : data.payment_confirmation_email_status === 'failed'
-            ? 'Needs resend'
-            : 'Pending';
-
-      document.getElementById('completedRow').style.display = data.completedAt ? '' : 'none';
-      if (data.completedAt) {
-        document.getElementById('resCompleted').textContent = new Date(data.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      }
-
-      document.getElementById('timeline').innerHTML = timelineHtml(data.status || '');
-
-      if (data.status === 'completed') {
-        document.getElementById('resNote').textContent = 'Your report has been delivered to your email address. Check your inbox and spam folder.';
-      } else if (data.status === 'manual_review') {
-        document.getElementById('resNote').textContent = 'Research finished, but a manual review step is required before delivery because some sources were incomplete or blocked.';
-      } else if (data.status === 'delivery_failed') {
-        document.getElementById('resNote').textContent = 'Your report is ready, but email delivery failed. Our team needs to resend it manually.';
-      } else if (data.status === 'failed') {
-        document.getElementById('resNote').textContent = 'Investigation encountered an error. Our team has been notified and will follow up within 24 hours.';
-      } else if (data.status === 'canceled') {
-        document.getElementById('resNote').textContent = 'Payment was canceled before the order entered production.';
-      } else if (data.status === 'refunded') {
-        document.getElementById('resNote').textContent = 'This order has been refunded.';
-      } else if (data.retryAt) {
-        document.getElementById('resNote').textContent = `The workflow hit a temporary issue and is queued to retry around ${new Date(data.retryAt).toLocaleString()}.`;
-      } else {
-        document.getElementById('resNote').textContent = data.payment_confirmation_email_status === 'sent'
-          ? 'Payment confirmation email was sent successfully. Research is progressing through the queue.'
-          : '';
-      }
-
-      syncReportActions(data);
-      renderBrief(data);
-      document.getElementById('orderResult').style.display = '';
-    }
-
-    function briefSignals(input = {}) {
-      const aliasCount = Array.isArray(input.alternateNames) ? input.alternateNames.length : 0;
-      return [
-        ['Address', input.lastKnownAddress],
-        ['Parcel', input.parcelId],
-        ['Aliases', aliasCount ? `${aliasCount} captured` : ''],
-        ['DOB', input.dateOfBirth],
-        ['Death year', input.deathYear],
-        ['Phone', input.subjectPhone],
-        ['Email', input.subjectEmail],
-        ['URL', input.websiteProfile],
-        ['Search seeds', Array.isArray(input.searchSeeds) && input.searchSeeds.length ? `${input.searchSeeds.length} loaded` : '']
-      ].filter(([, value]) => value);
-    }
-
-    function renderBrief(data) {
-      const input = data.input_criteria || {};
-      const requested = input.requestedFindingsList?.length
-        ? input.requestedFindingsList.join('; ')
-        : input.requestedFindings || '';
-      const goals = input.goals || '';
-      const signals = briefSignals(input);
-      const panel = document.getElementById('briefPanel');
-      const hasBrief = Boolean(requested || goals || signals.length);
-
-      panel.style.display = hasBrief ? 'block' : 'none';
-      if (!hasBrief) return;
-
-      document.getElementById('resRequestedFindings').textContent = requested || 'No requested-findings note was stored for this order.';
-      document.getElementById('resGoals').textContent = goals || 'No explicit case objective was stored for this order.';
-      document.getElementById('resSignalStrength').textContent = `${signals.length} identifiers`;
-      document.getElementById('resSignalChips').innerHTML = signals.map(([label, value]) => `<span class="brief-chip">${label}: ${value}</span>`).join('');
-    }
-
-    function buildArtifactUrl(caseRef, format) {
-      const query = new URLSearchParams({ caseRef, format });
-      if (currentStatusToken) query.set('status_token', currentStatusToken);
-      else if (currentEmail) query.set('email', currentEmail);
-      return `/api/order-artifact?${query.toString()}`;
-    }
-
-    function syncReportActions(data) {
-      const actions = document.getElementById('reportActions');
-      const pdfLink = document.getElementById('reportPdfLink');
-      const htmlLink = document.getElementById('reportHtmlLink');
-      const ready = Boolean(data.caseRef && data.artifact_url_or_path && ARTIFACT_READY.has(data.status));
-
-      if (!ready) {
-        actions.style.display = 'none';
-        pdfLink.removeAttribute('href');
-        htmlLink.removeAttribute('href');
-        return;
-      }
-
-      pdfLink.href = buildArtifactUrl(data.caseRef, 'pdf');
-      htmlLink.href = buildArtifactUrl(data.caseRef, 'html');
-      actions.style.display = 'flex';
-    }
-
-    async function fetchOrder() {
-      try {
-        const params = new URLSearchParams({ caseRef: currentCaseRef });
-        if (currentStatusToken) params.set('status_token', currentStatusToken);
-        else params.set('email', currentEmail);
-        const res = await fetch(`/api/get-order?${params}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        renderOrder(data.order || data);
-        if (TERMINAL.has((data.order || data).status)) {
-          clearInterval(pollTimer);
-          pollTimer = null;
-        }
-      } catch (err) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-        document.getElementById('lookupError').textContent = err.message;
-        document.getElementById('lookupError').style.display = '';
-        document.getElementById('orderResult').style.display = 'none';
-      }
-    }
-
-    async function lookupOrder(e) {
-      e.preventDefault();
-      const btn = document.getElementById('lookupBtn');
-      const errEl = document.getElementById('lookupError');
-      errEl.style.display = 'none';
-      btn.textContent = 'Checking…';
-      btn.disabled = true;
-
-      currentCaseRef = document.getElementById('caseRef').value.trim();
-      currentEmail = document.getElementById('email').value.trim();
-      currentStatusToken = '';
-
-      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-
-      try {
-        const params = new URLSearchParams({ caseRef: currentCaseRef, email: currentEmail });
-        const res = await fetch(`/api/get-order?${params}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-
-        renderOrder(data.order || data);
-
-        const status = (data.order || data).status;
-        if (!TERMINAL.has(status)) {
-          pollTimer = setInterval(fetchOrder, 30000);
-        }
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.style.display = '';
-      } finally {
-        btn.textContent = 'Check Status';
-        btn.disabled = false;
-      }
-    }
-
-    // Pre-fill from URL params
-    const params = new URLSearchParams(location.search);
-    if (params.get('caseRef')) document.getElementById('caseRef').value = params.get('caseRef');
-    if (params.get('email')) document.getElementById('email').value = params.get('email');
-    if (params.get('status_token') || params.get('statusToken')) {
-      currentStatusToken = params.get('status_token') || params.get('statusToken');
-      currentCaseRef = params.get('caseRef') || '';
-    }
-    if (params.get('caseRef') && params.get('email')) {
-      document.getElementById('lookupForm').requestSubmit();
-    } else if (params.get('caseRef') && currentStatusToken) {
-      fetchOrder();
-      pollTimer = setInterval(fetchOrder, 30000);
-    }
-  </script>
+  <script src="/order-status.js" type="module"></script>
 </body>
 </html>

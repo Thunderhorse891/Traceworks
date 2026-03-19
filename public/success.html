@@ -283,7 +283,7 @@
     <header class="site-header">
       <div class="topbar">
         <h1>Trace<span>Works™</span></h1>
-        <nav class="topbar-nav">
+        <nav class="topbar-nav" aria-label="Main navigation">
           <a href="/">Home</a>
           <a href="/packages.html">Reports</a>
           <a href="/dashboard.html">My Orders</a>
@@ -292,7 +292,7 @@
       </div>
     </header>
 
-    <div class="success-wrap">
+    <main class="success-wrap">
       <div class="confirm-badge">
         <span class="dot"></span>
         <span>Payment Confirmed</span>
@@ -416,216 +416,9 @@
         <a id="reportHtmlLink" href="#" class="btn-outline" target="_blank" rel="noopener" style="display:none;">Open HTML Report</a>
         <a href="/" class="btn-outline">Return to Home</a>
       </div>
-    </div>
+    </main>
 
     <script src="/pwa.js" type="module"></script>
-    <script>
-      const params      = new URLSearchParams(location.search);
-      const caseRef     = params.get('case_ref');
-      const email       = params.get('email');
-      const statusToken = params.get('status_token') || params.get('statusToken');
-
-      const statusPill    = document.getElementById('statusPill');
-      const fieldCaseRef  = document.getElementById('fieldCaseRef');
-      const fieldPackage  = document.getElementById('fieldPackage');
-      const fieldSubject  = document.getElementById('fieldSubject');
-      const fieldJurisdiction = document.getElementById('fieldJurisdiction');
-      const fieldStatus   = document.getElementById('fieldStatus');
-      const fieldConfirmation = document.getElementById('fieldConfirmation');
-      const fieldQueued   = document.getElementById('fieldQueued');
-      const fieldAttempts = document.getElementById('fieldAttempts');
-      const fieldCompleted= document.getElementById('fieldCompleted');
-      const fieldError    = document.getElementById('fieldError');
-      const rowCompleted  = document.getElementById('rowCompleted');
-      const rowError      = document.getElementById('rowError');
-      const stepResearch  = document.getElementById('stepResearch');
-      const stepReport    = document.getElementById('stepReport');
-      const stepDelivery  = document.getElementById('stepDelivery');
-      const briefPanel    = document.getElementById('briefPanel');
-      const briefSignalPill = document.getElementById('briefSignalPill');
-      const fieldRequestedFindings = document.getElementById('fieldRequestedFindings');
-      const fieldGoals    = document.getElementById('fieldGoals');
-      const briefSignalChips = document.getElementById('briefSignalChips');
-      const reportPdfLink = document.getElementById('reportPdfLink');
-      const reportHtmlLink = document.getElementById('reportHtmlLink');
-
-      const TERMINAL = new Set(['completed', 'manual_review', 'failed', 'delivery_failed', 'refunded', 'canceled']);
-      const ARTIFACT_READY = new Set(['completed', 'manual_review', 'delivery_failed']);
-      let pollInterval = null;
-
-      function fmt(iso) {
-        if (!iso) return '—';
-        try { return new Date(iso).toLocaleString(undefined, { hour12: true }); } catch { return iso; }
-      }
-
-      function setPill(status) {
-        const map = {
-          pending_payment: 'queued',
-          paid: 'queued',
-          queued:     'queued',
-          running:    'processing',
-          completed:  'completed',
-          manual_review: 'processing',
-          failed:     'failed',
-          delivery_failed: 'failed',
-          refunded: 'failed',
-          canceled: 'failed',
-        };
-        const cls = map[status] || 'default';
-        statusPill.className = 'status-pill ' + cls;
-        statusPill.textContent = (status || 'unknown').replace(/_/g, ' ').toUpperCase();
-      }
-
-      function updateTimeline(status) {
-        const active = 'timeline-step-dot active';
-        const done   = 'timeline-step-dot done';
-        const pend   = 'timeline-step-dot';
-        if (status === 'completed') {
-          stepResearch.className = done;
-          stepReport.className   = done;
-          stepDelivery.className = done;
-        } else if (status === 'running') {
-          stepResearch.className = active;
-          stepReport.className   = pend;
-          stepDelivery.className = pend;
-        } else if (status === 'manual_review' || status === 'delivery_failed') {
-          stepResearch.className = done;
-          stepReport.className   = done;
-          stepDelivery.className = pend;
-        } else if (status === 'failed') {
-          stepResearch.className = 'timeline-step-dot';
-          stepReport.className   = 'timeline-step-dot';
-          stepDelivery.className = 'timeline-step-dot';
-        } else {
-          stepResearch.className = active;
-        }
-      }
-
-      function briefSignals(input = {}) {
-        const aliasCount = Array.isArray(input.alternateNames) ? input.alternateNames.length : 0;
-        return [
-          ['Address', input.lastKnownAddress],
-          ['Parcel', input.parcelId],
-          ['Aliases', aliasCount ? `${aliasCount} captured` : ''],
-          ['DOB', input.dateOfBirth],
-          ['Death year', input.deathYear],
-          ['Phone', input.subjectPhone],
-          ['Email', input.subjectEmail],
-          ['URL', input.websiteProfile],
-          ['Search seeds', Array.isArray(input.searchSeeds) && input.searchSeeds.length ? `${input.searchSeeds.length} loaded` : '']
-        ].filter(([, value]) => value);
-      }
-
-      function renderBrief(data) {
-        const input = data.input_criteria || {};
-        const requested = input.requestedFindingsList?.length
-          ? input.requestedFindingsList.join('; ')
-          : input.requestedFindings || '';
-        const goals = input.goals || '';
-        const signals = briefSignals(input);
-        const hasBrief = Boolean(requested || goals || signals.length);
-
-        briefPanel.style.display = hasBrief ? '' : 'none';
-        if (!hasBrief) return;
-
-        fieldRequestedFindings.textContent = requested || 'No custom requested-findings note was stored for this order.';
-        fieldGoals.textContent = goals || 'No explicit case objective was stored for this order.';
-        briefSignalPill.textContent = `${signals.length} identifiers`;
-        briefSignalChips.innerHTML = signals.map(([label, value]) => `<span class="brief-chip">${label}: ${value}</span>`).join('');
-      }
-
-      function renderOrder(data) {
-        fieldCaseRef.textContent  = data.caseRef || '—';
-        fieldPackage.textContent  = data.packageName || data.packageId || '—';
-        fieldSubject.textContent  = data.subjectName || '—';
-        fieldJurisdiction.textContent = [data.county, data.state].filter(Boolean).join(', ') || '—';
-        fieldStatus.textContent   = (data.status || '—').replace(/_/g, ' ');
-        fieldConfirmation.textContent =
-          data.payment_confirmation_email_status === 'sent'
-            ? 'Sent'
-            : data.payment_confirmation_email_status === 'failed'
-              ? 'Needs resend'
-              : 'Pending';
-        fieldQueued.textContent   = fmt(data.queuedAt || data.createdAt);
-        fieldAttempts.textContent = data.fulfillmentAttempts ?? '—';
-
-        rowCompleted.style.display = data.completedAt ? '' : 'none';
-        if (data.completedAt) {
-          fieldCompleted.textContent = fmt(data.completedAt);
-        }
-        const errorText = data.lastError || data.failure_reason || '';
-        rowError.style.display = errorText ? '' : 'none';
-        if (errorText) {
-          fieldError.textContent = errorText;
-        }
-
-        setPill(data.status);
-        updateTimeline(data.status);
-        renderBrief(data);
-        syncReportActions(data);
-      }
-
-      function artifactUrl(caseReference, format) {
-        const query = new URLSearchParams({ caseRef: caseReference, format });
-        if (statusToken) query.set('status_token', statusToken);
-        else if (email) query.set('email', email);
-        return `/api/order-artifact?${query.toString()}`;
-      }
-
-      function syncReportActions(data) {
-        const ready = Boolean(data.caseRef && data.artifact_url_or_path && ARTIFACT_READY.has(data.status));
-
-        if (!ready) {
-          reportPdfLink.style.display = 'none';
-          reportHtmlLink.style.display = 'none';
-          reportPdfLink.removeAttribute('href');
-          reportHtmlLink.removeAttribute('href');
-          return;
-        }
-
-        reportPdfLink.href = artifactUrl(data.caseRef, 'pdf');
-        reportHtmlLink.href = artifactUrl(data.caseRef, 'html');
-        reportPdfLink.style.display = '';
-        reportHtmlLink.style.display = '';
-      }
-
-      async function poll() {
-        if (!caseRef || (!statusToken && !email)) {
-          statusPill.textContent = 'ERROR';
-          fieldStatus.textContent = 'Missing case reference — contact traceworks.tx@outlook.com with your payment receipt.';
-          clearInterval(pollInterval);
-          return;
-        }
-
-        try {
-          const auth = statusToken
-            ? `statusToken=${encodeURIComponent(statusToken)}`
-            : `email=${encodeURIComponent(email)}`;
-          const res  = await fetch(`/api/get-order?caseRef=${encodeURIComponent(caseRef)}&${auth}`);
-          const data = await res.json().catch(() => ({}));
-
-          if (res.ok) {
-            renderOrder(data);
-            if (TERMINAL.has(data.status)) clearInterval(pollInterval);
-          } else if (res.status === 404) {
-            statusPill.className = 'status-pill default';
-            statusPill.textContent = 'QUEUED';
-            fieldCaseRef.textContent = caseRef;
-            fieldStatus.textContent  = 'Pending — check back in 30 seconds';
-          } else {
-            statusPill.textContent = 'UNAVAILABLE';
-            fieldStatus.textContent = data.error || 'Status temporarily unavailable — your order is still processing.';
-          }
-        } catch {
-          fieldStatus.textContent = 'Status service unavailable. If you are testing locally, make sure your API routes are running and reachable.';
-        }
-      }
-
-      // Set case ref immediately from URL
-      if (caseRef) fieldCaseRef.textContent = caseRef;
-
-      poll();
-      pollInterval = setInterval(poll, 20_000);
-    </script>
+    <script src="/success.js" type="module"></script>
   </body>
 </html>

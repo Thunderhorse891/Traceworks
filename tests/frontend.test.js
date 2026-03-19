@@ -57,8 +57,9 @@ test('retired sample preview page is explicit', () => {
 
 test('order status tracker supports signed polling links', () => {
   const html = readFileSync('public/order-status.html', 'utf8');
-  assert.ok(html.includes("params.set('status_token', currentStatusToken)"));
-  assert.ok(html.includes('payment_confirmation_email_status'));
+  const js = readFileSync('public/order-status.js', 'utf8');
+  assert.ok(js.includes("params.set('status_token', currentStatusToken)"));
+  assert.ok(js.includes('payment_confirmation_email_status'));
   assert.ok(html.includes('id="briefPanel"'));
   assert.ok(html.includes('id="resRequestedFindings"'));
 });
@@ -77,6 +78,27 @@ test('success page surfaces stored intake brief details', () => {
   assert.ok(html.includes('id="briefPanel"'));
   assert.ok(html.includes('id="fieldRequestedFindings"'));
   assert.ok(html.includes('id="briefSignalChips"'));
+});
+
+test('customer tracking pages use dedicated external modules instead of inline handlers', () => {
+  const dashboard = readFileSync('public/dashboard.html', 'utf8');
+  const tracker = readFileSync('public/order-status.html', 'utf8');
+  const success = readFileSync('public/success.html', 'utf8');
+  const offline = readFileSync('public/offline.html', 'utf8');
+
+  assert.equal(dashboard.includes('onsubmit="lookupOrder(event)"'), false);
+  assert.equal(dashboard.includes('onclick="clearHistory()"'), false);
+  assert.ok(dashboard.includes('/dashboard.js'));
+  assert.ok(dashboard.includes('role="alert"'));
+
+  assert.equal(tracker.includes('onsubmit="lookupOrder(event)"'), false);
+  assert.ok(tracker.includes('/order-status.js'));
+  assert.ok(tracker.includes('role="alert"'));
+
+  assert.ok(success.includes('/success.js'));
+  assert.equal(success.includes("const params      = new URLSearchParams(location.search);"), false);
+
+  assert.ok(offline.includes('/offline.js'));
 });
 
 test('packages catalog routes into the real intake flow and loads availability', () => {
@@ -174,4 +196,13 @@ test('sales pages use external scripts instead of inline form handlers', () => {
   assert.equal(enterprise.includes('onsubmit="submitSales(event)"'), false);
   assert.ok(contactSales.includes('/contact-sales.js'));
   assert.ok(enterprise.includes('/enterprise-sales.js'));
+});
+
+test('admin orders page removes inline artifact handlers', () => {
+  const html = readFileSync('public/admin-orders.html', 'utf8');
+
+  assert.ok(html.includes('/admin-orders.js'));
+  assert.ok(html.includes('/error-handler.js'));
+  assert.equal(html.includes("onclick='downloadArtifact"), false);
+  assert.equal(html.includes('window.downloadArtifact'), false);
 });
