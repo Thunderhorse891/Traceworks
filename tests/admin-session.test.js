@@ -62,8 +62,10 @@ test('admin-login returns an HttpOnly cookie when the API key is valid', async (
 test('admin dashboard uses cookie login flow instead of sessionStorage bearer reuse', async () => {
   const { readFileSync } = await import('node:fs');
   const html = readFileSync('public/admin-dashboard.html', 'utf8');
-  assert.ok(html.includes('/api/admin-login'));
-  assert.ok(html.includes("credentials: 'same-origin'"));
+  const js = readFileSync('public/admin-dashboard.js', 'utf8');
+  assert.ok(html.includes('/admin-dashboard.js'));
+  assert.ok(js.includes('/api/admin-login'));
+  assert.ok(js.includes("credentials: 'same-origin'"));
   assert.equal(html.includes('sessionStorage'), false);
 });
 

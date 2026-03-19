@@ -114,6 +114,7 @@ test('packages catalog routes into the real intake flow and loads availability',
 
 test('admin dashboard exposes operator visibility panels for live launch monitoring', () => {
   const html = readFileSync('public/admin-dashboard.html', 'utf8');
+  const js = readFileSync('public/admin-dashboard.js', 'utf8');
   assert.ok(html.includes('Manual Review Queue'));
   assert.ok(html.includes('Active Queue Work'));
   assert.ok(html.includes('Recent Audit Timeline'));
@@ -124,8 +125,11 @@ test('admin dashboard exposes operator visibility panels for live launch monitor
   assert.ok(html.includes('deadLetterRows'));
   assert.ok(html.includes('Run Worker Once'));
   assert.ok(html.includes('opsFeedback'));
-  assert.ok(html.includes("data-admin-action=\"${escapeHtml(action)}\""));
-  assert.ok(html.includes('function escapeHtml'));
+  assert.ok(html.includes('/admin-dashboard.js'));
+  assert.equal(html.includes('onsubmit="authenticate(event)"'), false);
+  assert.equal(html.includes('onclick="refresh()"'), false);
+  assert.equal(html.includes('onclick="logout()"'), false);
+  assert.ok(js.includes("data-admin-action=\"${escapeHtml(action)}\""));
 });
 
 test('manifest ships installable PNG icons and screenshots', () => {
@@ -205,4 +209,16 @@ test('admin orders page removes inline artifact handlers', () => {
   assert.ok(html.includes('/error-handler.js'));
   assert.equal(html.includes("onclick='downloadArtifact"), false);
   assert.equal(html.includes('window.downloadArtifact'), false);
+});
+
+test('launch readiness page uses an external module instead of inline scripts', () => {
+  const html = readFileSync('public/launch-readiness.html', 'utf8');
+  const js = readFileSync('public/launch-readiness.js', 'utf8');
+
+  assert.ok(html.includes('/launch-readiness.js'));
+  assert.ok(html.includes('/error-handler.js'));
+  assert.ok(js.includes('/api/health'));
+  assert.ok(js.includes('/api/launch-audit'));
+  assert.ok(js.includes('/api/source-proof'));
+  assert.ok(js.includes('/api/admin-login'));
 });

@@ -9,10 +9,11 @@ test('admin dashboard links to launch readiness page', async () => {
 
 test('launch readiness page includes health check hook', async () => {
   const html = await readFile('public/launch-readiness.html', 'utf8');
-  assert.ok(html.includes('/api/health'));
-  assert.ok(html.includes('/api/launch-audit'));
-  assert.ok(html.includes('/api/source-proof'));
-  assert.ok(html.includes('/api/admin-login'));
+  const js = await readFile('public/launch-readiness.js', 'utf8');
+  assert.ok(js.includes('/api/health'));
+  assert.ok(js.includes('/api/launch-audit'));
+  assert.ok(js.includes('/api/source-proof'));
+  assert.ok(js.includes('/api/admin-login'));
   assert.ok(html.includes('Live Source Proof'));
   assert.ok(html.includes('Recent Recorded Proofs'));
   assert.ok(html.includes('Phase One Launch Rules'));
@@ -24,4 +25,5 @@ test('launch readiness page includes health check hook', async () => {
   assert.ok(html.includes('County and provider validation'));
   assert.ok(html.includes('Package Launch Matrix'));
   assert.equal(html.includes('localStorage.getItem'), false);
+  assert.equal(html.includes('<script>'), false);
 });

@@ -40,11 +40,8 @@ test('repo hygiene stays aligned with the Netlify-only production path', async (
 test('Netlify hardens key customer pages with stricter script CSP where inline JS is no longer needed', async () => {
   const netlifyToml = await readFile('netlify.toml', 'utf8');
 
-  assert.ok(netlifyToml.includes('for = "/dashboard.html"'));
-  assert.ok(netlifyToml.includes('for = "/order-status.html"'));
-  assert.ok(netlifyToml.includes('for = "/success.html"'));
-  assert.ok(netlifyToml.includes('for = "/offline.html"'));
   assert.ok(netlifyToml.includes("script-src 'self';"));
+  assert.equal(netlifyToml.includes("script-src 'self' 'unsafe-inline'"), false);
 });
 
 test('Netlify function entrypoints use the modern adapter or return native Responses', async () => {

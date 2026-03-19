@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Console — TraceWorks™</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#09090f" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script src="/error-handler.js" defer></script>
   <link rel="stylesheet" href="/styles.css" />
   <style>
     body { font-family: var(--mono, monospace); }
@@ -53,10 +57,10 @@
   <header class="site-header">
     <div class="topbar">
       <a href="/" style="text-decoration:none;"><h1 style="margin:0;font-size:20px;">Trace<span style="color:var(--gold,#c9a84c);">Works™</span></h1></a>
-      <nav class="topbar-nav">
+      <nav class="topbar-nav" aria-label="Main navigation">
         <a href="/">Home</a>
         <a href="/launch-readiness.html">Launch Readiness</a>
-        <span id="logoutBtn" onclick="logout()" style="cursor:pointer;color:var(--text-3);font-size:13px;display:none;">Logout</span>
+        <button id="logoutBtn" type="button" style="cursor:pointer;color:var(--text-3);font-size:13px;display:none;background:none;border:none;padding:0;">Logout</button>
       </nav>
     </div>
   </header>
@@ -66,13 +70,13 @@
     <span class="eyebrow">Admin Console</span>
     <h2 style="font-family:var(--serif,Georgia,serif);font-size:28px;color:var(--text-1);margin:12px 0 24px;">Authenticate</h2>
     <div class="panel">
-      <form id="loginForm" onsubmit="authenticate(event)">
+      <form id="loginForm">
         <div class="field-group">
           <label>Admin API Key</label>
           <input type="password" id="apiKey" placeholder="Bearer token" required autocomplete="off" />
         </div>
         <button type="submit" class="btn-primary" id="loginBtn" style="width:100%;padding:10px;">Authenticate</button>
-        <div id="loginError" class="err-msg" style="display:none;"></div>
+        <div id="loginError" class="err-msg" role="alert" aria-live="polite" style="display:none;"></div>
       </form>
     </div>
     <p style="font-size:11px;color:var(--text-4);text-align:center;margin-top:16px;">Enter your ADMIN_API_KEY once. TraceWorks will keep the admin session in an HttpOnly cookie instead of browser storage.</p>
@@ -87,8 +91,8 @@
       </div>
       <div style="display:flex;gap:10px;">
         <button id="runWorkerBtn" class="btn-primary" style="font-size:12px;padding:8px 16px;">Run Worker Once</button>
-        <button onclick="refresh()" class="btn-outline" style="font-size:12px;padding:8px 16px;">Refresh</button>
-        <button onclick="logout()" style="font-size:12px;padding:8px 16px;background:none;border:1px solid rgba(255,255,255,.1);color:var(--text-3);border-radius:2px;cursor:pointer;">Logout</button>
+        <button id="refreshBtn" type="button" class="btn-outline" style="font-size:12px;padding:8px 16px;">Refresh</button>
+        <button id="logoutActionBtn" type="button" style="font-size:12px;padding:8px 16px;background:none;border:1px solid rgba(255,255,255,.1);color:var(--text-3);border-radius:2px;cursor:pointer;">Logout</button>
       </div>
     </div>
 
@@ -168,350 +172,6 @@
     <div id="dashError" class="err-msg" style="display:none;"></div>
   </div>
 
-  <script>
-    let adminSessionReady = false;
-
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function normalizeStatusTone(status) {
-      return /^[a-z_]+$/.test(status || '') ? status : 'failed';
-    }
-
-    function setOpsFeedback(message, tone = '') {
-      const el = document.getElementById('opsFeedback');
-      if (!el) return;
-      el.textContent = message || '';
-      if (!message) {
-        el.style.display = 'none';
-        el.removeAttribute('data-tone');
-        return;
-      }
-      el.style.display = 'block';
-      el.setAttribute('data-tone', tone || 'ok');
-    }
-
-    function renderActionButton(label, action, caseRef) {
-      if (!caseRef) return '';
-      return `<button class="mini-btn" data-admin-action="${escapeHtml(action)}" data-case-ref="${escapeHtml(caseRef)}">${escapeHtml(label)}</button>`;
-    }
-
-    async function postAdminAction(action, payload = {}) {
-      const res = await fetch('/api/admin-actions', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...payload })
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const error = body.error || `HTTP ${res.status}`;
-        const err = new Error(error);
-        err.status = res.status;
-        err.payload = body;
-        throw err;
-      }
-      return body;
-    }
-
-    async function requeueCase(caseRef) {
-      const result = await postAdminAction('requeue_case', { caseRef });
-      const manualReviewNote = result.manualReviewLikely ? ' Manual review may still be needed for browser-backed sources.' : '';
-      setOpsFeedback(`Case ${caseRef} requeued successfully.${manualReviewNote}`, result.manualReviewLikely ? 'warn' : 'ok');
-      await loadData();
-      return result;
-    }
-
-    async function runQueueOnce(caseRef = '') {
-      const result = await postAdminAction('run_queue_once', caseRef ? { caseRef } : {});
-      const target = result.caseRef ? ` for ${result.caseRef}` : '';
-      const tone = result.manualReview ? 'warn' : 'ok';
-      const message = result.message === 'no_jobs'
-        ? `No queued fulfillment jobs were ready${target}.`
-        : `Queue worker ran${target}.`;
-      setOpsFeedback(message, tone);
-      await loadData();
-      return result;
-    }
-
-    async function logout() {
-      try {
-        await fetch('/api/admin-logout', { method: 'POST', credentials: 'same-origin' });
-      } catch {}
-      adminSessionReady = false;
-      document.getElementById('adminDash').style.display = 'none';
-      document.getElementById('loginScreen').style.display = '';
-      document.getElementById('logoutBtn').style.display = 'none';
-      setOpsFeedback('');
-    }
-
-    function statusBadge(status) {
-      const labels = {
-        pending_payment:'Payment Pending',
-        paid:'Payment Confirmed',
-        queued:'Queued',
-        running:'Research Running',
-        processing:'Processing',
-        retry:'Retry Scheduled',
-        completed:'Completed',
-        manual_review:'Manual Review',
-        failed:'Failed',
-        delivery_failed:'Delivery Failed',
-        refunded:'Refunded',
-        canceled:'Canceled'
-      };
-      const tone = normalizeStatusTone(status === 'retry' ? 'retrying' : status);
-      return `<span class="status-badge s-${tone}">${escapeHtml(labels[status] || status || 'unknown')}</span>`;
-    }
-
-    function fmtDate(iso) {
-      if (!iso) return '—';
-      return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    }
-
-    function fmtAmt(cents) {
-      if (!cents) return '—';
-      return '$' + (Number(cents) / 100).toFixed(2);
-    }
-
-    function renderInfoRows(targetId, rows, emptyText, formatter) {
-      const target = document.getElementById(targetId);
-      if (!target) return;
-      target.innerHTML = rows.length
-        ? rows.map(formatter).join('')
-        : `<p style="font-size:12px;color:var(--text-4);">${emptyText}</p>`;
-    }
-
-    async function loadData() {
-      const errEl = document.getElementById('dashError');
-      errEl.style.display = 'none';
-
-      try {
-        const [metricsRes, ordersRes, healthRes] = await Promise.all([
-          fetch('/api/admin-metrics', { credentials: 'same-origin' }),
-          fetch('/api/admin-orders?limit=50', { credentials: 'same-origin' }),
-          fetch('/api/health', { credentials: 'same-origin' }),
-        ]);
-
-        if (metricsRes.status === 401 || ordersRes.status === 401) {
-          adminSessionReady = false;
-          await logout();
-          return;
-        }
-
-        const metrics = await metricsRes.json();
-        const orders = await ordersRes.json();
-        const health = await healthRes.json();
-
-        // Metrics cards
-        document.getElementById('mTotal').textContent = orders.total ?? '—';
-        document.getElementById('mRevenue').textContent = orders.aggregate?.revenueTotalFormatted || '—';
-        document.getElementById('mQueue').textContent = metrics.metrics?.queueDepth ?? '—';
-        document.getElementById('mFailed').textContent = metrics.metrics?.byStatus?.failed ?? 0;
-
-        // Health
-        const missing = health.envMissing || [];
-        const degraded = metrics.degraded;
-        document.getElementById('healthStatus').innerHTML = degraded
-          ? '<span style="font-size:10px;color:#f07070;"><span class="status-dot dot-error"></span>Degraded</span>'
-          : '<span style="font-size:10px;color:#5ecb94;"><span class="status-dot dot-ok"></span>Healthy</span>';
-
-        const healthChecks = [
-          { label: 'Stripe', ok: !missing.includes('STRIPE_SECRET_KEY') },
-          { label: 'Webhooks', ok: !missing.includes('STRIPE_WEBHOOK_SECRET') },
-          { label: 'SMTP', ok: !missing.some(k => k.startsWith('SMTP')) },
-          { label: 'Queue', ok: (metrics.metrics?.queueDepth ?? 0) < 50 },
-          { label: 'Failed Jobs', ok: (metrics.metrics?.byStatus?.failed ?? 0) === 0 },
-          { label: 'Admin API Key', ok: true },
-        ];
-        document.getElementById('healthRows').innerHTML = healthChecks.map(c =>
-          `<div class="health-row"><span style="color:var(--text-2);">${escapeHtml(c.label)}</span><span class="status-dot ${c.ok ? 'dot-ok' : 'dot-error'}"></span></div>`
-        ).join('');
-
-        // By-status
-        const bs = orders.aggregate?.byStatus || {};
-        document.getElementById('byStatusRows').innerHTML = Object.entries(bs).length
-          ? Object.entries(bs).map(([s, n]) => `<div class="health-row"><span>${statusBadge(s)}</span><span style="color:var(--text-1);font-weight:700;">${escapeHtml(n)}</span></div>`).join('')
-          : '<p style="font-size:12px;color:var(--text-4);">No orders.</p>';
-
-        const ops = metrics.operations || {};
-        const manualReviewOrders = Array.isArray(ops.manualReviewOrders) ? ops.manualReviewOrders : [];
-        const activeJobs = Array.isArray(ops.activeJobs) ? ops.activeJobs : [];
-        const auditEvents = Array.isArray(ops.recentAuditEvents) ? ops.recentAuditEvents : [];
-        const deadLetters = Array.isArray(ops.recentDeadLetters) ? ops.recentDeadLetters : [];
-
-        document.getElementById('manualReviewCount').textContent = `${manualReviewOrders.length} visible`;
-        renderInfoRows('manualReviewRows', manualReviewOrders, 'No orders are currently in manual review.', (order) => `
-          <div class="health-row" style="display:block;">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-              <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(order.caseRef || order.order_id || '—')}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(order.packageId || order.purchased_tier || 'unknown package')} · ${escapeHtml(fmtDate(order.updatedAt || order.completed_at || order.createdAt))}</div>
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                ${renderActionButton('Requeue', 'requeue-case', order.caseRef || order.order_id || '')}
-                <span>${statusBadge(order.status || 'manual_review')}</span>
-              </div>
-            </div>
-            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${escapeHtml(order.failure_reason || 'Manual review required.')}</div>
-          </div>
-        `);
-
-        document.getElementById('activeJobCount').textContent = `${activeJobs.length} active`;
-        renderInfoRows('activeJobRows', activeJobs, 'No queued, retrying, or processing jobs right now.', (job) => `
-          <div class="health-row" style="display:block;">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-              <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(job.payload?.caseRef || job.id)}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(job.type || 'job')} · attempts ${escapeHtml(job.attempts || 0)} · next ${escapeHtml(fmtDate(job.nextAttemptAt || job.updatedAt || job.createdAt))}</div>
-              </div>
-              <span>${statusBadge(job.status || 'queued')}</span>
-            </div>
-            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${escapeHtml(job.lastError || 'Awaiting worker action.')}</div>
-          </div>
-        `);
-
-        document.getElementById('auditEventCount').textContent = `${auditEvents.length} recent`;
-        renderInfoRows('auditEventRows', auditEvents, 'No recent audit events recorded yet.', (entry) => `
-          <div class="health-row" style="display:block;">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-              <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(entry.event || 'audit_event')}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(entry.caseRef || entry.orderId || 'system')} · ${escapeHtml(fmtDate(entry.at))}</div>
-              </div>
-            </div>
-            <div style="margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.5;">${escapeHtml(entry.error || entry.status || entry.packageId || entry.tier || 'Recorded in audit log.')}</div>
-          </div>
-        `);
-
-        document.getElementById('deadLetterCount').textContent = `${deadLetters.length} recent`;
-        renderInfoRows('deadLetterRows', deadLetters, 'No dead letters recorded.', (entry) => `
-          <div class="health-row" style="display:block;">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-              <div>
-                <div style="color:var(--text-1);font-weight:700;font-size:12px;">${escapeHtml(entry.caseRef || entry.jobId || 'dead_letter')}</div>
-                <div style="margin-top:4px;color:var(--text-3);font-size:11px;">${escapeHtml(entry.source || 'queue')} · ${escapeHtml(fmtDate(entry.at))}</div>
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                ${renderActionButton('Requeue', 'requeue-case', entry.caseRef || '')}
-              </div>
-            </div>
-            <div style="margin-top:8px;font-size:12px;color:#f0a3a3;line-height:1.5;">${escapeHtml(entry.error || 'Unknown queue failure.')}</div>
-          </div>
-        `);
-
-        // Orders table
-        const rows = orders.orders || [];
-        document.getElementById('orderCount').textContent = `Showing ${rows.length} of ${orders.total}`;
-        document.getElementById('noOrders').style.display = rows.length ? 'none' : '';
-        document.getElementById('ordersBody').innerHTML = rows.map(o => `
-          <tr>
-            <td style="font-family:var(--mono);color:var(--text-1);">${escapeHtml(o.caseRef || '—')}</td>
-            <td>${escapeHtml(o.packageId || o.tier || '—')}</td>
-            <td>${statusBadge(o.status || 'unknown')}</td>
-            <td>${escapeHtml(fmtDate(o.createdAt))}</td>
-            <td>${escapeHtml(fmtAmt(o.amountTotal))}</td>
-            <td style="color:${(o.fulfillmentAttempts||0)>2?'#f07070':'var(--text-2)'};">${escapeHtml(o.fulfillmentAttempts || 0)}</td>
-          </tr>`).join('');
-
-        document.getElementById('lastRefresh').textContent = `Last refreshed: ${new Date().toLocaleTimeString()}`;
-        adminSessionReady = true;
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.style.display = '';
-      }
-    }
-
-    async function authenticate(e) {
-      e.preventDefault();
-      const btn = document.getElementById('loginBtn');
-      const errEl = document.getElementById('loginError');
-      errEl.style.display = 'none';
-      btn.textContent = 'Authenticating…';
-      btn.disabled = true;
-      const key = document.getElementById('apiKey').value.trim();
-      try {
-        const res = await fetch('/api/admin-login', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey: key })
-        });
-        if (res.status === 401) throw new Error('Invalid API key.');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        adminSessionReady = true;
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('adminDash').style.display = '';
-        document.getElementById('logoutBtn').style.display = '';
-        await loadData();
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.style.display = '';
-      } finally {
-        btn.textContent = 'Authenticate';
-        btn.disabled = false;
-      }
-    }
-
-    async function refresh() { await loadData(); }
-
-    document.getElementById('runWorkerBtn').addEventListener('click', async (event) => {
-      const button = event.currentTarget;
-      button.disabled = true;
-      button.textContent = 'Running…';
-      try {
-        await runQueueOnce();
-      } catch (err) {
-        const tone = err.status === 409 || err.status === 202 ? 'warn' : 'error';
-        setOpsFeedback(err.message, tone);
-      } finally {
-        button.disabled = false;
-        button.textContent = 'Run Worker Once';
-      }
-    });
-
-    document.addEventListener('click', async (event) => {
-      const button = event.target.closest('[data-admin-action]');
-      if (!button) return;
-      const action = button.dataset.adminAction || '';
-      const caseRef = button.dataset.caseRef || '';
-      if (action !== 'requeue-case' || !caseRef) return;
-
-      button.disabled = true;
-      const original = button.textContent;
-      button.textContent = 'Requeueing…';
-      try {
-        await requeueCase(caseRef);
-      } catch (err) {
-        const tone = err.status === 409 ? 'warn' : 'error';
-        setOpsFeedback(err.message, tone);
-      } finally {
-        button.disabled = false;
-        button.textContent = original;
-      }
-    });
-
-    // Init
-    loadData()
-      .then(() => {
-        if (adminSessionReady) {
-          document.getElementById('loginScreen').style.display = 'none';
-          document.getElementById('adminDash').style.display = '';
-          document.getElementById('logoutBtn').style.display = '';
-          setInterval(loadData, 60000);
-          return;
-        }
-        document.getElementById('loginScreen').style.display = '';
-      })
-      .catch(() => {
-        document.getElementById('loginScreen').style.display = '';
-      });
-  </script>
+  <script src="/admin-dashboard.js" type="module"></script>
 </body>
 </html>
