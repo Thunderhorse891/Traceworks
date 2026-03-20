@@ -20,41 +20,15 @@
   <meta name="twitter:image" content="/og-image.svg" />
   <script src="/error-handler.js" defer></script>
   <link rel="stylesheet" href="/styles.css" />
-  <style>
-    .dash-layout { max-width: 980px; margin: 0 auto; padding: 64px 24px 80px; }
-    .dash-grid { display: grid; grid-template-columns: 300px 1fr; gap: 32px; }
-    @media (max-width: 768px) { .dash-grid { grid-template-columns: 1fr; } }
-    .dash-sidebar { }
-    .dash-main { min-width: 0; }
-    .dash-section { background: var(--bg-raised, rgba(255,255,255,.025)); border: 1px solid rgba(255,255,255,.07); border-radius: 4px; padding: 24px; margin-bottom: 20px; }
-    .dash-section h3 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); margin: 0 0 16px; }
-    .field-group { margin-bottom: 14px; }
-    .field-group label { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
-    .field-group input { width: 100%; padding: 9px 12px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.1); border-radius: 2px; color: var(--text-1); font-size: 13px; box-sizing: border-box; font-family: var(--mono); }
-    .field-group input:focus { outline: none; border-color: var(--gold); }
-    .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-    .status-queued { background: rgba(100,130,220,.15); color: #8ba3f0; }
-    .status-processing { background: rgba(201,168,76,.12); color: var(--gold); }
-    .status-completed { background: rgba(58,158,110,.12); color: #5ecb94; }
-    .status-failed { background: rgba(220,60,60,.12); color: #f07070; }
-    .status-retrying { background: rgba(220,140,40,.12); color: #f0a040; }
-    .order-row { padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.04); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .order-row:last-child { border-bottom: none; }
-    .order-ref { font-family: var(--mono); font-size: 13px; color: var(--text-1); }
-    .order-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-    .error-msg { padding: 12px 16px; background: rgba(220,60,60,.1); border: 1px solid rgba(220,60,60,.2); border-radius: 3px; color: #f07070; font-size: 13px; margin-top: 12px; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-3); }
-    .empty-state p { font-size: 14px; margin: 8px 0 0; }
-  </style>
 </head>
 <body>
   <header class="site-header">
     <div class="topbar">
-      <a href="/" style="text-decoration:none;"><h1 style="margin:0;font-size:20px;">Trace<span style="color:var(--gold);">Works™</span></h1></a>
+      <a href="/" class="portal-wordmark-link"><h1 class="portal-wordmark-title">Trace<span class="portal-wordmark-mark">Works™</span></h1></a>
       <nav class="topbar-nav" aria-label="Main navigation">
         <a href="/">Home</a>
         <a href="/packages.html">Reports</a>
-        <a href="/dashboard.html" style="color:var(--text-1);">My Orders</a>
+        <a href="/dashboard.html" class="is-current">My Orders</a>
         <a href="/order-status.html">Track Order</a>
         <a href="/#order" class="btn-primary">New Request</a>
       </nav>
@@ -62,10 +36,10 @@
   </header>
 
   <main class="dash-layout">
-    <div style="margin-bottom:40px;">
+    <div class="page-intro">
       <span class="eyebrow">Customer Portal</span>
-      <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,38px);color:var(--text-1);margin:12px 0 8px;">My Orders</h2>
-      <p style="color:var(--text-2);font-size:14px;max-width:560px;">TraceWorks does not require an account. Track orders using your Case Reference and email — both were sent in your confirmation email.</p>
+      <h2 class="page-heading">My Orders</h2>
+      <p class="page-copy">TraceWorks does not require an account. Track orders using your Case Reference and email — both were sent in your confirmation email.</p>
     </div>
 
     <div class="dash-grid">
@@ -82,19 +56,19 @@
               <label>Email Address</label>
               <input type="email" id="email" placeholder="you@example.com" required />
             </div>
-            <button type="submit" id="lookupBtn" class="btn-primary" style="width:100%;padding:10px;font-size:13px;">Check Status</button>
+            <button type="submit" id="lookupBtn" class="btn-primary btn-block btn-compact">Check Status</button>
             <div id="lookupError" class="error-msg" role="alert" aria-live="polite" style="display:none;"></div>
           </form>
         </div>
 
         <div class="dash-section">
           <h3>Quick Links</h3>
-          <nav style="display:flex;flex-direction:column;gap:8px;">
-            <a href="/packages.html" style="font-size:13px;color:var(--text-2);">View Report Tiers</a>
-            <a href="/#order" style="font-size:13px;color:var(--text-2);">Submit New Request</a>
-            <a href="/order-status.html" style="font-size:13px;color:var(--text-2);">Full Status Tracker</a>
-            <a href="/refund-policy.html" style="font-size:13px;color:var(--text-2);">Refund Policy</a>
-            <a href="mailto:traceworks.tx@outlook.com" style="font-size:13px;color:var(--text-2);">Contact Support</a>
+          <nav class="portal-link-stack">
+            <a href="/packages.html">View Report Tiers</a>
+            <a href="/#order">Submit New Request</a>
+            <a href="/order-status.html">Full Status Tracker</a>
+            <a href="/refund-policy.html">Refund Policy</a>
+            <a href="mailto:traceworks.tx@outlook.com">Contact Support</a>
           </nav>
         </div>
       </div>
@@ -103,28 +77,28 @@
       <div class="dash-main">
         <!-- Active order result -->
         <div id="orderResult" style="display:none;" class="dash-section">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+          <div class="portal-result-head">
             <div>
-              <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;">Case Reference</div>
-              <div id="resCaseRef" style="font-family:var(--mono);font-size:15px;color:var(--text-1);"></div>
+              <div class="portal-detail-label">Case Reference</div>
+              <div id="resCaseRef" class="portal-detail-value portal-detail-value--mono"></div>
             </div>
             <div id="resBadge"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-            <div><div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:3px;">Package</div><div id="resPackage" style="font-size:13px;color:var(--text-2);"></div></div>
-            <div><div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:3px;">Primary Subject</div><div id="resSubject" style="font-size:13px;color:var(--text-2);"></div></div>
-            <div><div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:3px;">Jurisdiction</div><div id="resJurisdiction" style="font-size:13px;color:var(--text-2);"></div></div>
-            <div><div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:3px;">Submitted</div><div id="resCreated" style="font-size:13px;color:var(--text-2);"></div></div>
+          <div class="portal-detail-grid">
+            <div class="portal-detail-item"><div class="portal-detail-label portal-detail-label--compact">Package</div><div id="resPackage" class="portal-detail-value"></div></div>
+            <div class="portal-detail-item"><div class="portal-detail-label portal-detail-label--compact">Primary Subject</div><div id="resSubject" class="portal-detail-value"></div></div>
+            <div class="portal-detail-item"><div class="portal-detail-label portal-detail-label--compact">Jurisdiction</div><div id="resJurisdiction" class="portal-detail-value"></div></div>
+            <div class="portal-detail-item"><div class="portal-detail-label portal-detail-label--compact">Submitted</div><div id="resCreated" class="portal-detail-value"></div></div>
           </div>
-          <p id="resNote" style="font-size:12px;color:var(--text-3);margin:0 0 16px;"></p>
-          <a id="resStatusLink" href="#" style="font-size:13px;color:var(--gold);">View Full Status &rarr;</a>
+          <p id="resNote" class="portal-note portal-note--top"></p>
+          <a id="resStatusLink" href="#" class="portal-accent-link">View Full Status &rarr;</a>
         </div>
 
         <!-- Recent orders from localStorage -->
         <div class="dash-section">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="margin:0;">Recent Orders</h3>
-            <button id="clearHistoryBtn" type="button" style="font-size:11px;color:var(--text-4);background:none;border:none;cursor:pointer;padding:0;">Clear history</button>
+          <div class="portal-section-head">
+            <h3>Recent Orders</h3>
+            <button id="clearHistoryBtn" type="button" class="portal-subtle-button">Clear history</button>
           </div>
           <div id="historyList"></div>
         </div>
@@ -132,8 +106,8 @@
     </div>
   </main>
 
-  <footer role="contentinfo" style="border-top:1px solid rgba(255,255,255,.07);padding:40px 24px;text-align:center;">
-    <p style="font-size:12px;color:var(--text-4);">© 2025 TraceWorks™. All rights reserved. &nbsp;|&nbsp; <a href="/terms.html" style="color:var(--text-4);">Terms</a> &nbsp;|&nbsp; <a href="/privacy.html" style="color:var(--text-4);">Privacy</a></p>
+  <footer role="contentinfo" class="portal-footer">
+    <p class="portal-footer-copy">© 2025 TraceWorks™. All rights reserved. &nbsp;|&nbsp; <a href="/terms.html">Terms</a> &nbsp;|&nbsp; <a href="/privacy.html">Privacy</a></p>
   </footer>
 
   <script src="/pwa.js" type="module"></script>

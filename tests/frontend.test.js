@@ -97,8 +97,24 @@ test('customer tracking pages use dedicated external modules instead of inline h
 
   assert.ok(success.includes('/success.js'));
   assert.equal(success.includes("const params      = new URLSearchParams(location.search);"), false);
+  assert.equal(success.includes('<style>'), false);
 
   assert.ok(offline.includes('/offline.js'));
+});
+
+test('customer portal pages stay on the shared design system instead of page-local style blocks', () => {
+  const styles = readFileSync('public/styles.css', 'utf8');
+  const dashboard = readFileSync('public/dashboard.html', 'utf8');
+  const tracker = readFileSync('public/order-status.html', 'utf8');
+
+  assert.ok(styles.includes('.portal-wordmark-link'));
+  assert.ok(styles.includes('.portal-detail-grid'));
+  assert.ok(styles.includes('.dash-layout'));
+  assert.ok(styles.includes('.status-page .timeline'));
+  assert.equal(dashboard.includes('<style>'), false);
+  assert.equal(tracker.includes('<style>'), false);
+  assert.ok(dashboard.includes('class="portal-footer"'));
+  assert.ok(tracker.includes('class="portal-footer"'));
 });
 
 test('packages catalog routes into the real intake flow and loads availability', () => {
