@@ -165,6 +165,41 @@ test('public entry pages wire pwa bootstrap, metadata, and error handling consis
   }
 });
 
+test('styled shell pages load premium fonts directly without CSS import bottlenecks', () => {
+  const fontStylesheet = 'fonts.googleapis.com/css2?family=Inter';
+  const preconnectGoogle = 'https://fonts.googleapis.com';
+  const preconnectStatic = 'https://fonts.gstatic.com';
+  const pages = [
+    'public/admin-dashboard.html',
+    'public/admin-orders.html',
+    'public/cancel.html',
+    'public/contact-sales.html',
+    'public/dashboard.html',
+    'public/enterprise.html',
+    'public/index.html',
+    'public/launch-readiness.html',
+    'public/offline.html',
+    'public/order-status.html',
+    'public/packages.html',
+    'public/privacy.html',
+    'public/refund-policy.html',
+    'public/report-sample.html',
+    'public/report-tiers.html',
+    'public/success.html',
+    'public/terms.html',
+  ];
+
+  const sharedStyles = readFileSync('public/styles.css', 'utf8');
+  assert.equal(sharedStyles.includes("@import url('https://fonts.googleapis.com/css2"), false);
+
+  for (const file of pages) {
+    const html = readFileSync(file, 'utf8');
+    assert.ok(html.includes(preconnectGoogle), `${file} should preconnect to Google Fonts`);
+    assert.ok(html.includes(preconnectStatic), `${file} should preconnect to Google static fonts`);
+    assert.ok(html.includes(fontStylesheet), `${file} should load the shared font stylesheet directly`);
+  }
+});
+
 test('key customer pages expose richer social metadata', () => {
   const pages = [
     'public/index.html',

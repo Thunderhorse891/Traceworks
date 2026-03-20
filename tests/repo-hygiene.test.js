@@ -35,6 +35,7 @@ test('repo hygiene stays aligned with the Netlify-only production path', async (
   assert.equal(await exists('public/robots.txt'), true);
   assert.equal(await exists('public/favicon.svg'), true);
   assert.equal(await exists('public/error-handler.js'), true);
+  assert.equal((await readFile('public/styles.css', 'utf8')).includes("@import url('https://fonts.googleapis.com/css2"), false);
 });
 
 test('Netlify hardens key customer pages with stricter script CSP where inline JS is no longer needed', async () => {
