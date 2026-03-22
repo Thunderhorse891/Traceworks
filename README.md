@@ -46,6 +46,7 @@ The live paid workflows are driven by `netlify/functions/_lib/tier-handlers.js`,
 - Generate runtime secrets: `node scripts/generate-launch-secrets.mjs`
 - Print Netlify env template: `node scripts/netlify-env-template.mjs --url https://your-site.example`
 - Live smoke test: `node scripts/live-smoke.mjs --url https://your-deployed-site.example [--admin-key ...]`
+- Build Wix custom element bridge: `node scripts/build-wix-custom-element.mjs --app-url https://your-site.example`
 - Tests: `node --test --test-isolation=none --test-concurrency=1`
 - Local dev: `npx netlify dev`
 

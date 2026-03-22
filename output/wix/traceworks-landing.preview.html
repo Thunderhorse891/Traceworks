@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TraceWorks Wix Preview</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, rgba(212,168,39,0.09), transparent 28%),
+          linear-gradient(180deg, #07101b 0%, #0a111b 48%, #0d1520 100%);
+        font-family: Inter, system-ui, sans-serif;
+        color: #edf2fc;
+      }
+
+      .shell {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+
+      .note {
+        margin: 0 0 18px;
+        color: #b8c6e0;
+        font-size: 14px;
+        line-height: 1.7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <p class="note">This is the generated Wix custom element preview. Replace <code>app-base-url</code> with your real TraceWorks domain before placing it in Wix Studio.</p>
+      <traceworks-landing app-base-url="https://traceworks.example.com"></traceworks-landing>
+    </div>
+    <script type="module" src="./traceworks-landing.element.js"></script>
+  </body>
+</html>

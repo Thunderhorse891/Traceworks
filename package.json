@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:wix": "node scripts/build-wix-custom-element.mjs",
     "check": "npm run lint:js && npm run test",
     "ci": "npm run check",
     "launch:audit": "node scripts/launch-audit.mjs",
