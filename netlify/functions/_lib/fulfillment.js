@@ -10,6 +10,37 @@ function now() {
   return new Date().toISOString();
 }
 
+function buildRepoCategoryPanel(workflow = {}) {
+  const osint = workflow.osint;
+  if (!osint || !Array.isArray(osint.repoCategoryResults) || !osint.repoCategoryResults.length) return null;
+
+  const items = [];
+  for (const category of osint.repoCategoryResults) {
+    const repoList = Array.isArray(category.repoReferences) ? category.repoReferences.slice(0, 2).map((repo) => repo.slug || repo.url).filter(Boolean) : [];
+    const queryPreview = Array.isArray(category.queryPlan) ? category.queryPlan.slice(0, 2).join(' | ') : '';
+    items.push(`${category.label || category.categoryId}: ${Number(category.sources?.length || 0)} cited lead(s); repo references ${repoList.length ? repoList.join(', ') : 'not listed'}; queries ${queryPreview || 'not captured'}.`);
+  }
+
+  if (Array.isArray(osint.repoReferences) && osint.repoReferences.length) {
+    items.push(`Overall repo references used in this run: ${osint.repoReferences.slice(0, 5).map((repo) => repo.slug || repo.url).filter(Boolean).join(', ')}.`);
+  }
+
+  return {
+    title: 'Repo-Mapped OSINT Category Runs',
+    items
+  };
+}
+
+function appendRepoCategoryPanel(report = {}, workflow = {}) {
+  const panel = buildRepoCategoryPanel(workflow);
+  if (!panel) return report;
+  const analysisPanels = Array.isArray(report.analysisPanels) ? report.analysisPanels : [];
+  return {
+    ...report,
+    analysisPanels: [...analysisPanels, panel]
+  };
+}
+
 export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) {
   const sendEmails = deps.sendReportEmails || sendReportEmails;
   const saveArtifacts = deps.saveReportArtifacts || saveReportArtifacts;
@@ -32,7 +63,9 @@ export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) 
     const workflow = await runner(order, { startedAt, fetchImpl: deps.fetchImpl });
     await recordAuditEvent({ event: 'source_query_completed', orderId, sourcesAttempted: workflow.sources.length });
 
-    const report = sanitizeCustomerFacingReport(buildDynamicReportFromWorkflow(workflow, order));
+    const report = sanitizeCustomerFacingReport(
+      appendRepoCategoryPanel(buildDynamicReportFromWorkflow(workflow, order), workflow)
+    );
     const artifacts = await saveArtifacts(report);
     await checkArtifact(artifacts.htmlPath);
     await checkArtifact(artifacts.pdfPath);
