@@ -14,6 +14,18 @@ const dashError = document.getElementById('dashError');
 const refreshBtn = document.getElementById('refreshBtn');
 const logoutActionBtn = document.getElementById('logoutActionBtn');
 const runWorkerBtn = document.getElementById('runWorkerBtn');
+const debugCaseForm = document.getElementById('debugCaseForm');
+const debugCaseBtn = document.getElementById('debugCaseBtn');
+const debugCaseRefInput = document.getElementById('debugCaseRef');
+const debugCaseMeta = document.getElementById('debugCaseMeta');
+const debugCaseError = document.getElementById('debugCaseError');
+const debugCaseEmpty = document.getElementById('debugCaseEmpty');
+const debugCaseWrap = document.getElementById('debugCaseWrap');
+const debugCaseSummary = document.getElementById('debugCaseSummary');
+const debugProviderStack = document.getElementById('debugProviderStack');
+const debugCategoryRuns = document.getElementById('debugCategoryRuns');
+const debugTopHits = document.getElementById('debugTopHits');
+const debugQueryPlan = document.getElementById('debugQueryPlan');
 
 function normalizeStatusTone(status) {
   return /^[a-z_]+$/.test(status || '') ? status : 'failed';
@@ -59,6 +71,192 @@ function renderActionButton(label, action, caseRef) {
   return `<button class="mini-btn" data-admin-action="${escapeHtml(action)}" data-case-ref="${escapeHtml(caseRef)}">${escapeHtml(label)}</button>`;
 }
 
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function setDebugError(message = '') {
+  if (!debugCaseError) return;
+  debugCaseError.textContent = message;
+  debugCaseError.style.display = message ? '' : 'none';
+}
+
+function clearDebugCase(message = 'Load a case to inspect package → OSINT categories → providers → hits.') {
+  if (debugCaseMeta) debugCaseMeta.textContent = '';
+  if (debugCaseSummary) debugCaseSummary.innerHTML = '';
+  if (debugProviderStack) debugProviderStack.innerHTML = '';
+  if (debugCategoryRuns) debugCategoryRuns.innerHTML = '';
+  if (debugTopHits) debugTopHits.innerHTML = '';
+  if (debugQueryPlan) debugQueryPlan.textContent = '';
+  if (debugCaseWrap) debugCaseWrap.style.display = 'none';
+  if (debugCaseEmpty) {
+    debugCaseEmpty.textContent = message;
+    debugCaseEmpty.style.display = '';
+  }
+}
+
+function renderDebugItems(target, items, emptyText) {
+  if (!target) return;
+  target.innerHTML = items.length
+    ? items.join('')
+    : `<div class="debug-item"><small>${escapeHtml(emptyText)}</small></div>`;
+}
+
+function providerTone(hitCount, ok) {
+  if (hitCount > 0) return 'ok';
+  return ok ? 'warn' : 'error';
+}
+
+function providerToneChip(tone) {
+  const colors = {
+    ok: '#5ecb94',
+    warn: '#c9a84c',
+    error: '#f07070'
+  };
+  return `<span style="display:inline-block;width:8px;height:8px;border-radius:999px;background:${colors[tone] || colors.warn};margin-right:8px;"></span>`;
+}
+
+function renderProviderHealthRow(row, preferredProviders = []) {
+  const preferredIndex = preferredProviders.indexOf(row.provider);
+  const preferredTag = preferredIndex === -1 ? 'fallback' : `pref #${preferredIndex + 1}`;
+  const tone = providerTone(Number(row.hitCount || 0), Boolean(row.ok));
+  const errorLine = row.error ? `<small>error: ${escapeHtml(row.error)}</small>` : `<small>${escapeHtml(preferredTag)} · attempts ${escapeHtml(row.attempts || 0)} · hits ${escapeHtml(row.hitCount || 0)}</small>`;
+  return `
+    <div class="debug-item">
+      <strong>${providerToneChip(tone)}${escapeHtml(row.provider || 'unknown provider')}</strong>
+      ${errorLine}
+    </div>
+  `;
+}
+
+function renderSourceRow(source) {
+  const categories = safeArray(source.osintCategories).join(', ') || 'uncategorized';
+  const supportingRepos = safeArray(source.supportingRepos)
+    .slice(0, 2)
+    .map((repo) => repo.slug || repo.url || '')
+    .filter(Boolean)
+    .join(' · ');
+  return `
+    <div class="debug-item">
+      <strong>${escapeHtml(source.title || source.url || 'Source')}</strong>
+      <small>${escapeHtml(source.provider || 'provider')} · ${escapeHtml(source.sourceType || 'open-web')} · ${escapeHtml(source.domain || 'unknown domain')}</small>
+      <small>${escapeHtml(categories)}</small>
+      ${supportingRepos ? `<small>${escapeHtml(supportingRepos)}</small>` : ''}
+      <small><a href="${escapeHtml(source.url || '#')}" target="_blank" rel="noreferrer" style="color:inherit;">${escapeHtml(source.url || '')}</a></small>
+    </div>
+  `;
+}
+
+function renderCategoryRow(category) {
+  const queryPlan = safeArray(category.queryPlan).slice(0, 4).join(' | ') || 'No category query plan captured.';
+  const providerPreview = safeArray(category.providerHealth)
+    .map((row) => `${row.provider}:${row.hitCount || 0}`)
+    .join(' · ');
+  const repoPreview = safeArray(category.repoReferences)
+    .slice(0, 3)
+    .map((repo) => repo.slug || repo.url || '')
+    .filter(Boolean)
+    .join(' · ');
+  const preferred = safeArray(category.preferredProviders).join(', ') || 'No explicit preference stack';
+  return `
+    <div class="debug-item">
+      <strong>${escapeHtml(category.label || category.categoryId || 'OSINT category')}</strong>
+      <small>${escapeHtml(category.categoryId || '')} · preferred: ${escapeHtml(preferred)}</small>
+      <small>sources ${escapeHtml(category.sourceCount || 0)}${providerPreview ? ` · ${escapeHtml(providerPreview)}` : ''}</small>
+      <small>${escapeHtml(queryPlan)}</small>
+      ${repoPreview ? `<small>${escapeHtml(repoPreview)}</small>` : ''}
+    </div>
+  `;
+}
+
+function renderSummary(debug) {
+  const osint = debug.osint || {};
+  return [
+    { label: 'Case Ref', value: debug.caseRef || '—' },
+    { label: 'Package', value: debug.packageId || osint.packageId || '—' },
+    { label: 'Status', value: debug.status || '—' },
+    { label: 'Subject', value: debug.subjectName || '—' },
+    { label: 'Jurisdiction', value: [debug.county, debug.state].filter(Boolean).join(', ') || '—' },
+    { label: 'Categories', value: safeArray(osint.osintCategories).join(', ') || '—' },
+    { label: 'Coverage', value: osint.coverage ? `${osint.coverage.totalSources || 0} total · ${osint.coverage.providersWithHits || 0} providers with hits` : '—' },
+    { label: 'Note', value: osint.providerNote || '—' }
+  ].map((item) => `
+    <div class="debug-item">
+      <strong>${escapeHtml(item.label)}</strong>
+      <small>${escapeHtml(item.value)}</small>
+    </div>
+  `);
+}
+
+function renderCaseDebug(debug) {
+  const osint = debug.osint || {};
+  if (debugCaseMeta) {
+    debugCaseMeta.textContent = [debug.caseRef, debug.packageId || osint.packageId, debug.status].filter(Boolean).join(' · ');
+  }
+  renderDebugItems(debugCaseSummary, renderSummary(debug), 'No case summary available.');
+  renderDebugItems(
+    debugProviderStack,
+    safeArray(osint.providerHealth).map((row) => renderProviderHealthRow(row, safeArray(osint.preferredProviders))),
+    'No provider health captured for this case.'
+  );
+  renderDebugItems(
+    debugCategoryRuns,
+    safeArray(osint.repoCategoryResults).map((category) => renderCategoryRow(category)),
+    'No repo category runs were stored for this case.'
+  );
+  renderDebugItems(
+    debugTopHits,
+    safeArray(osint.topSources).map((source) => renderSourceRow(source)),
+    'No OSINT hits were stored for this case.'
+  );
+  if (debugQueryPlan) {
+    const lines = [
+      `Preferred providers: ${safeArray(osint.preferredProviders).join(', ') || 'none'}`,
+      '',
+      'Query plan:',
+      ...safeArray(osint.queryPlan).map((query, index) => `${index + 1}. ${query}`)
+    ];
+    debugQueryPlan.textContent = lines.join('\n');
+  }
+  if (debugCaseEmpty) debugCaseEmpty.style.display = 'none';
+  if (debugCaseWrap) debugCaseWrap.style.display = '';
+}
+
+async function loadCaseDebug(caseRef) {
+  if (!caseRef) {
+    setDebugError('Case ref is required.');
+    clearDebugCase();
+    return;
+  }
+
+  setDebugError('');
+  if (debugCaseBtn) {
+    debugCaseBtn.disabled = true;
+    debugCaseBtn.textContent = 'Loading…';
+  }
+
+  try {
+    const response = await fetch(`/api/admin-case-debug?caseRef=${encodeURIComponent(caseRef)}`, {
+      credentials: 'same-origin'
+    });
+    const body = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      await logout();
+      return;
+    }
+    if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+    renderCaseDebug(body.debug || {});
+  } catch (error) {
+    setDebugError(error.message || 'Unable to load case debug.');
+    clearDebugCase('No case debug loaded.');
+  } finally {
+    if (debugCaseBtn) {
+      debugCaseBtn.disabled = false;
+      debugCaseBtn.textContent = 'Load Case Debug';
+    }
+  }
+}
+
 async function postAdminAction(action, payload = {}) {
   const response = await fetch('/api/admin-actions', {
     method: 'POST',
@@ -82,6 +280,9 @@ async function requeueCase(caseRef) {
   const manualReviewNote = result.manualReviewLikely ? ' Manual review may still be needed for browser-backed sources.' : '';
   setOpsFeedback(`Case ${caseRef} requeued successfully.${manualReviewNote}`, result.manualReviewLikely ? 'warn' : 'ok');
   await loadData();
+  if ((debugCaseRefInput?.value || '').trim() === caseRef) {
+    await loadCaseDebug(caseRef);
+  }
   return result;
 }
 
@@ -94,6 +295,9 @@ async function runQueueOnce(caseRef = '') {
     : `Queue worker ran${target}.`;
   setOpsFeedback(message, tone);
   await loadData();
+  if (caseRef && (debugCaseRefInput?.value || '').trim() === caseRef) {
+    await loadCaseDebug(caseRef);
+  }
   return result;
 }
 
@@ -105,6 +309,8 @@ async function logout() {
   adminSessionReady = false;
   syncAuthenticatedUi();
   setOpsFeedback('');
+  clearDebugCase();
+  setDebugError('');
 }
 
 function statusBadge(status) {
@@ -321,6 +527,10 @@ loginForm?.addEventListener('submit', authenticate);
 refreshBtn?.addEventListener('click', refresh);
 logoutBtn?.addEventListener('click', logout);
 logoutActionBtn?.addEventListener('click', logout);
+debugCaseForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  await loadCaseDebug((debugCaseRefInput?.value || '').trim());
+});
 
 runWorkerBtn?.addEventListener('click', async (event) => {
   const button = event.currentTarget;
@@ -365,6 +575,8 @@ document.addEventListener('click', async (event) => {
     button.textContent = original;
   }
 });
+
+clearDebugCase();
 
 loadData()
   .then(() => {
