@@ -12,7 +12,8 @@ export const PACKAGES = {
       'County Appraisal District Lookup',
       'Tax Collector / Assessment Record',
       'Parcel GIS Lookup'
-    ]
+    ],
+    osintCategories: ['appraisal_district', 'code_enforcement', 'archived_snapshots']
   },
   ownership_encumbrance: {
     id: 'ownership_encumbrance',
@@ -26,7 +27,8 @@ export const PACKAGES = {
       'Grantor-Grantee Index',
       'Mortgage / Trust Deed Index',
       'Chain-of-Title Continuity Analysis'
-    ]
+    ],
+    osintCategories: ['appraisal_district', 'business_registry', 'code_enforcement', 'archived_snapshots']
   },
   probate_heirship: {
     id: 'probate_heirship',
@@ -39,7 +41,8 @@ export const PACKAGES = {
       'Probate Case Index',
       'Licensed People Association Lookup',
       'Heir Candidate Scoring'
-    ]
+    ],
+    osintCategories: ['probate', 'obituary', 'people_search', 'voter_files', 'jail', 'archived_snapshots']
   },
   asset_network: {
     id: 'asset_network',
@@ -54,7 +57,8 @@ export const PACKAGES = {
       'County Clerk Deed Index',
       'Grantor-Grantee Index',
       'Chain-of-Title Continuity Analysis'
-    ]
+    ],
+    osintCategories: ['appraisal_district', 'business_registry', 'people_search', 'code_enforcement', 'voter_files', 'archived_snapshots']
   },
   comprehensive: {
     id: 'comprehensive',
@@ -77,7 +81,8 @@ export const PACKAGES = {
       'Cross-Source Discrepancy Analysis',
       'Confidence Matrix',
       'Recommended Next Steps'
-    ]
+    ],
+    osintCategories: ['appraisal_district', 'probate', 'business_registry', 'obituary', 'people_search', 'voter_files', 'code_enforcement', 'jail', 'archived_snapshots']
   }
 };
 
