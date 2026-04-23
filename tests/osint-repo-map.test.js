@@ -20,6 +20,17 @@ async function mockFetch(url) {
   if (value.includes('wikipedia.org')) return mockJsonResponse({ query: { search: [] } });
   if (value.includes('reddit.com')) return mockJsonResponse({ data: { children: [] } });
   if (value.includes('opencorporates.com')) return mockJsonResponse({ results: { companies: [] } });
+  if (value.includes('api.github.com/search/repositories')) {
+    return mockJsonResponse({
+      items: [
+        {
+          full_name: 'example/probate-scraper',
+          html_url: 'https://github.com/example/probate-scraper',
+          stargazers_count: 7
+        }
+      ]
+    });
+  }
   throw new Error(`Unexpected fetch URL in test: ${value}`);
 }
 
@@ -56,4 +67,23 @@ test('gatherOsint returns repo-backed category plans for purchased package categ
     assert.ok(categoryResult.queryPlan.length > 0, `Expected query plan for ${categoryResult.categoryId}`);
     assert.ok(categoryResult.repoReferences.length > 0, `Expected repo references for ${categoryResult.categoryId}`);
   }
+});
+
+test('gatherOsint includes GitHub provider results and category metadata', async () => {
+  const result = await gatherOsint('Jane Doe Travis County TX', {
+    packageId: 'probate_heirship',
+    fetchImpl: mockFetch,
+    env: {},
+    investigationInput: {
+      subjectName: 'Jane Doe',
+      county: 'Travis',
+      state: 'TX',
+      deathYear: '2023'
+    }
+  });
+
+  assert.ok(result.providerHealth.some((provider) => provider.provider === 'github'));
+  assert.ok(result.sources.some((source) => source.provider === 'github'));
+  assert.ok(result.sources.some((source) => Array.isArray(source.osintCategories) && source.osintCategories.length > 0));
+  assert.ok(result.sources.some((source) => Array.isArray(source.supportingRepos) && source.supportingRepos.length > 0));
 });
