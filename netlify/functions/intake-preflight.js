@@ -1,5 +1,6 @@
 import { buildInputCriteria, normalizeCheckoutPayload, validateCheckoutPayload } from './_lib/validation.js';
 import { assessOrderLaunchGate } from './_lib/launch-audit.js';
+import { relaxGateForOpenWebOsint } from './_lib/customer-boundaries.js';
 import { jsonWithRequestId } from './_lib/http.js';
 import { createModernHandler } from './_lib/netlify-modern.js';
 import { hitRateLimit } from './_lib/rate-limit.js';
@@ -56,7 +57,10 @@ export async function handler(event) {
   }
 
   const inputCriteria = buildInputCriteria(payload);
-  const launchGate = assessOrderLaunchGate(payload.packageId, inputCriteria, process.env);
+  const launchGate = relaxGateForOpenWebOsint(
+    assessOrderLaunchGate(payload.packageId, inputCriteria, process.env),
+    payload.packageId
+  );
 
   return jsonWithRequestId(event, 200, {
     ok: launchGate.launchReady,
