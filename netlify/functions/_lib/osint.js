@@ -377,6 +377,15 @@ function packageOsintCategories(packageId) {
   return Array.isArray(pkg?.osintCategories) ? uniqueStrings(pkg.osintCategories) : [];
 }
 
+function providerPreferencesForCategories(categoryIds = []) {
+  return uniqueStrings(
+    categoryIds.flatMap((categoryId) => {
+      const config = OSINT_REPO_MAP[categoryId];
+      return Array.isArray(config?.preferredProviders) ? config.preferredProviders : [];
+    })
+  );
+}
+
 function buildQueries(query, packageId) {
   const base = (query || 'subject public records').trim();
   const extras = openWebKeywordsForPackage(packageId);
@@ -423,11 +432,16 @@ function annotateHit(record, extras = {}) {
 
 function categoryRelevanceScore(record, packageCategories = []) {
   const categories = Array.isArray(record?.osintCategories) ? record.osintCategories : [];
-  const matches = categories.filter((category) => packageCategories.includes(category)).length;
-  return matches;
+  return categories.filter((category) => packageCategories.includes(category)).length;
 }
 
-function dedupeAndRank(records, packageCategories = []) {
+function providerPreferenceScore(provider, preferredProviders = []) {
+  const index = preferredProviders.indexOf(provider);
+  if (index === -1) return 0;
+  return preferredProviders.length - index;
+}
+
+function dedupeAndRank(records, packageCategories = [], preferredProviders = []) {
   const byUrl = new Map();
   for (const record of records) {
     if (!record?.url) continue;
@@ -451,6 +465,8 @@ function dedupeAndRank(records, packageCategories = []) {
     .sort((a, b) => {
       const categoryDiff = categoryRelevanceScore(b, packageCategories) - categoryRelevanceScore(a, packageCategories);
       if (categoryDiff !== 0) return categoryDiff;
+      const providerPrefDiff = providerPreferenceScore(b.provider, preferredProviders) - providerPreferenceScore(a.provider, preferredProviders);
+      if (providerPrefDiff !== 0) return providerPrefDiff;
       const qualityDiff = compareRecordQuality(b, a);
       if (qualityDiff !== 0) return qualityDiff;
       return a.domain.localeCompare(b.domain);
@@ -553,6 +569,7 @@ async function runCategoryOsint(categoryId, baseQuery, providers, fetchImpl, opt
     };
   }
 
+  const preferredProviders = Array.isArray(config.preferredProviders) ? config.preferredProviders : [];
   const settled = await runQueriesAcrossProviders(queryPlan, providers, fetchImpl);
   const sources = dedupeAndRank(
     settled.flatMap((result) =>
@@ -562,7 +579,8 @@ async function runCategoryOsint(categoryId, baseQuery, providers, fetchImpl, opt
         matchedQueries: [result.query]
       }))
     ),
-    [categoryId]
+    [categoryId],
+    preferredProviders
   );
 
   return {
@@ -570,6 +588,7 @@ async function runCategoryOsint(categoryId, baseQuery, providers, fetchImpl, opt
     label: config.label || categoryId,
     queryPlan,
     repoReferences: config.repos || [],
+    preferredProviders,
     providerHealth: providerHealth(settled),
     sources
   };
@@ -582,6 +601,7 @@ export async function gatherOsint(query, opts = {}) {
   const queries = buildQueries(query, packageId);
   const providers = buildProviders(env, { ...opts, packageId });
   const osintCategories = uniqueStrings(opts.osintCategories || packageOsintCategories(packageId));
+  const preferredProviders = providerPreferencesForCategories(osintCategories);
 
   const settled = await runQueriesAcrossProviders(queries, providers, fetchImpl);
   const generalHits = settled.flatMap((result) =>
@@ -596,7 +616,7 @@ export async function gatherOsint(query, opts = {}) {
   const aggregated = dedupeAndRank([
     ...generalHits,
     ...categoryResults.flatMap((result) => result.sources)
-  ], osintCategories);
+  ], osintCategories, preferredProviders);
   const health = providerHealth(settled);
   const healthyProviders = new Set(
     [...health, ...categoryResults.flatMap((result) => result.providerHealth)].filter((item) => item.hitCount > 0).map((item) => item.provider)
@@ -623,6 +643,9 @@ export async function gatherOsint(query, opts = {}) {
   if (categoryResults.length) {
     providerNoteParts.push(`Repo-mapped category scrapers executed ${categoryResults.length} category plan(s) backed by ${repoReferences.length} GitHub repo reference(s).`);
   }
+  if (preferredProviders.length) {
+    providerNoteParts.push(`Provider preference stack for this package: ${preferredProviders.join(', ')}.`);
+  }
   if (publicRecords?.evidence?.length) {
     providerNoteParts.push(`Structured public-record connectors returned ${publicRecords.evidence.length} evidence item(s).`);
   }
@@ -631,6 +654,7 @@ export async function gatherOsint(query, opts = {}) {
     query: queries[0],
     packageId,
     osintCategories,
+    preferredProviders,
     queryPlan: queries,
     providerHealth: health,
     providerNote: providerNoteParts.join(' '),
