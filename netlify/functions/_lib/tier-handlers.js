@@ -91,6 +91,7 @@ async function gatherWorkflowOsint(order, input, packageId, ctx = {}) {
       packageId,
       fetchImpl: ctx.fetchImpl,
       env,
+      investigationInput: input,
       location: input.county && input.state ? `${input.county} County, ${input.state}, United States` : '',
       publicRecordOrder: null,
       orderId: order.order_id || order.caseRef
