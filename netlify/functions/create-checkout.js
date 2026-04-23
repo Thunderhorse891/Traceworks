@@ -9,6 +9,7 @@ import { validateStripeSecretKey } from './_lib/stripe-config.js';
 import { ORDER_STATUS } from './_lib/order-status.js';
 import { resolvePurchasedTier } from './_lib/tier-mapping.js';
 import { assessOrderLaunchGate } from './_lib/launch-audit.js';
+import { relaxGateForOpenWebOsint } from './_lib/customer-boundaries.js';
 import { buildCheckoutSessionPayload } from './_lib/stripe-checkout.js';
 import { createModernHandler } from './_lib/netlify-modern.js';
 
@@ -39,7 +40,10 @@ export async function handler(event) {
     const pkg = getPackage(packageId);
     if (!pkg) return jsonWithRequestId(event, 400, { error: 'Invalid package selected.' });
     const inputCriteria = buildInputCriteria(payload);
-    const launchGate = assessOrderLaunchGate(packageId, inputCriteria, process.env);
+    const launchGate = relaxGateForOpenWebOsint(
+      assessOrderLaunchGate(packageId, inputCriteria, process.env),
+      packageId
+    );
     if (!launchGate.launchReady) {
       return jsonWithRequestId(event, 503, {
         error: launchGate.launchMessage,
