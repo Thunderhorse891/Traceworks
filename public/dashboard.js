@@ -97,7 +97,7 @@ function renderResult(payload) {
     order.status === 'completed'
       ? 'Your report has been delivered to your email address.'
       : order.status === 'manual_review'
-        ? 'Research finished with gaps or blocked sources. A manual review step is required before delivery.'
+        ? 'TraceWorks flagged this report for internal follow-up because some sources were incomplete or blocked. No customer action is required.'
         : order.status === 'delivery_failed'
           ? 'Your report is ready, but email delivery failed. Our team needs to resend it manually.'
           : order.status === 'failed'
