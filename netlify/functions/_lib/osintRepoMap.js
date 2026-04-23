@@ -1,6 +1,7 @@
 export const OSINT_REPO_MAP = Object.freeze({
   appraisal_district: {
     label: 'County appraisal and property tax search',
+    preferredProviders: ['firecrawl', 'apify', 'duckduckgo', 'github'],
     repos: [
       { slug: 'scrapy/scrapy', url: 'https://github.com/scrapy/scrapy', role: 'Structured public-record crawling patterns' },
       { slug: 'microsoft/playwright', url: 'https://github.com/microsoft/playwright', role: 'Browser automation for county property portals' },
@@ -15,6 +16,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   probate: {
     label: 'Probate and estate docket search',
+    preferredProviders: ['firecrawl', 'apify', 'duckduckgo', 'github'],
     repos: [
       { slug: 'scrapy/scrapy', url: 'https://github.com/scrapy/scrapy', role: 'Court index crawling patterns' },
       { slug: 'microsoft/playwright', url: 'https://github.com/microsoft/playwright', role: 'Browser workflows for probate portals' },
@@ -29,6 +31,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   business_registry: {
     label: 'Secretary of state and entity registry search',
+    preferredProviders: ['opencorporates', 'github', 'firecrawl', 'duckduckgo'],
     repos: [
       { slug: 'scrapy/scrapy', url: 'https://github.com/scrapy/scrapy', role: 'Entity registry scraping patterns' },
       { slug: 'microsoft/playwright', url: 'https://github.com/microsoft/playwright', role: 'Automation for SOS and franchise portals' },
@@ -43,6 +46,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   obituary: {
     label: 'Obituary and death notice search',
+    preferredProviders: ['firecrawl', 'duckduckgo', 'wikipedia', 'github'],
     repos: [
       { slug: 'scrapy/scrapy', url: 'https://github.com/scrapy/scrapy', role: 'News and obituary index crawling' },
       { slug: 'microsoft/playwright', url: 'https://github.com/microsoft/playwright', role: 'Automation for local notice sites' },
@@ -57,6 +61,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   people_search: {
     label: 'Open-web people search and username enumeration',
+    preferredProviders: ['github', 'duckduckgo', 'firecrawl', 'reddit'],
     repos: [
       { slug: 'sherlock-project/sherlock', url: 'https://github.com/sherlock-project/sherlock', role: 'Username and profile enumeration' },
       { slug: 'p1ngul1n0/blackbird', url: 'https://github.com/p1ngul1n0/blackbird', role: 'Fast open-web account discovery' },
@@ -71,6 +76,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   voter_files: {
     label: 'Voter file and registration signal search',
+    preferredProviders: ['firecrawl', 'duckduckgo', 'github'],
     repos: [
       { slug: 'scrapy/scrapy', url: 'https://github.com/scrapy/scrapy', role: 'Public voter lookup scraping patterns' },
       { slug: 'microsoft/playwright', url: 'https://github.com/microsoft/playwright', role: 'Automation for state voter portals' },
@@ -85,6 +91,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   code_enforcement: {
     label: 'Code enforcement and municipal violation search',
+    preferredProviders: ['firecrawl', 'duckduckgo', 'github'],
     repos: [
       { slug: 'scrapy/scrapy', url: 'https://github.com/scrapy/scrapy', role: 'Municipal records crawling patterns' },
       { slug: 'microsoft/playwright', url: 'https://github.com/microsoft/playwright', role: 'Automation for city code-enforcement portals' },
@@ -99,6 +106,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   jail: {
     label: 'Jail roster and inmate locator search',
+    preferredProviders: ['firecrawl', 'duckduckgo', 'github'],
     repos: [
       { slug: 'scrapy/scrapy', url: 'https://github.com/scrapy/scrapy', role: 'Roster crawling patterns' },
       { slug: 'microsoft/playwright', url: 'https://github.com/microsoft/playwright', role: 'Automation for sheriff inmate portals' },
@@ -113,6 +121,7 @@ export const OSINT_REPO_MAP = Object.freeze({
   },
   archived_snapshots: {
     label: 'Archived snapshots and historical page recovery',
+    preferredProviders: ['github', 'firecrawl', 'wikipedia', 'duckduckgo'],
     repos: [
       { slug: 'akamhy/waybackpy', url: 'https://github.com/akamhy/waybackpy', role: 'Wayback Machine access patterns' },
       { slug: 'ArchiveBox/ArchiveBox', url: 'https://github.com/ArchiveBox/ArchiveBox', role: 'Historical capture and replay workflows' },
