@@ -4,6 +4,7 @@ import { getOrder, upsertOrder, recordAuditEvent } from './store.js';
 import { ORDER_STATUS } from './order-status.js';
 import { tierRunnerFor } from './tier-handlers.js';
 import { buildDynamicReportFromWorkflow, dynamicReportToHtml, dynamicReportToText } from './dynamic-report-builder.js';
+import { sanitizeCustomerFacingReport } from './customer-boundaries.js';
 
 function now() {
   return new Date().toISOString();
@@ -31,7 +32,7 @@ export async function processPaidOrder(orderId, { ownerEmail, deps = {} } = {}) 
     const workflow = await runner(order, { startedAt, fetchImpl: deps.fetchImpl });
     await recordAuditEvent({ event: 'source_query_completed', orderId, sourcesAttempted: workflow.sources.length });
 
-    const report = buildDynamicReportFromWorkflow(workflow, order);
+    const report = sanitizeCustomerFacingReport(buildDynamicReportFromWorkflow(workflow, order));
     const artifacts = await saveArtifacts(report);
     await checkArtifact(artifacts.htmlPath);
     await checkArtifact(artifacts.pdfPath);
