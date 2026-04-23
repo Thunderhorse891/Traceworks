@@ -48,6 +48,7 @@ function providerScore(provider) {
   if (provider === 'firecrawl') return 6;
   if (provider === 'apify') return 5;
   if (provider === 'robin') return 4;
+  if (provider === 'github') return 4;
   if (provider === 'opencorporates') return 3;
   if (provider === 'duckduckgo') return 2;
   if (provider === 'wikipedia') return 1;
@@ -171,6 +172,37 @@ async function fromOpenCorporates(query, fetchImpl) {
           confidence: 'medium'
         },
         'opencorporates'
+      )
+    )
+    .filter(Boolean);
+}
+
+async function fromGitHubRepositories(query, fetchImpl, env) {
+  const url = new URL('https://api.github.com/search/repositories');
+  url.searchParams.set('q', query);
+  url.searchParams.set('sort', 'updated');
+  url.searchParams.set('order', 'desc');
+  url.searchParams.set('per_page', '5');
+
+  const token = String(env?.GITHUB_TOKEN || env?.GH_TOKEN || '').trim();
+  const headers = {
+    accept: 'application/vnd.github+json',
+    'user-agent': 'TraceWorks-OSINT'
+  };
+  if (token) headers.authorization = `Bearer ${token}`;
+
+  const data = await fetchJson(url.toString(), fetchImpl, 10_000, { headers });
+  const rows = Array.isArray(data?.items) ? data.items : [];
+  return rows
+    .map((repo) =>
+      normalizeRecord(
+        {
+          title: repo.full_name || repo.name || 'GitHub repository result',
+          url: repo.html_url,
+          sourceType: 'search-index',
+          confidence: repo.stargazers_count > 0 ? 'medium' : 'low'
+        },
+        'github'
       )
     )
     .filter(Boolean);
@@ -389,7 +421,13 @@ function annotateHit(record, extras = {}) {
   };
 }
 
-function dedupeAndRank(records) {
+function categoryRelevanceScore(record, packageCategories = []) {
+  const categories = Array.isArray(record?.osintCategories) ? record.osintCategories : [];
+  const matches = categories.filter((category) => packageCategories.includes(category)).length;
+  return matches;
+}
+
+function dedupeAndRank(records, packageCategories = []) {
   const byUrl = new Map();
   for (const record of records) {
     if (!record?.url) continue;
@@ -411,6 +449,8 @@ function dedupeAndRank(records) {
 
   return [...byUrl.values()]
     .sort((a, b) => {
+      const categoryDiff = categoryRelevanceScore(b, packageCategories) - categoryRelevanceScore(a, packageCategories);
+      if (categoryDiff !== 0) return categoryDiff;
       const qualityDiff = compareRecordQuality(b, a);
       if (qualityDiff !== 0) return qualityDiff;
       return a.domain.localeCompare(b.domain);
@@ -451,7 +491,8 @@ function buildProviders(env, opts = {}) {
     { name: 'duckduckgo', fn: fromDuckDuckGo },
     { name: 'wikipedia', fn: fromWikipediaSearch },
     { name: 'reddit', fn: fromRedditSearch },
-    { name: 'opencorporates', fn: fromOpenCorporates }
+    { name: 'opencorporates', fn: fromOpenCorporates },
+    { name: 'github', fn: (query, fetchImpl) => fromGitHubRepositories(query, fetchImpl, env) }
   ];
 
   if (String(env?.ROBIN_API_URL || '').trim()) {
@@ -520,7 +561,8 @@ async function runCategoryOsint(categoryId, baseQuery, providers, fetchImpl, opt
         supportingRepos: config.repos || [],
         matchedQueries: [result.query]
       }))
-    )
+    ),
+    [categoryId]
   );
 
   return {
@@ -554,7 +596,7 @@ export async function gatherOsint(query, opts = {}) {
   const aggregated = dedupeAndRank([
     ...generalHits,
     ...categoryResults.flatMap((result) => result.sources)
-  ]);
+  ], osintCategories);
   const health = providerHealth(settled);
   const healthyProviders = new Set(
     [...health, ...categoryResults.flatMap((result) => result.providerHealth)].filter((item) => item.hitCount > 0).map((item) => item.provider)
