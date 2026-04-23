@@ -1,18 +1,34 @@
 import { gatherPublicRecordIntel } from './public-records.js';
 import { canonicalPackageId, openWebKeywordsForPackage } from './package-contract.js';
 import { resolveApifyOsintConfig, resolveFirecrawlConfig } from './osint-config.js';
+import { getPackage } from './packages.js';
+import { OSINT_REPO_MAP } from './osintRepoMap.js';
 
 function domainOf(url) {
   try {
-    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+    return new URL(url).hostname.replace(/^www\./, '').toLowerCase();
   } catch {
-    return "unknown";
+    return 'unknown';
   }
 }
 
+function uniqueStrings(values = []) {
+  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function uniqueRepoReferences(repos = []) {
+  const byKey = new Map();
+  for (const repo of repos) {
+    const key = String(repo?.slug || repo?.url || '').trim();
+    if (!key || byKey.has(key)) continue;
+    byKey.set(key, repo);
+  }
+  return [...byKey.values()];
+}
+
 function confidenceScore(label) {
-  if (label === "high") return 3;
-  if (label === "medium") return 2;
+  if (label === 'high') return 3;
+  if (label === 'medium') return 2;
   return 1;
 }
 
@@ -77,14 +93,14 @@ async function fetchJson(url, fetchImpl, timeoutMs = 9000, init = {}) {
   }
 }
 
-function normalizeRecord(record, provider, fallbackType = "open-web") {
-  const url = record.url || record.FirstURL || "";
+function normalizeRecord(record, provider, fallbackType = 'open-web') {
+  const url = record.url || record.FirstURL || '';
   if (!url) return null;
   return {
-    title: (record.title || record.Text || record.name || "Public web record").trim(),
+    title: (record.title || record.Text || record.name || 'Public web record').trim(),
     url,
     sourceType: record.sourceType || fallbackType,
-    confidence: record.confidence || "medium",
+    confidence: record.confidence || 'medium',
     provider,
     domain: domainOf(url)
   };
@@ -96,7 +112,7 @@ async function fromDuckDuckGo(query, fetchImpl) {
   const related = Array.isArray(data.RelatedTopics) ? data.RelatedTopics : [];
   return related
     .flatMap((r) => (Array.isArray(r.Topics) ? r.Topics : [r]))
-    .map((item) => normalizeRecord(item, "duckduckgo", "open-web"))
+    .map((item) => normalizeRecord(item, 'duckduckgo', 'open-web'))
     .filter(Boolean)
     .slice(0, 8);
 }
@@ -109,11 +125,11 @@ async function fromWikipediaSearch(query, fetchImpl) {
     normalizeRecord(
       {
         title: row.title,
-        url: `https://en.wikipedia.org/wiki/${encodeURIComponent(row.title.replaceAll(" ", "_"))}`,
-        sourceType: "knowledge-base",
-        confidence: "low"
+        url: `https://en.wikipedia.org/wiki/${encodeURIComponent(row.title.replaceAll(' ', '_'))}`,
+        sourceType: 'knowledge-base',
+        confidence: 'low'
       },
-      "wikipedia"
+      'wikipedia'
     )
   );
 }
@@ -128,12 +144,12 @@ async function fromRedditSearch(query, fetchImpl) {
       const d = post?.data || {};
       return normalizeRecord(
         {
-          title: d.title || "Community signal",
-          url: `https://www.reddit.com${d.permalink || ""}`,
-          sourceType: "community-intel",
-          confidence: "low"
+          title: d.title || 'Community signal',
+          url: `https://www.reddit.com${d.permalink || ''}`,
+          sourceType: 'community-intel',
+          confidence: 'low'
         },
-        "reddit"
+        'reddit'
       );
     })
     .filter(Boolean);
@@ -149,23 +165,23 @@ async function fromOpenCorporates(query, fetchImpl) {
     .map((company) =>
       normalizeRecord(
         {
-          title: company.name || "OpenCorporates company record",
-          url: company.opencorporates_url || "",
-          sourceType: "business-registry",
-          confidence: "medium"
+          title: company.name || 'OpenCorporates company record',
+          url: company.opencorporates_url || '',
+          sourceType: 'business-registry',
+          confidence: 'medium'
         },
-        "opencorporates"
+        'opencorporates'
       )
     )
     .filter(Boolean);
 }
 
 async function fromRobin(query, fetchImpl, env) {
-  const base = String(env?.ROBIN_API_URL || "").trim();
-  if (!base) throw new Error("ROBIN_API_URL is not configured");
+  const base = String(env?.ROBIN_API_URL || '').trim();
+  if (!base) throw new Error('ROBIN_API_URL is not configured');
 
-  const apiKey = String(env?.ROBIN_API_KEY || "").trim();
-  const url = `${base.replace(/\/$/, "")}/search?q=${encodeURIComponent(query)}`;
+  const apiKey = String(env?.ROBIN_API_KEY || '').trim();
+  const url = `${base.replace(/\/$/, '')}/search?q=${encodeURIComponent(query)}`;
   const headers = apiKey ? { authorization: `Bearer ${apiKey}` } : {};
   const data = await fetchJson(url, fetchImpl, 10_000, { headers });
   const rows = Array.isArray(data?.results) ? data.results : [];
@@ -174,21 +190,25 @@ async function fromRobin(query, fetchImpl, env) {
     .map((row) =>
       normalizeRecord(
         {
-          title: row.title || row.name || "Robin intelligence result",
+          title: row.title || row.name || 'Robin intelligence result',
           url: row.url,
-          sourceType: row.sourceType || "legal-intel",
-          confidence: row.confidence || "high"
+          sourceType: row.sourceType || 'legal-intel',
+          confidence: row.confidence || 'high'
         },
-        "robin"
+        'robin'
       )
     )
     .filter(Boolean)
     .slice(0, 10);
 }
 
+function investigationInputFromOpts(opts = {}) {
+  return opts.investigationInput || opts.publicRecordOrder?.input || {};
+}
+
 function firecrawlLocation(opts = {}) {
   if (String(opts.location || '').trim()) return String(opts.location).trim();
-  const input = opts.publicRecordOrder?.input || {};
+  const input = investigationInputFromOpts(opts);
   const county = String(input.county || '').trim();
   const state = String(input.state || '').trim();
   if (!county && !state) return '';
@@ -320,11 +340,53 @@ async function fromApify(query, fetchImpl, env, opts = {}) {
   return normalizeApifyRows(items).slice(0, config.resultLimit);
 }
 
+function packageOsintCategories(packageId) {
+  const pkg = getPackage(packageId);
+  return Array.isArray(pkg?.osintCategories) ? uniqueStrings(pkg.osintCategories) : [];
+}
+
 function buildQueries(query, packageId) {
   const base = (query || 'subject public records').trim();
   const extras = openWebKeywordsForPackage(packageId);
   const queries = [base, ...extras.map((k) => `${base} ${k}`)];
   return [...new Set(queries)].slice(0, 6);
+}
+
+function categoryTokens(query, opts = {}) {
+  const input = investigationInputFromOpts(opts);
+  const location = firecrawlLocation(opts);
+  return {
+    query: String(query || '').trim(),
+    subject: String(input.subjectName || query || '').trim(),
+    address: String(input.lastKnownAddress || input.address || '').trim(),
+    parcelId: String(input.parcelId || input.parcel || '').trim(),
+    county: String(input.county || '').trim(),
+    state: String(input.state || '').trim(),
+    deathYear: String(input.deathYear || '').trim(),
+    location
+  };
+}
+
+function buildCategoryQueries(categoryId, query, opts = {}) {
+  const config = OSINT_REPO_MAP[categoryId];
+  if (!config) return [];
+  const tokens = categoryTokens(query, opts);
+  const templateQueries = (config.queryTemplates || [])
+    .map((template) => fillTemplateValue(template, tokens).replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  const keywordQueries = (config.keywords || [])
+    .map((keyword) => [tokens.query, keyword].filter(Boolean).join(' ').trim())
+    .filter(Boolean);
+  return uniqueStrings([...templateQueries, ...keywordQueries]).slice(0, 6);
+}
+
+function annotateHit(record, extras = {}) {
+  return {
+    ...record,
+    osintCategories: uniqueStrings([...(record.osintCategories || []), ...(extras.osintCategories || [])]),
+    supportingRepos: uniqueRepoReferences([...(record.supportingRepos || []), ...(extras.supportingRepos || [])]),
+    matchedQueries: uniqueStrings([...(record.matchedQueries || []), ...(extras.matchedQueries || [])])
+  };
 }
 
 function dedupeAndRank(records) {
@@ -334,12 +396,17 @@ function dedupeAndRank(records) {
     const key = record.url.trim().toLowerCase();
     const existing = byUrl.get(key);
     if (!existing) {
-      byUrl.set(key, record);
+      byUrl.set(key, annotateHit(record));
       continue;
     }
-    if (compareRecordQuality(record, existing) > 0) {
-      byUrl.set(key, record);
-    }
+
+    const preferred = compareRecordQuality(record, existing) > 0 ? record : existing;
+    const merged = annotateHit(preferred, {
+      osintCategories: [...(existing.osintCategories || []), ...(record.osintCategories || [])],
+      supportingRepos: [...(existing.supportingRepos || []), ...(record.supportingRepos || [])],
+      matchedQueries: [...(existing.matchedQueries || []), ...(record.matchedQueries || [])]
+    });
+    byUrl.set(key, merged);
   }
 
   return [...byUrl.values()]
@@ -375,20 +442,20 @@ function providerHealth(results) {
     ok: item.ok,
     hitCount: item.hitCount,
     attempts: item.attempts,
-    error: item.errors.length ? item.errors.join("; ") : null
+    error: item.errors.length ? item.errors.join('; ') : null
   }));
 }
 
 function buildProviders(env, opts = {}) {
   const providers = [
-    { name: "duckduckgo", fn: fromDuckDuckGo },
-    { name: "wikipedia", fn: fromWikipediaSearch },
-    { name: "reddit", fn: fromRedditSearch },
-    { name: "opencorporates", fn: fromOpenCorporates }
+    { name: 'duckduckgo', fn: fromDuckDuckGo },
+    { name: 'wikipedia', fn: fromWikipediaSearch },
+    { name: 'reddit', fn: fromRedditSearch },
+    { name: 'opencorporates', fn: fromOpenCorporates }
   ];
 
-  if (String(env?.ROBIN_API_URL || "").trim()) {
-    providers.push({ name: "robin", fn: (query, fetchImpl) => fromRobin(query, fetchImpl, env) });
+  if (String(env?.ROBIN_API_URL || '').trim()) {
+    providers.push({ name: 'robin', fn: (query, fetchImpl) => fromRobin(query, fetchImpl, env) });
   }
 
   if (resolveFirecrawlConfig(env).configured) {
@@ -402,31 +469,97 @@ function buildProviders(env, opts = {}) {
   return providers;
 }
 
-export async function gatherOsint(query, opts = {}) {
-  const fetchImpl = opts.fetchImpl || fetch;
-  const env = opts.env || process.env;
-  const packageId = canonicalPackageId(opts.packageId || 'standard') || 'standard';
-  const queries = buildQueries(query, packageId);
-  const providers = buildProviders(env, { ...opts, packageId });
-
+async function runQueriesAcrossProviders(queries, providers, fetchImpl) {
   const settled = [];
   for (const q of queries) {
     const runs = await Promise.all(
       providers.map(async (provider) => {
         try {
           const hits = await provider.fn(q, fetchImpl);
-          return { provider: provider.name, ok: true, hits };
+          return { provider: provider.name, ok: true, hits, query: q };
         } catch (error) {
-          return { provider: provider.name, ok: false, hits: [], error: String(error.message || error) };
+          return { provider: provider.name, ok: false, hits: [], error: String(error.message || error), query: q };
         }
       })
     );
     settled.push(...runs);
   }
+  return settled;
+}
 
-  const aggregated = dedupeAndRank(settled.flatMap((r) => r.hits));
+async function runCategoryOsint(categoryId, baseQuery, providers, fetchImpl, opts = {}) {
+  const config = OSINT_REPO_MAP[categoryId];
+  if (!config) {
+    return {
+      categoryId,
+      label: categoryId,
+      queryPlan: [],
+      repoReferences: [],
+      providerHealth: [],
+      sources: []
+    };
+  }
+
+  const queryPlan = buildCategoryQueries(categoryId, baseQuery, opts);
+  if (!queryPlan.length) {
+    return {
+      categoryId,
+      label: config.label || categoryId,
+      queryPlan: [],
+      repoReferences: config.repos || [],
+      providerHealth: [],
+      sources: []
+    };
+  }
+
+  const settled = await runQueriesAcrossProviders(queryPlan, providers, fetchImpl);
+  const sources = dedupeAndRank(
+    settled.flatMap((result) =>
+      result.hits.map((hit) => annotateHit(hit, {
+        osintCategories: [categoryId],
+        supportingRepos: config.repos || [],
+        matchedQueries: [result.query]
+      }))
+    )
+  );
+
+  return {
+    categoryId,
+    label: config.label || categoryId,
+    queryPlan,
+    repoReferences: config.repos || [],
+    providerHealth: providerHealth(settled),
+    sources
+  };
+}
+
+export async function gatherOsint(query, opts = {}) {
+  const fetchImpl = opts.fetchImpl || fetch;
+  const env = opts.env || process.env;
+  const packageId = canonicalPackageId(opts.packageId || 'standard') || 'standard';
+  const queries = buildQueries(query, packageId);
+  const providers = buildProviders(env, { ...opts, packageId });
+  const osintCategories = uniqueStrings(opts.osintCategories || packageOsintCategories(packageId));
+
+  const settled = await runQueriesAcrossProviders(queries, providers, fetchImpl);
+  const generalHits = settled.flatMap((result) =>
+    result.hits.map((hit) => annotateHit(hit, { matchedQueries: [result.query] }))
+  );
+
+  const categoryResults = [];
+  for (const categoryId of osintCategories) {
+    categoryResults.push(await runCategoryOsint(categoryId, query, providers, fetchImpl, { ...opts, packageId }));
+  }
+
+  const aggregated = dedupeAndRank([
+    ...generalHits,
+    ...categoryResults.flatMap((result) => result.sources)
+  ]);
   const health = providerHealth(settled);
-  const healthyProviders = new Set(health.filter((h) => h.hitCount > 0).map((h) => h.provider));
+  const healthyProviders = new Set(
+    [...health, ...categoryResults.flatMap((result) => result.providerHealth)].filter((item) => item.hitCount > 0).map((item) => item.provider)
+  );
+  const repoReferences = uniqueRepoReferences(categoryResults.flatMap((result) => result.repoReferences || []));
 
   let publicRecords = null;
   if (opts.publicRecordOrder) {
@@ -443,7 +576,10 @@ export async function gatherOsint(query, opts = {}) {
   if (aggregated.length > 0) {
     providerNoteParts.push(`Open-web OSINT returned ${aggregated.length} cited lead(s) across ${healthyProviders.size} provider(s).`);
   } else {
-    providerNoteParts.push("No open-web OSINT providers returned sourceable hits for this query plan in this run.");
+    providerNoteParts.push('No open-web OSINT providers returned sourceable hits for this query plan in this run.');
+  }
+  if (categoryResults.length) {
+    providerNoteParts.push(`Repo-mapped category scrapers executed ${categoryResults.length} category plan(s) backed by ${repoReferences.length} GitHub repo reference(s).`);
   }
   if (publicRecords?.evidence?.length) {
     providerNoteParts.push(`Structured public-record connectors returned ${publicRecords.evidence.length} evidence item(s).`);
@@ -452,16 +588,20 @@ export async function gatherOsint(query, opts = {}) {
   return {
     query: queries[0],
     packageId,
+    osintCategories,
     queryPlan: queries,
     providerHealth: health,
-    providerNote: providerNoteParts.join(" "),
+    providerNote: providerNoteParts.join(' '),
     coverage: {
       totalSources: aggregated.length + (publicRecords?.evidence?.length || 0),
       totalOpenWebSources: aggregated.length,
       totalStructuredEvidence: publicRecords?.evidence?.length || 0,
+      totalRepoCategoryRuns: categoryResults.length,
       distinctDomains: new Set(aggregated.map((s) => s.domain || domainOf(s.url))).size,
       providersWithHits: healthyProviders.size
     },
+    repoReferences,
+    repoCategoryResults: categoryResults,
     sources: aggregated,
     evidence: publicRecords?.evidence || [],
     publicRecords
