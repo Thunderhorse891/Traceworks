@@ -10,7 +10,7 @@ function now() {
   return new Date().toISOString();
 }
 
-function buildRepoCategoryPanel(workflow = {}) {
+export function buildRepoCategoryPanel(workflow = {}) {
   const osint = workflow.osint;
   if (!osint || !Array.isArray(osint.repoCategoryResults) || !osint.repoCategoryResults.length) return null;
 
@@ -31,7 +31,7 @@ function buildRepoCategoryPanel(workflow = {}) {
   };
 }
 
-function appendRepoCategoryPanel(report = {}, workflow = {}) {
+export function appendRepoCategoryPanel(report = {}, workflow = {}) {
   const panel = buildRepoCategoryPanel(workflow);
   if (!panel) return report;
   const analysisPanels = Array.isArray(report.analysisPanels) ? report.analysisPanels : [];
