@@ -135,6 +135,12 @@ test('admin dashboard exposes operator visibility panels for live launch monitor
   assert.ok(html.includes('Active Queue Work'));
   assert.ok(html.includes('Recent Audit Timeline'));
   assert.ok(html.includes('Dead Letters'));
+  assert.ok(html.includes('Case-Level OSINT Debug'));
+  assert.ok(html.includes('debugCaseForm'));
+  assert.ok(html.includes('debugProviderStack'));
+  assert.ok(html.includes('debugCategoryRuns'));
+  assert.ok(html.includes('debugTopHits'));
+  assert.ok(html.includes('debugQueryPlan'));
   assert.ok(html.includes('manualReviewRows'));
   assert.ok(html.includes('activeJobRows'));
   assert.ok(html.includes('auditEventRows'));
@@ -145,6 +151,10 @@ test('admin dashboard exposes operator visibility panels for live launch monitor
   assert.equal(html.includes('onsubmit="authenticate(event)"'), false);
   assert.equal(html.includes('onclick="refresh()"'), false);
   assert.equal(html.includes('onclick="logout()"'), false);
+  assert.ok(js.includes('/api/admin-case-debug?caseRef='));
+  assert.ok(js.includes('debugCaseForm?.addEventListener'));
+  assert.ok(js.includes('renderCaseDebug'));
+  assert.ok(js.includes('clearDebugCase')); 
   assert.ok(js.includes("data-admin-action=\"${escapeHtml(action)}\""));
 });
 
