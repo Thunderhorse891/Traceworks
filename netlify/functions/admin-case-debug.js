@@ -8,7 +8,7 @@ function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function buildOsintDebug(order) {
+export function buildOsintDebug(order) {
   const workflow = order?.workflow_results || {};
   const osint = workflow?.osint || {};
   return {
