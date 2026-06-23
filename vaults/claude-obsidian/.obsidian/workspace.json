@@ -1,0 +1,5 @@
+{
+  "active": "claude-skills",
+  "source": "https://github.com/alirezarezvani/claude-skills.git",
+  "lastAppliedBy": "scripts/setup-claude-obsidian-vault.mjs"
+}
