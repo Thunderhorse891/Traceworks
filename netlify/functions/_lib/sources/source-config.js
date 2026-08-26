@@ -12,61 +12,6 @@ const TEXAS_FIRST_SOURCE_CONFIG = {
         itemsPath: 'ResultList',
         map: { owner: 'OwnerName', address: 'SitusAddress', account: 'PropertyNumber', propertyId: 'PropertyQuickRefID' }
       }
-    },
-    {
-      id: 'tx_harris_appraisal',
-      name: 'Harris County Appraisal District',
-      type: 'html',
-      coverage: { states: ['TX'], counties: ['Harris'] },
-      request: { urlTemplate: 'https://hcad.org/property-search/property-search-results/?q={owner}', method: 'GET' },
-      extraction: {
-        itemRegex: '<tr[^>]*>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>',
-        map: { account: 1, owner: 2, address: 3 }
-      }
-    },
-    {
-      id: 'tx_travis_appraisal',
-      name: 'Travis Central Appraisal District',
-      type: 'html',
-      coverage: { states: ['TX'], counties: ['Travis'] },
-      request: { urlTemplate: 'https://www.traviscad.org/propertysearch?owner={owner}', method: 'GET' },
-      extraction: {
-        itemRegex: '<tr[^>]*>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>',
-        map: { account: 1, owner: 2, address: 3 }
-      }
-    },
-    {
-      id: 'tx_dallas_appraisal',
-      name: 'Dallas Central Appraisal District',
-      type: 'html',
-      coverage: { states: ['TX'], counties: ['Dallas'] },
-      request: { urlTemplate: 'https://www.dallascad.org/SearchOwner.aspx?owner={owner}', method: 'GET' },
-      extraction: {
-        itemRegex: '<tr[^>]*>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>',
-        map: { account: 1, owner: 2, address: 3 }
-      }
-    },
-    {
-      id: 'tx_bexar_appraisal',
-      name: 'Bexar Appraisal District',
-      type: 'html',
-      coverage: { states: ['TX'], counties: ['Bexar'] },
-      request: { urlTemplate: 'https://www.bcad.org/clientdb/?cid=1&owner={owner}', method: 'GET' },
-      extraction: {
-        itemRegex: '<tr[^>]*>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>',
-        map: { account: 1, owner: 2, address: 3 }
-      }
-    },
-    {
-      id: 'tx_tarrant_appraisal',
-      name: 'Tarrant Appraisal District',
-      type: 'html',
-      coverage: { states: ['TX'], counties: ['Tarrant'] },
-      request: { urlTemplate: 'https://www.tad.org/property/search?owner={owner}', method: 'GET' },
-      extraction: {
-        itemRegex: '<tr[^>]*>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>\\s*<td[^>]*>([^<]*)</td>',
-        map: { account: 1, owner: 2, address: 3 }
-      }
     }
   ],
   countyRecorder: [
