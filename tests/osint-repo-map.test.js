@@ -37,7 +37,9 @@ async function mockFetch(url) {
 test('every package OSINT category resolves to a configured repo map entry', () => {
   for (const pkg of PACKAGE_LIST) {
     assert.ok(Array.isArray(pkg.osintCategories), `${pkg.id} is missing osintCategories`);
-    assert.ok(pkg.osintCategories.length > 0, `${pkg.id} should define at least one OSINT category`);
+    if (pkg.openWebEnabled !== false) {
+      assert.ok(pkg.osintCategories.length > 0, `${pkg.id} should define at least one OSINT category`);
+    }
     for (const categoryId of pkg.osintCategories) {
       assert.ok(OSINT_REPO_MAP[categoryId], `Missing OSINT repo map entry for ${categoryId}`);
       assert.ok(Array.isArray(OSINT_REPO_MAP[categoryId].repos), `OSINT repo map entry for ${categoryId} is missing repos`);
