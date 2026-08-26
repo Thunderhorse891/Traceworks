@@ -3,6 +3,17 @@ import { canonicalPackageId, publicRecordFamiliesForPackage } from '../package-c
 const TEXAS_FIRST_SOURCE_CONFIG = {
   countyProperty: [
     {
+      id: 'tx_williamson_appraisal',
+      name: 'Williamson Central Appraisal District',
+      type: 'json',
+      coverage: { states: ['TX'], counties: ['Williamson'] },
+      request: { urlTemplate: 'https://search.wcad.org/ProxyT/Search/Properties/quick/?f={owner}&pn=1&st=4&so=desc&pt=RP%3BPP%3BMH%3BNR&ty=2027', method: 'GET' },
+      extraction: {
+        itemsPath: 'ResultList',
+        map: { owner: 'OwnerName', address: 'SitusAddress', account: 'PropertyNumber', propertyId: 'PropertyQuickRefID' }
+      }
+    },
+    {
       id: 'tx_harris_appraisal',
       name: 'Harris County Appraisal District',
       type: 'html',
