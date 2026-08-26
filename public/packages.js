@@ -6,26 +6,26 @@ export const clientPackages = [
     name: 'Standard Property Snapshot',
     price: '$99',
     deliveryHours: 24,
-    bestFor: 'Quick property ownership lookup and parcel verification',
+    bestFor: 'Owner-of-record and property identifier verification',
     turnaround: 'Typical delivery: same day',
     payLink: 'https://buy.stripe.com/8x2aEXgLPbEKcxke4lenS01',
     bullets: [
-      'County appraisal district lookup',
-      'Tax assessment / parcel record',
-      'GIS parcel boundary lookup',
+      'Official county appraisal lookup',
+      'Owner, address, and property identifiers',
+      'Assessment or map details when the source returns them',
       'Source trace panel — every query logged'
     ],
     summary:
       'Fast public-record property snapshot for legal professionals needing ownership confirmation, parcel data, and assessment history.',
     includedFindings: [
-      'County CAD owner of record with parcel ID and legal description',
-      'Tax assessment status and last-known assessment value',
-      'Parcel GIS result with any known address discrepancies'
+      'County-source owner of record and property identifiers',
+      'Submitted address compared with the source result',
+      'Assessment, legal, or map details only when available from the source'
     ],
     workflowScope: [
-      'County property data',
-      'Tax collector lookup',
-      'Parcel GIS verification'
+      'County appraisal property search',
+      'Owner, address, and identifier cross-check',
+      'Timestamped source trace and discrepancy notes'
     ],
     intake: {
       defaultSubjectType: 'property',
