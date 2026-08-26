@@ -8,12 +8,13 @@ export const PACKAGES = {
     amount: 9900,
     currency: 'usd',
     deliveryHours: 24,
+    openWebEnabled: false,
     sections: [
-      'County Appraisal District Lookup',
-      'Tax Collector / Assessment Record',
-      'Parcel GIS Lookup'
+      'County Appraisal Property Search',
+      'Owner, Address, and Property Identifier Cross-Check',
+      'Source Trace and Discrepancy Notes'
     ],
-    osintCategories: ['appraisal_district', 'code_enforcement', 'archived_snapshots']
+    osintCategories: []
   },
   ownership_encumbrance: {
     id: 'ownership_encumbrance',
