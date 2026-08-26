@@ -50,6 +50,16 @@ test('usingBundledSourceConfig detects when the starter catalog is still active'
   assert.equal(usingBundledSourceConfig({ PUBLIC_RECORD_SOURCE_CONFIG: '{"countyProperty":[],"countyRecorder":[],"probateIndex":[],"entitySearch":[]}' }), false);
 });
 
+test('bundled coverage includes Williamson County through the official WCAD JSON source', () => {
+  const config = loadSourceConfig({});
+  const source = config.countyProperty.find((item) => item.id === 'tx_williamson_appraisal');
+  assert.ok(source);
+  assert.equal(source.type, 'json');
+  assert.deepEqual(source.coverage.counties, ['Williamson']);
+  assert.equal(source.extraction.itemsPath, 'ResultList');
+  assert.ok(source.request.urlTemplate.startsWith('https://search.wcad.org/'));
+});
+
 test('assessPackageJurisdictionCoverage flags unsupported county coverage', () => {
   const coverage = assessPackageJurisdictionCoverage({
     packageId: 'standard',
