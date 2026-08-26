@@ -1,11 +1,11 @@
-const SECRET_PREFIXES = ['sk_live_', 'sk_test_'];
+const SECRET_PREFIXES = ['sk_live_', 'sk_test_', 'rk_live_', 'rk_test_'];
 const PUBLISHABLE_PREFIXES = ['pk_live_', 'pk_test_', 'mk_live_', 'mk_test_', 'pk_', 'mk_'];
 
 export function validateStripeSecretKey(value) {
   const key = String(value || '').trim();
-  if (!key) return { ok: false, message: 'Stripe secret key is missing.' };
+  if (!key) return { ok: false, message: 'Stripe API key is missing.' };
   if (PUBLISHABLE_PREFIXES.some((prefix) => key.startsWith(prefix))) {
-    return { ok: false, message: 'Configured STRIPE_SECRET_KEY looks like a publishable key. Use a Stripe secret key (sk_live_... or sk_test_...).'};
+    return { ok: false, message: 'Configured STRIPE_SECRET_KEY looks like a publishable key. Use a restricted or secret server-side Stripe key.'};
   }
   if (!SECRET_PREFIXES.some((prefix) => key.startsWith(prefix))) {
     return { ok: false, message: 'Configured STRIPE_SECRET_KEY format is invalid.' };
