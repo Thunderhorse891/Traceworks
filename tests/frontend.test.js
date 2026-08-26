@@ -39,7 +39,7 @@ test('homepage includes enterprise sales form', () => {
   assert.ok(html.includes('id="intakeProgressFill"'));
   assert.ok(html.includes('id="clearDraftBtn"'));
   assert.ok(html.includes('Texas Property Snapshot — $99'));
-  assert.ok(html.includes('Harris, Travis, Dallas, Bexar, and Tarrant'));
+  assert.ok(html.includes('Williamson, Harris, Travis, Dallas, Bexar, and Tarrant'));
   assert.equal(html.includes('&lt;45 min'), false);
   assert.equal(html.includes('and more</li>'), false);
 });
