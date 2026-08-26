@@ -57,6 +57,7 @@ test('gatherOsint uses robin provider when configured', async () => {
 
   const result = await gatherOsint('jordan mercer texas', {
     packageId: 'standard',
+    allowOpenWeb: true,
     fetchImpl: robinFetch,
     env: { ROBIN_API_URL: 'https://robin.example' }
   });
@@ -68,6 +69,7 @@ test('gatherOsint uses robin provider when configured', async () => {
 test('gatherOsint keeps zero-hit runs empty instead of injecting fallback sources', async () => {
   const result = await gatherOsint('no results expected', {
     packageId: 'standard',
+    allowOpenWeb: true,
     fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({}) })
   });
 
@@ -181,6 +183,7 @@ test('gatherOsint adds Firecrawl provider hits when configured', async () => {
 test('gatherOsint adds Apify actor hits when configured', async () => {
   const result = await gatherOsint('jordan mercer texas', {
     packageId: 'standard',
+    allowOpenWeb: true,
     env: { APIFY_API_TOKEN: 'apify-secret' },
     fetchImpl: async (url) => {
       if (url.includes('duckduckgo.com')) return { ok: true, json: async () => ({ RelatedTopics: [] }) };
@@ -214,6 +217,7 @@ test('gatherOsint adds Apify actor hits when configured', async () => {
 test('gatherOsint ranks higher-trust provider evidence ahead of weaker open-web ties', async () => {
   const result = await gatherOsint('jordan mercer texas', {
     packageId: 'standard',
+    allowOpenWeb: true,
     env: {
       FIRECRAWL_API_KEY: 'firecrawl-secret',
       APIFY_API_TOKEN: 'apify-secret'
@@ -278,4 +282,19 @@ test('gatherOsint ranks higher-trust provider evidence ahead of weaker open-web 
   assert.equal(result.sources[0].provider, 'firecrawl');
   assert.equal(result.sources[1].provider, 'apify');
   assert.equal(result.sources.at(-1).provider, 'reddit');
+});
+
+test('standard package does not transmit customer identifiers to open-web providers', async () => {
+  let calls = 0;
+  const result = await gatherOsint('private owner and property address', {
+    packageId: 'standard',
+    fetchImpl: async () => {
+      calls += 1;
+      return { ok: true, json: async () => ({}) };
+    }
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.coverage.totalOpenWebSources, 0);
+  assert.ok(result.providerNote.includes('intentionally disabled'));
 });
