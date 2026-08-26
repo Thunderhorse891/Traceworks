@@ -921,6 +921,52 @@ button:disabled {
   color: var(--gold-700);
 }
 
+.launch-offer {
+  width: min(1180px, calc(100% - 40px));
+  margin: 28px auto 0;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  border: 1px solid rgba(212,168,39,0.35);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(212,168,39,0.12), rgba(8,15,27,0.94) 52%);
+  box-shadow: var(--shadow-gold);
+}
+
+.launch-offer h3 {
+  margin: 7px 0 8px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 32px);
+}
+
+.launch-offer p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.launch-offer .btn-primary {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .launch-offer {
+    width: min(100% - 24px, 1180px);
+    padding: 22px;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .launch-offer .btn-primary {
+    text-align: center;
+  }
+}
+
 /* ── STAT CARDS ──────────────────────────────────────────────── */
 .stat-card {
   background: var(--bg-raised);
