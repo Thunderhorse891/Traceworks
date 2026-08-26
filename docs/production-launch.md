@@ -2,6 +2,8 @@
 
 This checklist is for the real Netlify deployment path only.
 
+Current production origin: `https://traceworks-draft-20260313.netlify.app`
+
 ## Required Now
 
 Set these in Netlify site environment variables before taking paid traffic:
