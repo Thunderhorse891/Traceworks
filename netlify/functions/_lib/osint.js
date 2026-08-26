@@ -598,8 +598,9 @@ export async function gatherOsint(query, opts = {}) {
   const fetchImpl = opts.fetchImpl || fetch;
   const env = opts.env || process.env;
   const packageId = canonicalPackageId(opts.packageId || 'standard') || 'standard';
-  const queries = buildQueries(query, packageId);
-  const providers = buildProviders(env, { ...opts, packageId });
+  const openWebEnabled = opts.allowOpenWeb === true || getPackage(packageId)?.openWebEnabled !== false;
+  const queries = openWebEnabled ? buildQueries(query, packageId) : [];
+  const providers = openWebEnabled ? buildProviders(env, { ...opts, packageId }) : [];
   const osintCategories = uniqueStrings(opts.osintCategories || packageOsintCategories(packageId));
   const preferredProviders = providerPreferencesForCategories(osintCategories);
 
@@ -635,7 +636,9 @@ export async function gatherOsint(query, opts = {}) {
   }
 
   const providerNoteParts = [];
-  if (aggregated.length > 0) {
+  if (!openWebEnabled) {
+    providerNoteParts.push('Open-web enrichment is intentionally disabled for this package; only configured public-record connectors are used.');
+  } else if (aggregated.length > 0) {
     providerNoteParts.push(`Open-web OSINT returned ${aggregated.length} cited lead(s) across ${healthyProviders.size} provider(s).`);
   } else {
     providerNoteParts.push('No open-web OSINT providers returned sourceable hits for this query plan in this run.');
@@ -651,7 +654,7 @@ export async function gatherOsint(query, opts = {}) {
   }
 
   return {
-    query: queries[0],
+    query: queries[0] || String(query || '').trim(),
     packageId,
     osintCategories,
     preferredProviders,
