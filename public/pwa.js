@@ -90,8 +90,6 @@ window.addEventListener('offline', syncNetworkIndicator);
 document.addEventListener('visibilitychange', syncInstallButton);
 document.addEventListener('DOMContentLoaded', () => {
   bindInstallButton();
-  syncNetworkIndicator();
 });
 bindInstallButton();
-syncNetworkIndicator();
 syncInstallButton();
