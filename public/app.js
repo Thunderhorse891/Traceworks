@@ -586,7 +586,7 @@ function buildCard(pkg) {
 function renderPackages() {
   if (!packagesGrid) return;
   packagesGrid.innerHTML = '';
-  for (const pkg of packageCatalog) {
+  for (const pkg of readyPackages()) {
     packagesGrid.appendChild(buildCard(pkg));
   }
 }
@@ -757,7 +757,12 @@ async function boot() {
       updateGuidedExperience();
     }
   } else {
-    updateGuidedExperience();
+    const ready = readyPackages();
+    if (ready.length === 1) {
+      await selectPackage(ready[0], { shouldScroll: false, source: 'default', trackSelection: false });
+    } else {
+      updateGuidedExperience();
+    }
   }
 
   const yearEl = document.getElementById('year');
