@@ -127,6 +127,18 @@ export async function gatherPublicRecordIntel(order, { fetchImpl = fetch, env = 
       payload.findings.property = propertyOut.results;
       payload.findings.propertyMatches = propertyOut.results.filter((row) => ['confirmed', 'likely'].includes(row.matchLevel));
       payload.findings.propertyCandidates = propertyOut.results.filter((row) => row.matchLevel === 'possible');
+      const confirmedCount = payload.findings.propertyMatches.filter((row) => row.matchLevel === 'confirmed').length;
+      const likelyCount = payload.findings.propertyMatches.filter((row) => row.matchLevel === 'likely').length;
+      const candidateCount = payload.findings.propertyCandidates.length;
+      payload.findings.propertyDiscovery = {
+        verdict: confirmedCount || likelyCount ? 'matched' : candidateCount ? 'candidate_only' : 'no_match',
+        confirmedCount,
+        likelyCount,
+        candidateCount,
+        uniqueRecordsReturned: propertyOut.results.length,
+        searchPathsAttempted: propertyOut.evidence.filter((item) => item.status !== 'skipped').length,
+        sourceIds: [...new Set(propertyOut.evidence.map((item) => item.sourceId).filter(Boolean))]
+      };
       pushEvidence(payload, propertyOut);
 
       const propertyGap = familyGap(payload.findings.propertyMatches, propertyOut.evidence, {
@@ -134,7 +146,6 @@ export async function gatherPublicRecordIntel(order, { fetchImpl = fetch, env = 
         allSkipped: 'No county property sources were in scope for the supplied identifiers or jurisdiction.'
       });
       if (propertyGap) {
-        const candidateCount = payload.findings.propertyCandidates.length;
         payload.gaps.push(candidateCount
           ? `No exact or likely county property match found. ${candidateCount} broad candidate record(s) require manual identity verification.`
           : propertyGap);
