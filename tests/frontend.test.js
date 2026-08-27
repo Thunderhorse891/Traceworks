@@ -35,6 +35,7 @@ test('homepage exposes one focused Williamson County checkout', () => {
   assert.ok(html.includes('name="packageId" value="standard"'));
   assert.ok(html.includes('name="requestedFindings"'));
   assert.ok(html.includes('name="lastKnownAddress"'));
+  assert.ok(html.includes('name="alternateNames"'));
   assert.ok(html.includes('Williamson County, Texas'));
   assert.ok(html.includes('Continue to secure checkout · $99'));
   assert.ok(html.includes('without pretending it is a title report or legal opinion'));
