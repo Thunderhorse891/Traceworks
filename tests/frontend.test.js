@@ -29,25 +29,25 @@ test('client packages include valid Stripe payment links', () => {
   }
 });
 
-test('homepage includes enterprise sales form', () => {
+test('homepage exposes one focused Williamson County checkout', () => {
   const html = readFileSync('public/index.html', 'utf8');
-  assert.ok(html.includes('salesForm'), 'homepage must include enterprise sales form');
+  assert.ok(html.includes('id="checkoutForm"'));
+  assert.ok(html.includes('name="packageId" value="standard"'));
   assert.ok(html.includes('name="requestedFindings"'));
   assert.ok(html.includes('name="lastKnownAddress"'));
-  assert.ok(html.includes('id="packageModal"'));
-  assert.ok(html.includes('id="liveBriefCard"'));
-  assert.ok(html.includes('id="intakeProgressFill"'));
-  assert.ok(html.includes('id="clearDraftBtn"'));
-  assert.ok(html.includes('Texas Property Snapshot — $99'));
-  assert.ok(html.includes('Current verified coverage: Williamson County, Texas'));
+  assert.ok(html.includes('Williamson County, Texas'));
+  assert.ok(html.includes('Continue to secure checkout · $99'));
+  assert.ok(html.includes('without pretending it is a title report or legal opinion'));
+  assert.equal(html.includes('id="salesForm"'), false);
   assert.equal(html.includes('&lt;45 min'), false);
   assert.equal(html.includes('and more</li>'), false);
 });
 
 test('homepage keeps customer navigation on real production pages', () => {
   const html = readFileSync('public/index.html', 'utf8');
-  assert.ok(html.includes('/packages.html'));
   assert.ok(html.includes('/order-status.html'));
+  assert.ok(html.includes('/terms.html'));
+  assert.ok(html.includes('/privacy.html'));
   assert.equal(html.includes('/report-tiers.html'), false);
   assert.equal(html.includes('/console.html'), false);
   assert.equal(html.includes('/launch-readiness.html'), false);
@@ -68,13 +68,13 @@ test('order status tracker supports signed polling links', () => {
   assert.ok(html.includes('id="resRequestedFindings"'));
 });
 
-test('homepage app persists a structured local draft for intake continuity', () => {
+test('homepage app preflights coverage before creating checkout', () => {
   const js = readFileSync('public/app.js', 'utf8');
-  assert.ok(js.includes('traceworksCheckoutDraftV1'));
-  assert.ok(js.includes('localStorage.setItem'));
-  assert.ok(js.includes('Local draft restored.'));
-  assert.ok(js.includes("fetch('/api/packages')"));
-  assert.ok(js.includes('Source Coverage Pending'));
+  assert.ok(js.includes("postJson('/api/intake-preflight'"));
+  assert.ok(js.includes("postJson('/api/create-checkout'"));
+  assert.ok(js.includes('window.location.assign(checkout.checkoutUrl)'));
+  assert.ok(js.includes('payload.legalConsent'));
+  assert.ok(js.includes('payload.tosConsent'));
 });
 
 test('success page surfaces stored intake brief details', () => {
