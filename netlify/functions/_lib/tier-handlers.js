@@ -56,6 +56,7 @@ function makePublicRecordInput(input) {
     decedentName: input.subjectName || '',
     entityName: input.subjectType === 'entity' ? input.subjectName : '',
     parcel: input.parcelId || '',
+    alternateNames: input.alternateNames || [],
     county: input.county,
     state: input.state,
   };
