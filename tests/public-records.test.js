@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { gatherPublicRecordIntel } from '../netlify/functions/_lib/public-records.js';
-import { buildPropertySearchTerms } from '../netlify/functions/_lib/sources/county-property.js';
+import { runStandardReport } from '../netlify/functions/_lib/tier-handlers.js';
+import { buildPropertySearchTerms, classifyPropertyResult } from '../netlify/functions/_lib/sources/county-property.js';
 
 function jsonResponse(status, data) {
   return {
@@ -72,6 +73,9 @@ test('multipath WCAD discovery keeps surname-only records as unverified candidat
   assert.equal(out.findings.propertyMatches.length, 0);
   assert.equal(out.findings.propertyCandidates.length, 1);
   assert.equal(out.findings.propertyCandidates[0].matchLevel, 'possible');
+  assert.equal(out.findings.propertyCandidates[0].needsVerification, true);
+  assert.equal(out.findings.propertyDiscovery.verdict, 'candidate_only');
+  assert.equal(out.findings.propertyDiscovery.searchPathsAttempted, 4);
   assert.match(out.gaps[0], /broad candidate record/);
 });
 
@@ -99,6 +103,57 @@ test('multipath WCAD discovery promotes exact owner records and deduplicates var
   assert.equal(out.findings.propertyCandidates.length, 0);
   assert.deepEqual(out.gaps, []);
   assert.ok(out.findings.propertyMatches[0].matchedQueries.length >= 3);
+  assert.equal(out.findings.propertyDiscovery.verdict, 'matched');
+});
+
+test('identity scoring confirms reversed exact names and any returned property identifier', () => {
+  const nameMatch = classifyPropertyResult(
+    { owner: 'WYRICK, ERIN', address: '200 MATCH ST', propertyId: 'R2' },
+    { owner: 'Erin Wyrick' }
+  );
+  assert.equal(nameMatch.matchLevel, 'confirmed');
+  assert.equal(nameMatch.matchScore, 95);
+
+  const identifierMatch = classifyPropertyResult(
+    { owner: 'OTHER OWNER', propertyId: 'R2', account: 'ACCOUNT-2' },
+    { parcel: 'ACCOUNT-2' }
+  );
+  assert.equal(identifierMatch.matchLevel, 'confirmed');
+  assert.equal(identifierMatch.matchScore, 100);
+});
+
+test('identity scoring does not accept a numeric-only address or surname overlap', () => {
+  const result = classifyPropertyResult(
+    { owner: 'WYRICK, SOMEONE ELSE', address: '200 OTHER ST' },
+    { owner: 'Erin Wyrick', address: '200' }
+  );
+  assert.equal(result.matchLevel, 'possible');
+  assert.equal(result.needsVerification, true);
+  assert.ok(result.matchConflicts.length > 0);
+});
+
+test('standard workflow is partial rather than successful when only broad candidates exist', async () => {
+  const fetchImpl = async (url) => {
+    const term = new URL(url).searchParams.get('f');
+    return jsonResponse(200, {
+      ResultList: term === 'Wyrick'
+        ? [{ PropertyQuickRefID: 'R9', PropertyNumber: 'A9', OwnerName: 'WYRICK, SOMEONE ELSE', SitusAddress: '900 OTHER ST' }]
+        : []
+    });
+  };
+
+  const workflow = await runStandardReport(
+    {
+      order_id: 'TW-CANDIDATE-ONLY',
+      packageId: 'standard',
+      input_criteria: { subjectName: 'Erin Wyrick', county: 'Williamson', state: 'TX' }
+    },
+    { fetchImpl, env: { PAID_FULFILLMENT_STRICT: 'true' } }
+  );
+
+  assert.equal(workflow.overallStatus, 'partial');
+  assert.equal(workflow.publicRecords.findings.propertyMatches.length, 0);
+  assert.match(workflow.partialReasons.join(' '), /manual identity verification/);
 });
 
 test('gatherPublicRecordIntel runs config-driven html/json adapters and logs evidence', async () => {
