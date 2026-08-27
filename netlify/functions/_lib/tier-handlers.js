@@ -151,7 +151,7 @@ export async function runStandardReport(order, ctx = {}) {
     { fetchImpl: ctx.fetchImpl, env }
   );
 
-  const primaryPropertyHit = Array.isArray(publicRecords?.findings?.property) ? publicRecords.findings.property[0] : null;
+  const primaryPropertyHit = Array.isArray(publicRecords?.findings?.propertyMatches) ? publicRecords.findings.propertyMatches[0] : null;
   const fallbackParcelId = input.parcelId
     || primaryPropertyHit?.parcelId
     || primaryPropertyHit?.apn
@@ -175,11 +175,22 @@ export async function runStandardReport(order, ctx = {}) {
 
   const osint = await gatherWorkflowOsint(order, { ...input, parcelId: parcelIdForOsint }, 'standard', { ...ctx, env });
 
+  const sourceOutcome = overallFromSources(workflowSources);
+  const verifiedPropertyMatches = publicRecords?.findings?.propertyMatches || [];
+  const standardOverallStatus = sourceOutcome === 'complete' && verifiedPropertyMatches.length === 0
+    ? 'partial'
+    : sourceOutcome;
+  const standardPartialReasons = standardOverallStatus === 'partial'
+    ? [...new Set([...(missingReasons(workflowSources) || []), ...(publicRecords.gaps || [])])]
+    : [];
+
   return mkWorkflow(order, 'standard', workflowSources, input, {
     startedAt: ctx.startedAt,
     publicRecords,
     osint,
     moduleFallback: missingModuleKeys.length > 0 && workflowSources.length > 0,
+    overallStatus: standardOverallStatus,
+    partialReasons: standardPartialReasons,
   });
 }
 
