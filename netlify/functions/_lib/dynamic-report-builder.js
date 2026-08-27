@@ -182,7 +182,10 @@ function summarizePropertyDiscovery(workflow) {
   if (!findings) return null;
   const matches = Array.isArray(findings.propertyMatches) ? findings.propertyMatches : [];
   const candidates = Array.isArray(findings.propertyCandidates) ? findings.propertyCandidates : [];
+  const discovery = findings.propertyDiscovery || {};
   const items = [
+    `Outcome: ${String(discovery.verdict || (matches.length ? 'matched' : candidates.length ? 'candidate_only' : 'no_match')).replaceAll('_', ' ')}`,
+    `Search paths attempted: ${discovery.searchPathsAttempted ?? 'Not captured'}`,
     `Confirmed or likely property matches: ${matches.length}`,
     `Broad candidates requiring identity verification: ${candidates.length}`
   ];
@@ -190,7 +193,7 @@ function summarizePropertyDiscovery(workflow) {
     const owner = row.owner || row.ownerName || 'Owner not shown';
     const address = row.address || row.propertyAddress || 'Address not shown';
     const identifier = row.propertyId || row.account || row.parcel || row.accountNumber || 'Identifier not shown';
-    items.push(`[${String(row.matchLevel || 'likely').toUpperCase()}] ${owner} — ${address} — ${identifier}`);
+    items.push(`[${String(row.matchLevel || 'likely').toUpperCase()} · ${row.matchScore ?? 'unscored'}/100] ${owner} — ${address} — ${identifier}`);
   }
   if (!matches.length && candidates.length) {
     items.push('No candidate was attributed to the submitted person because an exact owner, address, or parcel identifier did not match.');
