@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-test('homepage includes enterprise sales form', async () => {
-  const html = await readFile('public/index.html', 'utf8');
+test('enterprise sales remains available on its dedicated page', async () => {
+  const html = await readFile('public/enterprise.html', 'utf8');
   assert.ok(html.includes('id="salesForm"'));
-  assert.ok(html.includes('Request Enterprise Call'));
-  assert.ok(html.includes('name="website"'));
+  assert.ok(html.includes('Send Message'));
+  assert.ok(html.includes('type="email"'));
 });
 
 test('netlify routes contact-sales API endpoint', async () => {
