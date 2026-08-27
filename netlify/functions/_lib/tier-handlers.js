@@ -81,6 +81,10 @@ function buildOsintQuery(input) {
 
 async function gatherWorkflowOsint(order, input, packageId, ctx = {}) {
   const env = ctx.env || process.env;
+  // The Standard Property Snapshot is deliberately limited to the configured
+  // official county property source. Open-web enrichment is outside its paid
+  // scope and can introduce unrelated people or properties into the report.
+  if (packageId === 'standard') return null;
   if (!shouldEnrichWithOsint(env) || ctx.skipOsint) return null;
 
   const query = buildOsintQuery(input);
