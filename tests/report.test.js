@@ -187,3 +187,29 @@ test('dynamic report surfaces workflow intelligence panels from real derived dat
   assert.ok(html.includes('Manual validation required: 1'));
   assert.ok(html.includes('County record lead'));
 });
+
+test('dynamic report separates linked property matches from broad candidates', () => {
+  const report = buildDynamicReportFromWorkflow(
+    {
+      tier: 'standard',
+      orderId: 'TW-TEST-PROPERTY',
+      overallStatus: 'partial',
+      inputs: { ownerName: 'Erin Wyrick' },
+      publicRecords: {
+        findings: {
+          propertyMatches: [],
+          propertyCandidates: [{ owner: 'Another Wyrick', address: '100 Example St', matchLevel: 'possible' }]
+        },
+        gaps: ['No exact or likely county property match found.']
+      },
+      sources: []
+    },
+    { customerName: 'TraceWorks QA', customerEmail: 'qa@example.com', purchased_tier: 'standard' }
+  );
+
+  const text = dynamicReportToText(report);
+  assert.ok(text.includes('### Property Discovery'));
+  assert.ok(text.includes('Confirmed or likely property matches: 0'));
+  assert.ok(text.includes('Broad candidates requiring identity verification: 1'));
+  assert.ok(text.includes('No candidate was attributed to the submitted person'));
+});
