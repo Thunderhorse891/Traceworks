@@ -32,6 +32,14 @@ function evidenceToSourceResult(evidence, dataRows = []) {
   if (evidence.status === 'unavailable') status = SOURCE_STATUS.UNAVAILABLE;
   if (evidence.status === 'error') status = SOURCE_STATUS.ERROR;
 
+  const confidence = dataRows.some((row) => row?.matchLevel === 'confirmed')
+    ? CONFIDENCE.CONFIRMED
+    : dataRows.some((row) => row?.matchLevel === 'likely')
+      ? CONFIDENCE.LIKELY
+      : dataRows.length
+        ? CONFIDENCE.POSSIBLE
+        : CONFIDENCE.NOT_VERIFIED;
+
   return makeSourceResult({
     sourceId: evidence.sourceId,
     sourceLabel: evidence.sourceName,
@@ -39,7 +47,7 @@ function evidenceToSourceResult(evidence, dataRows = []) {
     queryUsed: JSON.stringify(evidence.query || {}),
     status,
     data: dataRows,
-    confidence: status === SOURCE_STATUS.FOUND ? CONFIDENCE.LIKELY : CONFIDENCE.NOT_VERIFIED,
+    confidence: status === SOURCE_STATUS.FOUND ? confidence : CONFIDENCE.NOT_VERIFIED,
     errorDetail: evidence.notes || null
   });
 }
@@ -60,7 +68,11 @@ function buildHealthSummary(evidence = []) {
 function pushEvidence(payload, out) {
   payload.evidence.push(...out.evidence);
   for (const e of out.evidence) {
-    payload.sources.push(evidenceToSourceResult(e, out.results));
+    const queryTerm = String(e?.query?.owner || e?.query?.address || e?.query?.parcel || '').trim();
+    const rows = queryTerm
+      ? out.results.filter((row) => Array.isArray(row?.matchedQueries) && row.matchedQueries.includes(queryTerm))
+      : out.results;
+    payload.sources.push(evidenceToSourceResult(e, rows));
   }
 }
 
@@ -108,17 +120,25 @@ export async function gatherPublicRecordIntel(order, { fetchImpl = fetch, env = 
         address: input.address,
         owner: input.ownerName,
         parcel: input.parcel,
+        alternateNames: input.alternateNames || [],
         configs: sourceConfig.countyProperty,
         fetchImpl
       });
       payload.findings.property = propertyOut.results;
+      payload.findings.propertyMatches = propertyOut.results.filter((row) => ['confirmed', 'likely'].includes(row.matchLevel));
+      payload.findings.propertyCandidates = propertyOut.results.filter((row) => row.matchLevel === 'possible');
       pushEvidence(payload, propertyOut);
 
-      const propertyGap = familyGap(propertyOut.results, propertyOut.evidence, {
+      const propertyGap = familyGap(payload.findings.propertyMatches, propertyOut.evidence, {
         noResult: 'No county property results found',
         allSkipped: 'No county property sources were in scope for the supplied identifiers or jurisdiction.'
       });
-      if (propertyGap) payload.gaps.push(propertyGap);
+      if (propertyGap) {
+        const candidateCount = payload.findings.propertyCandidates.length;
+        payload.gaps.push(candidateCount
+          ? `No exact or likely county property match found. ${candidateCount} broad candidate record(s) require manual identity verification.`
+          : propertyGap);
+      }
     }
   }
 
