@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { gatherPublicRecordIntel } from '../netlify/functions/_lib/public-records.js';
+import { buildPropertySearchTerms } from '../netlify/functions/_lib/sources/county-property.js';
 
 function jsonResponse(status, data) {
   return {
@@ -22,6 +23,83 @@ function htmlResponse(status, html) {
     }
   };
 }
+
+test('property discovery builds name-order, surname, parcel, address, and alias paths', () => {
+  const terms = buildPropertySearchTerms({
+    owner: 'Erin Wyrick',
+    address: '123 Main St, Hutto, TX',
+    parcel: 'R123',
+    alternateNames: ['Example Holdings LLC']
+  });
+
+  assert.ok(terms.includes('Erin Wyrick'));
+  assert.ok(terms.includes('Wyrick, Erin'));
+  assert.ok(terms.includes('Wyrick Erin'));
+  assert.ok(terms.includes('Wyrick'));
+  assert.ok(terms.includes('Example Holdings LLC'));
+  assert.ok(terms.includes('123 Main St, Hutto, TX'));
+  assert.ok(terms.includes('R123'));
+});
+
+test('multipath WCAD discovery keeps surname-only records as unverified candidates', async () => {
+  const requested = [];
+  const fetchImpl = async (url) => {
+    const term = new URL(url).searchParams.get('f');
+    requested.push(term);
+    const rows = term === 'Wyrick'
+      ? [{
+          PropertyQuickRefID: 'R1',
+          PropertyNumber: 'ACCOUNT-1',
+          OwnerName: 'WYRICK, SOMEONE ELSE',
+          SitusAddress: '100 OTHER ST'
+        }]
+      : [];
+    return jsonResponse(200, { ResultList: rows });
+  };
+
+  const out = await gatherPublicRecordIntel(
+    {
+      packageKey: 'standard',
+      input: { ownerName: 'Erin Wyrick', county: 'Williamson', state: 'TX' }
+    },
+    { fetchImpl, env: { PAID_FULFILLMENT_STRICT: 'true' } }
+  );
+
+  assert.ok(requested.includes('Erin Wyrick'));
+  assert.ok(requested.includes('Wyrick, Erin'));
+  assert.ok(requested.includes('Wyrick Erin'));
+  assert.ok(requested.includes('Wyrick'));
+  assert.equal(out.findings.propertyMatches.length, 0);
+  assert.equal(out.findings.propertyCandidates.length, 1);
+  assert.equal(out.findings.propertyCandidates[0].matchLevel, 'possible');
+  assert.match(out.gaps[0], /broad candidate record/);
+});
+
+test('multipath WCAD discovery promotes exact owner records and deduplicates variants', async () => {
+  const fetchImpl = async () => jsonResponse(200, {
+    ResultList: [{
+      PropertyQuickRefID: 'R2',
+      PropertyNumber: 'ACCOUNT-2',
+      OwnerName: 'ERIN WYRICK',
+      SitusAddress: '200 MATCH ST'
+    }]
+  });
+
+  const out = await gatherPublicRecordIntel(
+    {
+      packageKey: 'standard',
+      input: { ownerName: 'Erin Wyrick', county: 'Williamson', state: 'TX' }
+    },
+    { fetchImpl, env: { PAID_FULFILLMENT_STRICT: 'true' } }
+  );
+
+  assert.equal(out.findings.property.length, 1);
+  assert.equal(out.findings.propertyMatches.length, 1);
+  assert.equal(out.findings.propertyMatches[0].matchLevel, 'confirmed');
+  assert.equal(out.findings.propertyCandidates.length, 0);
+  assert.deepEqual(out.gaps, []);
+  assert.ok(out.findings.propertyMatches[0].matchedQueries.length >= 3);
+});
 
 test('gatherPublicRecordIntel runs config-driven html/json adapters and logs evidence', async () => {
   const env = {
