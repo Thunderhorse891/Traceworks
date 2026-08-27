@@ -28,6 +28,16 @@ function escapeHtml(value) {
 function sourceNarrative(source) {
   const label = CONF_LABEL[source.confidence] || '[NOT VERIFIED]';
   if (source.status === SOURCE_STATUS.FOUND) {
+    const rows = Array.isArray(source.data) ? source.data : [];
+    const confirmed = rows.filter((row) => row?.matchLevel === 'confirmed').length;
+    const likely = rows.filter((row) => row?.matchLevel === 'likely').length;
+    const possible = rows.filter((row) => row?.matchLevel === 'possible').length;
+    if (rows.length && confirmed + likely === 0 && possible > 0) {
+      return `[POSSIBLE] ${source.sourceLabel} returned ${possible} broad candidate record(s), but none could be linked to the submitted identity without another matching identifier.`;
+    }
+    if (rows.length && confirmed + likely > 0) {
+      return `${label} ${source.sourceLabel} returned ${confirmed} confirmed and ${likely} likely property match(es), plus ${possible} broad candidate(s).`;
+    }
     return `${label} Found responsive records in ${source.sourceLabel}.`;
   }
   if (source.status === SOURCE_STATUS.PARTIAL) {
@@ -167,8 +177,30 @@ function summarizeConfidenceMatrix(confidenceMatrix) {
   return { title: 'Confidence Matrix', items };
 }
 
+function summarizePropertyDiscovery(workflow) {
+  const findings = workflow?.publicRecords?.findings || workflow?.publicRecords?.standard?.findings;
+  if (!findings) return null;
+  const matches = Array.isArray(findings.propertyMatches) ? findings.propertyMatches : [];
+  const candidates = Array.isArray(findings.propertyCandidates) ? findings.propertyCandidates : [];
+  const items = [
+    `Confirmed or likely property matches: ${matches.length}`,
+    `Broad candidates requiring identity verification: ${candidates.length}`
+  ];
+  for (const row of matches) {
+    const owner = row.owner || row.ownerName || 'Owner not shown';
+    const address = row.address || row.propertyAddress || 'Address not shown';
+    const identifier = row.propertyId || row.account || row.parcel || row.accountNumber || 'Identifier not shown';
+    items.push(`[${String(row.matchLevel || 'likely').toUpperCase()}] ${owner} — ${address} — ${identifier}`);
+  }
+  if (!matches.length && candidates.length) {
+    items.push('No candidate was attributed to the submitted person because an exact owner, address, or parcel identifier did not match.');
+  }
+  return { title: 'Property Discovery', items };
+}
+
 function buildAnalysisPanels(workflow) {
   return [
+    summarizePropertyDiscovery(workflow),
     summarizeOsint(workflow),
     summarizeChainAnalysis(workflow.chainAnalysis),
     summarizeHeirCandidates(workflow.scoredCandidates),
