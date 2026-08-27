@@ -3,21 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TraceWorks™ | Texas Property Record Reports</title>
-    <meta name="description" content="Order a $99 source-traceable Williamson County property snapshot. Secure Stripe checkout and email delivery." />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#09090f" />
+    <title>TraceWorks™ | Williamson County Property Reports</title>
+    <meta name="description" content="Order a $99 source-traceable Williamson County property snapshot using official WCAD records." />
+    <meta name="theme-color" content="#10151b" />
     <link rel="canonical" href="/" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="TraceWorks" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" />
-    <meta property="og:title" content="TraceWorks™ — Investigative Property Reports" />
-    <meta property="og:description" content="Evidence-grade public-record reports for legal professionals. Property, ownership, probate, and entity research." />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Baskerville:wght@700&display=swap" />
+    <meta property="og:title" content="TraceWorks™ — Williamson County Property Snapshot" />
+    <meta property="og:description" content="A readable, source-traceable property report built from official Williamson Central Appraisal District records." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/og-image.svg" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -25,557 +22,134 @@
     <script src="/error-handler.js" defer></script>
     <link rel="stylesheet" href="/styles.css" />
   </head>
-
-  <body>
-
-    <!-- ─ Header ──────────────────────────────────────────────────── -->
-    <header class="site-header">
-      <div class="topbar">
-        <h1>Trace<span>Works™</span></h1>
-        <nav class="topbar-nav" aria-label="Main navigation">
-          <a href="/packages.html">Reports</a>
-          <a href="#process">How It Works</a>
-          <a href="/enterprise.html">Enterprise</a>
-          <a href="/dashboard.html">My Orders</a>
-          <button id="installBtn" hidden class="btn-outline" style="font-size:12px; padding:6px 14px; cursor:pointer;">Install App</button>
-          <a href="#order" class="btn-primary">Submit a Request</a>
-        </nav>
-      </div>
+  <body class="tw-simple">
+    <header class="tw-nav">
+      <a class="tw-logo" href="/" aria-label="TraceWorks home">Trace<span>Works™</span></a>
+      <nav aria-label="Main navigation">
+        <a href="#included">What you get</a>
+        <a href="/order-status.html">Track order</a>
+        <a class="tw-nav-cta" href="#order">Order report</a>
+      </nav>
     </header>
 
-    <!-- ─ Hero ────────────────────────────────────────────────────── -->
-    <section class="hero">
-      <div class="hero-grid">
-        <div class="hero-main">
-          <div class="hero-eyebrow">
-            <span class="hero-eyebrow-line"></span>
-            <span class="eyebrow">Investigative Reports &nbsp;·&nbsp; Texas Public Record</span>
+    <main>
+      <section class="tw-hero">
+        <div class="tw-hero-copy">
+          <p class="tw-kicker">Williamson County, Texas · Official property records</p>
+          <h1>Know what the county record actually shows.</h1>
+          <p class="tw-lead">TraceWorks turns a Williamson Central Appraisal District search into a clean, source-traceable property snapshot—without pretending it is a title report or legal opinion.</p>
+          <div class="tw-actions">
+            <a class="tw-primary" href="#order">Order for $99</a>
+            <a class="tw-secondary" href="#included">See the report scope</a>
           </div>
-          <h2>A clear property record, without the courthouse maze.</h2>
-          <p class="hero-sub">
-            Get a focused $99 Williamson County property snapshot. TraceWorks organizes official WCAD owner and property results into a readable, source-traceable report delivered by email.
-          </p>
-          <div class="hero-actions hero-cta">
-            <a href="#order" class="btn-primary">Start a $99 Property Snapshot</a>
-            <a href="#process" class="btn-outline">See How It Works</a>
-          </div>
-          <p class="hero-proof">Useful for attorneys, investors, researchers, and property professionals who need organized public-record findings without black-box claims.</p>
-
-          <div class="hero-signal-row">
-            <span class="hero-signal">Structured intake</span>
-            <span class="hero-signal">Stripe-backed checkout</span>
-            <span class="hero-signal">Texas county coverage</span>
-            <span class="hero-signal">Confidence-labeled findings</span>
-          </div>
-
-          <div class="hero-stats">
-            <div class="hero-stat">
-              <span class="hero-stat-value">$99</span>
-              <span class="hero-stat-label">Property Snapshot</span>
-            </div>
-            <div class="hero-stat">
-              <span class="hero-stat-value">1</span>
-              <span class="hero-stat-label">Verified County</span>
-            </div>
-            <div class="hero-stat">
-              <span class="hero-stat-value">24 hr</span>
-              <span class="hero-stat-label">Delivery Window</span>
-            </div>
-            <div class="hero-stat">
-              <span class="hero-stat-value">100%</span>
-              <span class="hero-stat-label">Source Traced</span>
-            </div>
+          <div class="tw-trust-row" aria-label="Service highlights">
+            <span>Official WCAD source</span>
+            <span>Secure Stripe payment</span>
+            <span>Email delivery within 24 hours</span>
           </div>
         </div>
-
-        <aside class="hero-panel report-preview" aria-label="Report contents">
-          <p class="label">Inside your report</p>
-          <h3>Findings you can verify</h3>
-          <div class="report-preview-status"><span></span> Official-source research</div>
-          <div class="report-preview-list">
-            <div><strong>Owner of record</strong><small>Name returned by the county source</small></div>
-            <div><strong>Property identifiers</strong><small>Account, parcel, or reference IDs when available</small></div>
-            <div><strong>Address comparison</strong><small>Situs and submitted address checked for differences</small></div>
-            <div><strong>Source trace</strong><small>Source, search time, and limitations documented</small></div>
-          </div>
-          <p class="report-preview-note">If a source is unavailable or a match is uncertain, the report says so plainly. No invented findings.</p>
+        <aside class="tw-report-card" aria-label="Report preview">
+          <div class="tw-report-topline"><span>PROPERTY SNAPSHOT</span><strong>$99</strong></div>
+          <h2>What the record returned</h2>
+          <dl>
+            <div><dt>Owner of record</dt><dd>As listed by WCAD</dd></div>
+            <div><dt>Property identifiers</dt><dd>Account and reference IDs when returned</dd></div>
+            <div><dt>Property address</dt><dd>Compared with your submitted address</dd></div>
+            <div><dt>Source trace</dt><dd>Query, source URL, and timestamp</dd></div>
+          </dl>
+          <p>Uncertain matches and unavailable data are labeled plainly. Nothing is invented.</p>
         </aside>
-      </div>
-    </section>
+      </section>
 
-    <!-- ─ Credibility Bar ──────────────────────────────────────────── -->
-    <div class="credibility-bar">
-      <div class="credibility-bar-inner">
-        <div class="cred-item">
-          <div class="cred-mark">
-            <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
-          </div>
-          <div class="cred-text">
-            <strong>Government-Source First</strong>
-          <span>Williamson Central Appraisal District</span>
+      <section class="tw-scope" id="included">
+        <div>
+          <p class="tw-kicker">One report. Clear boundaries.</p>
+          <h2>A focused public-record check.</h2>
+          <p>This report is for checking what WCAD currently returns for a Williamson County property search. It is not a deed chain, lien search, title commitment, appraisal, or ownership guarantee.</p>
+        </div>
+        <ul>
+          <li><strong>Included</strong><span>WCAD owner and property results</span></li>
+          <li><strong>Included</strong><span>Submitted-address comparison</span></li>
+          <li><strong>Included</strong><span>Result limitations and source trail</span></li>
+          <li><strong>Not included</strong><span>Liens, deed history, probate, or people searches</span></li>
+        </ul>
+      </section>
+
+      <section class="tw-order" id="order">
+        <div class="tw-order-intro">
+          <p class="tw-kicker">Order a Property Snapshot</p>
+          <h2>Tell us which property to check.</h2>
+          <p>Enter the strongest search term you have: the owner name, Williamson County property address, or WCAD property number.</p>
+          <div class="tw-price-box">
+            <span>Flat price</span>
+            <strong>$99</strong>
+            <small>Secure checkout through Stripe</small>
           </div>
         </div>
-        <div class="cred-item">
-          <div class="cred-mark">
-            <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
-          </div>
-          <div class="cred-text">
-            <strong>Confidence-Labeled Findings</strong>
-            <span>Confirmed, Likely, Not Found — every result</span>
-          </div>
-        </div>
-        <div class="cred-item">
-          <div class="cred-mark">
-            <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
-          </div>
-          <div class="cred-text">
-            <strong>Source Trace on Every Report</strong>
-            <span>Source, query, and timestamp — documented</span>
-          </div>
-        </div>
-        <div class="cred-item">
-          <div class="cred-mark">
-            <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
-          </div>
-          <div class="cred-text">
-            <strong>No Fabricated Data</strong>
-            <span>Reports render only from real source results</span>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <section class="launch-offer" aria-labelledby="launchOfferTitle">
-      <div>
-        <span class="eyebrow">Available Now</span>
-        <h3 id="launchOfferTitle">Texas Property Snapshot — $99</h3>
-        <p>Williamson County owner-of-record results, property identifiers, address comparison, discrepancies, and a timestamped WCAD source trace.</p>
-      </div>
-      <a href="#reports" class="btn-primary">Check Availability &amp; Start</a>
-    </section>
+        <form id="checkoutForm" class="tw-form" novalidate>
+          <input type="hidden" id="packageId" name="packageId" value="standard" />
+          <input type="hidden" name="subjectType" value="property" />
+          <input type="hidden" name="county" value="Williamson" />
+          <input type="hidden" name="state" value="TX" />
+          <input type="hidden" name="requestedFindings" value="Return the official WCAD property result, property identifiers, address comparison, source timestamp, and any match limitations." />
+          <input type="hidden" name="goals" value="Verify the currently returned Williamson Central Appraisal District property record." />
 
-    <!-- ─ Reports ─────────────────────────────────────────────────── -->
-    <section id="reports" class="section-block">
-      <div class="section-header">
-        <span class="eyebrow">Available Report</span>
-          <h3>One focused report. One clear price.</h3>
-          <p>Only the report backed by currently verified county sources is shown here. Additional research products stay private until their data coverage is validated.</p>
-      </div>
-      <div class="packages-grid" id="packages-grid"></div>
-      <div class="report-runtime-rail" hidden>
-        <article class="runtime-card">
-          <span class="runtime-card-label">Purchase Flow</span>
-          <strong>Package selection opens a structured intake, not a blank form.</strong>
-          <p>Each package unlocks the identifiers, guidance, and workflow signals that matter most for that investigative scope.</p>
-        </article>
-        <article class="runtime-card">
-          <span class="runtime-card-label">Automation Standard</span>
-          <strong>The engine runs the package the customer actually purchased.</strong>
-          <p>Property, recorder, probate, and OSINT steps stay package-scoped so the report matches the commercial promise.</p>
-        </article>
-        <article class="runtime-card">
-          <span class="runtime-card-label">Delivery Standard</span>
-          <strong>Reports show what was found, what was not, and what still needs manual review.</strong>
-          <p>No simulated evidence, no fabricated gaps filled in, and no silent omission of blocked sources.</p>
-        </article>
-      </div>
-    </section>
-
-    <dialog id="packageModal" class="package-modal" aria-labelledby="packageModalName">
-      <div class="package-modal-content">
-        <button type="button" class="package-modal-close" id="packageModalClose" aria-label="Close package details">×</button>
-        <p class="label" id="packageModalLabel">PACKAGE</p>
-        <h3 id="packageModalName">Package Details</h3>
-        <p class="price" id="packageModalPrice">$0</p>
-        <p class="pkg-meta" id="packageModalSummary"></p>
-        <p class="package-modal-availability" id="packageModalAvailability"></p>
-        <div class="package-modal-grid">
-          <section class="package-modal-panel">
-            <h4>Included Findings</h4>
-            <ul id="packageModalIncluded"></ul>
-          </section>
-          <section class="package-modal-panel">
-            <h4>Workflow Scope</h4>
-            <ul id="packageModalWorkflow"></ul>
-          </section>
-          <section class="package-modal-panel">
-            <h4>Required Intake Signals</h4>
-            <ul id="packageModalRequired"></ul>
-          </section>
-          <section class="package-modal-panel">
-            <h4>Recommended Identifiers</h4>
-            <ul id="packageModalRecommended"></ul>
-          </section>
-        </div>
-        <p class="package-modal-guidance" id="packageModalGuidance"></p>
-        <div class="package-modal-actions">
-          <button type="button" class="btn-primary" id="packageModalSelect">Start Secure Intake</button>
-          <a href="/packages.html">Compare all tiers</a>
-        </div>
-      </div>
-    </dialog>
-
-    <div class="policy-note">
-      <span class="policy-note-bar"></span>
-      <span><strong style="color:var(--text-2)">Service Policy —</strong> No refunds after research begins. If findings are incomplete due to source unavailability, we run a redo pass on the same scope at no charge.</span>
-    </div>
-
-    <!-- ─ Process ─────────────────────────────────────────────────── -->
-    <section id="process" class="process-section">
-      <div class="section-block">
-        <div class="section-header">
-          <span class="eyebrow">How It Works</span>
-          <h3>From request to inbox</h3>
-          <p>Four clear steps. No phone call required.</p>
-        </div>
-        <div class="steps-grid">
-          <div class="step">
-            <span class="step-num">01 —</span>
-            <h4>Submit Secure Intake</h4>
-            <p>Enter the subject name, county, and research scope. Payment processes through Stripe.</p>
-          </div>
-          <div class="step">
-            <span class="step-num">02 —</span>
-            <h4>Source Research</h4>
-            <p>TraceWorks queries the verified public-record sources available for the package and county you selected.</p>
-          </div>
-          <div class="step">
-            <span class="step-num">03 —</span>
-            <h4>Report Generated</h4>
-            <p>Every finding is confidence-labeled. Unavailable sources are documented with manual review links.</p>
-          </div>
-          <div class="step">
-            <span class="step-num">04 —</span>
-            <h4>Delivered to Inbox</h4>
-            <p>Report emailed directly. Source trace panel included — every source, query, and timestamp.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─ Intake Form ─────────────────────────────────────────────── -->
-    <section id="order">
-      <div class="section-block">
-        <div class="intake-section">
-
-          <div class="intake-info">
-            <span class="eyebrow">Secure Intake</span>
-            <h3>Submit a Research Request</h3>
-            <p>Select a report tier above, then complete this form. Payment processes through Stripe — we never see your card. Report delivered by email.</p>
-            <ul class="intake-checklist">
-              <li>Lawful investigative and legal use only</li>
-              <li>Public-record sources — no private database access</li>
-              <li>FCRA advisory: not for credit, employment, or tenant screening</li>
-              <li>Current verified coverage: Williamson County, Texas</li>
-            </ul>
-            <div class="intake-links">
-              <a href="/packages.html" target="_blank" rel="noopener">Compare package coverage</a>
-              <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a>
-              <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
-            </div>
-            <div class="intake-side-rail">
-              <div class="journey-card">
-                <p class="label">Request Flow</p>
-                <div class="journey-step-list">
-                  <div class="journey-step">
-                    <span class="journey-step-index">01</span>
-                    <div>
-                      <strong>Choose a package</strong>
-                      <p>Set the workflow and evidence scope first.</p>
-                    </div>
-                  </div>
-                  <div class="journey-step">
-                    <span class="journey-step-index">02</span>
-                    <div>
-                      <strong>Strengthen identifiers</strong>
-                      <p>More seeds mean better automation and less manual review.</p>
-                    </div>
-                  </div>
-                  <div class="journey-step">
-                    <span class="journey-step-index">03</span>
-                    <div>
-                      <strong>Define the outcome</strong>
-                      <p>Tell the engine what the report must return.</p>
-                    </div>
-                  </div>
-                  <div class="journey-step">
-                    <span class="journey-step-index">04</span>
-                    <div>
-                      <strong>Secure checkout</strong>
-                      <p>Stripe confirms payment, then the queue begins immediately.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="journey-card live-brief-card" id="liveBriefCard">
-                <div class="live-brief-head">
-                  <div>
-                    <p class="label">Case Brief</p>
-                    <h4>Investigation brief</h4>
-                  </div>
-                  <span class="draft-status" id="draftStatus">Draft saves locally</span>
-                </div>
-                <div class="brief-grid">
-                  <div class="brief-item">
-                    <span>Package</span>
-                    <strong id="briefPackage">Awaiting package selection</strong>
-                  </div>
-                  <div class="brief-item">
-                    <span>Target</span>
-                    <strong id="briefSubject">Awaiting subject name</strong>
-                  </div>
-                  <div class="brief-item">
-                    <span>Jurisdiction</span>
-                    <strong id="briefJurisdiction">Awaiting county</strong>
-                  </div>
-                  <div class="brief-item">
-                    <span>Signal strength</span>
-                    <strong id="briefSignalStrength">0 identifiers on file</strong>
-                  </div>
-                </div>
-                <p class="brief-copy" id="briefObjective">Choose a package, add the strongest identifiers you have, and describe what the report needs to confirm or uncover.</p>
-              </div>
-            </div>
+          <div class="tw-form-row">
+            <label>Your name
+              <input name="customerName" autocomplete="name" required placeholder="Name for the order" />
+            </label>
+            <label>Delivery email
+              <input type="email" name="customerEmail" autocomplete="email" required placeholder="you@example.com" />
+            </label>
           </div>
 
-          <div class="form-wrap">
-            <div class="form-header">
-              <h3>New Research Request</h3>
-            </div>
-            <div class="form-body">
-              <form id="checkoutForm">
-                <div class="intake-progress-card">
-                  <div class="intake-progress-header">
-                    <div>
-                      <p class="label">Investigation Setup</p>
-                      <h4 id="intakeProgressHeading">Step 1 of 4 - Choose a package</h4>
-                    </div>
-                    <button type="button" class="btn-outline intake-clear-btn" id="clearDraftBtn">Clear Draft</button>
-                  </div>
-                  <p class="intake-progress-copy" id="intakeProgressText">Select a report tier above and the intake will guide you toward the strongest identifiers for that workflow.</p>
-                  <div class="progress-wrap">
-                    <div class="progress-track">
-                      <div class="progress-fill" id="intakeProgressFill" style="width:0%"></div>
-                    </div>
-                    <div class="intake-progress-meta">
-                      <span id="requiredSignalsStatus">Required signals: 0 / 0</span>
-                      <span id="recommendedSignalsStatus">Recommended identifiers: 0 / 0</span>
-                    </div>
-                  </div>
-                  <div class="signal-chip-row" id="signalChipRow"></div>
-                </div>
-                <div class="selected-package-summary" id="selectedPackageSummary" hidden>
-                  <div>
-                    <p class="label">Selected Package</p>
-                    <h4 id="selectedPackageName">Choose a tier above</h4>
-                  </div>
-                  <div class="selected-package-pill" id="selectedPackageTurnaround">Awaiting selection</div>
-                  <p id="selectedPackageGuidance"></p>
-                </div>
+          <label>Property search
+            <input name="subjectName" required placeholder="Owner name, property address, or WCAD number" aria-describedby="propertySearchHelp" />
+          </label>
+          <p class="tw-help" id="propertySearchHelp">Use the exact owner name or property information if possible.</p>
 
-                <div class="field-group">
-                  <span class="field-group-label">Service Selection</span>
-                  <label>Selected Package
-                    <input id="packageId" name="packageId" readonly required placeholder="Select a tier above" />
-                  </label>
-                  <p class="field-help" id="packageSelectionHelp">Start with a package above to unlock the recommended intake fields for that workflow.</p>
-                </div>
+          <label>Property address <span>(recommended)</span>
+            <input name="lastKnownAddress" autocomplete="street-address" placeholder="123 Main St, Hutto, TX 78634" />
+          </label>
 
-                <div class="field-group">
-                  <span class="field-group-label">Requestor</span>
-                  <label>Full Name
-                    <input name="customerName" required placeholder="Attorney or investigator name" />
-                  </label>
-                  <label>Email Address
-                    <input type="email" name="customerEmail" required placeholder="Where to deliver the report" />
-                  </label>
-                </div>
+          <label>WCAD property number <span>(optional)</span>
+            <input name="parcelId" inputmode="numeric" placeholder="Property or account number" />
+          </label>
 
-                <div class="field-group">
-                  <span class="field-group-label">Subject &amp; Location</span>
-                  <label>Subject Type
-                    <select name="subjectType" id="subjectType">
-                      <option value="property">Property / parcel</option>
-                      <option value="person">Person</option>
-                      <option value="entity">Business / LLC / trust</option>
-                      <option value="estate">Estate / decedent</option>
-                      <option value="mixed">Mixed / unknown</option>
-                    </select>
-                  </label>
-                  <label>Primary Subject Name
-                    <input name="subjectName" required placeholder="Individual name or LLC / Trust / Corp" />
-                  </label>
-                  <div class="form-row">
-                    <label>County
-                      <input name="county" required value="Williamson" readonly />
-                    </label>
-                    <label>State
-                      <input name="state" value="TX" maxlength="2" />
-                    </label>
-                  </div>
-                  <label data-intake-field="lastKnownAddress">Last Known Address <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                    <input name="lastKnownAddress" placeholder="123 Main St, Austin, TX 78701" />
-                  </label>
-                  <div class="form-row">
-                    <label data-intake-field="parcelId">Parcel / APN ID <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                      <input name="parcelId" placeholder="Parcel, APN, account, or tax ID" />
-                    </label>
-                    <label data-intake-field="websiteProfile">Profile or Listing URL <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                      <input name="websiteProfile" placeholder="https://county-portal.example or public profile URL" />
-                    </label>
-                  </div>
-                  <label data-intake-field="alternateNames">Aliases / Alternate Names <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                    <input name="alternateNames" placeholder="Comma-separated aliases, relatives, prior owner names, or entity variants" />
-                  </label>
-                  <div class="form-row">
-                    <label data-intake-field="dateOfBirth">Date of Birth <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                      <input type="date" name="dateOfBirth" />
-                    </label>
-                    <label data-intake-field="deathYear">Death Year <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                      <input name="deathYear" inputmode="numeric" maxlength="4" placeholder="YYYY" />
-                    </label>
-                  </div>
-                  <div class="form-row">
-                    <label data-intake-field="subjectPhone">Subject Phone <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                      <input name="subjectPhone" inputmode="tel" placeholder="Known phone number" />
-                    </label>
-                    <label data-intake-field="subjectEmail">Subject Email <span style="color:var(--text-4); font-weight:400;">(optional)</span>
-                      <input type="email" name="subjectEmail" placeholder="Known subject email" />
-                    </label>
-                  </div>
-                  <p class="field-help" id="intakeGuidance">We only search public-record and configured licensed sources. More identifiers improve match quality and reduce manual review.</p>
-                </div>
-
-                <div class="field-group">
-                  <span class="field-group-label">Requested Findings</span>
-                  <label>What do you want this report to return?
-                    <textarea name="requestedFindings" rows="3" placeholder="Examples: verify current owner, identify deed chain, locate probate filing, list likely heirs, find related parcels, check for entity records."></textarea>
-                  </label>
-                </div>
-
-                <div class="field-group">
-                  <span class="field-group-label">Case Objective</span>
-                  <label>Describe the outcome you need
-                    <textarea name="goals" rows="3" placeholder="e.g. Need deed history and current lienholder signals for a probate matter in Harris County; deliver source-trace-backed report suitable for attorney review."></textarea>
-                  </label>
-                </div>
-
-                <div class="field-group">
-                  <span class="field-group-label">Legal Compliance</span>
-                  <label class="consent">
-                    <input type="checkbox" name="legalConsent" required />
-                    I confirm this request is for lawful investigative or legal professional use only.
-                  </label>
-                  <label class="consent">
-                    <input type="checkbox" name="tosConsent" required />
-                    I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">No-Refund Redo Policy</a>.
-                  </label>
-                </div>
-
-              </form>
-            </div>
-            <div class="form-submit">
-              <button type="submit" form="checkoutForm">Proceed to Secure Checkout</button>
-              <p id="status"></p>
-            </div>
+          <div class="tw-consents">
+            <label><input type="checkbox" name="legalConsent" required /> <span>I will use this public-record report for a lawful purpose, not credit, employment, insurance, or tenant screening.</span></label>
+            <label><input type="checkbox" name="tosConsent" required /> <span>I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a>, <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and <a href="/refund-policy.html" target="_blank" rel="noopener">service policy</a>.</span></label>
           </div>
 
-        </div>
-      </div>
-    </section>
+          <button class="tw-checkout" type="submit">Continue to secure checkout · $99</button>
+          <p id="status" class="tw-status" role="alert" aria-live="polite"></p>
+          <p class="tw-fineprint">Research begins after Stripe confirms payment. The report is informational and does not replace a title search or legal advice.</p>
+        </form>
+      </section>
 
-    <!-- ─ Enterprise ──────────────────────────────────────────────── -->
-    <section id="enterprise" class="enterprise-section">
-      <div class="section-block">
-        <div class="enterprise-grid">
-          <div class="enterprise-info">
-            <span class="eyebrow">Enterprise &amp; Agency</span>
-            <h3>Volume &amp; Retainer Pricing</h3>
-            <p>Law firms, title companies, and asset recovery agencies running recurring caseloads can contact us for retainer workflows and custom reporting scopes.</p>
-          </div>
-          <div class="form-wrap">
-            <div class="form-header"><h3>Enterprise Inquiry</h3></div>
-            <div class="form-body">
-              <form id="salesForm">
-                <div class="field-group">
-                  <div class="form-row" style="grid-template-columns:1fr 1fr;">
-                    <label>Name <input name="name" required placeholder="Your name" /></label>
-                    <label>Business Email <input type="email" name="email" required placeholder="firm@domain.com" /></label>
-                  </div>
-                  <div class="form-row" style="grid-template-columns:1fr 1fr;">
-                    <label>Company / Firm <input name="company" required placeholder="Law firm or agency" /></label>
-                    <label>Monthly Cases <input name="monthlyCases" required placeholder="e.g. 50" /></label>
-                  </div>
-                  <label>Budget Range <input name="budget" placeholder="e.g. $2k–$10k/mo" /></label>
-                  <!-- Honeypot -->
-                  <label style="display:none;">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
-                  <label>Notes
-                    <textarea name="message" rows="3" placeholder="Case types, geography, turnaround requirements."></textarea>
-                  </label>
-                </div>
-              </form>
-            </div>
-            <div class="form-submit">
-              <button type="submit" form="salesForm">Request Enterprise Call</button>
-              <p id="salesStatus"></p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+      <section class="tw-steps">
+        <div><span>1</span><strong>Submit</strong><p>Give us the property search term and delivery email.</p></div>
+        <div><span>2</span><strong>Pay securely</strong><p>Stripe handles card details; TraceWorks does not store them.</p></div>
+        <div><span>3</span><strong>Receive report</strong><p>Your source-traceable snapshot is emailed within 24 hours.</p></div>
+      </section>
 
-    <!-- ─ FAQ ────────────────────────────────────────────────────── -->
-    <section id="faq" class="faq-section">
-      <div class="section-block">
-        <div class="section-header">
-          <span class="eyebrow">Scope &amp; Clarity</span>
-          <h3>Common Questions</h3>
-          <p>Straightforward answers about what the reports include, what they don't, and when manual review is needed.</p>
-        </div>
-        <div class="faq-grid">
-          <div class="faq-item">
-            <h4>What's included in every report?</h4>
-            <p>Every report includes a Source Trace Panel — a table of every source queried, the exact query used, the timestamp, and the result status (Found, Not Found, Unavailable, or Error). No source is silently omitted. If a source couldn't be reached, it is documented with a direct manual-review link.</p>
-          </div>
-          <div class="faq-item">
-            <h4>What is not guaranteed?</h4>
-            <p>These are public-record investigative reports, not title commitments, heirship certifications, or legal opinions. We cannot guarantee completeness of county indexes, availability of any specific source, or that all properties, entities, or heirs associated with a subject will be found. Every limitation is labeled in the report.</p>
-          </div>
-          <div class="faq-item">
-            <h4>How long does delivery take?</h4>
-            <p>Most reports complete within 10–45 minutes of confirmed payment. Complex subjects or unavailable county portals may extend this. Comprehensive tier reports may take up to 90 minutes. You will receive an email when the report is ready — no need to wait on the confirmation page.</p>
-          </div>
-          <div class="faq-item">
-            <h4>What if a source is unavailable?</h4>
-            <p>Sources that require browser authentication (such as county deed indexes and TX Courts Online) are documented as "Unavailable — Manual Review Required" with a direct link to the source for human follow-up. We never fabricate data when automation fails. You receive an honest accounting of exactly what was accessible.</p>
-          </div>
-          <div class="faq-item">
-            <h4>What is the refund policy?</h4>
-            <p>No refunds after research begins — which occurs immediately after payment confirmation. If findings are incomplete due to source unavailability, we run a redo pass on the same scope at no charge. See the full <a href="/refund-policy.html">No-Refund Redo Policy</a> for scope definition.</p>
-          </div>
-          <div class="faq-item">
-            <h4>Who is this service for?</h4>
-            <p>TraceWorks is for licensed legal professionals, real estate attorneys, probate investors, title researchers, process servers, and asset recovery firms. This service is for lawful investigative and legal professional use only. It is not a consumer reporting service under FCRA and must not be used for credit, employment, or tenant screening decisions.</p>
-          </div>
-        </div>
-      </div>
-    </section>
+      <section class="tw-faq">
+        <h2>Before you order</h2>
+        <details><summary>What if WCAD returns no exact match?</summary><p>The report will document the search, what WCAD returned, and why the match could not be confirmed. It will not substitute unrelated web results.</p></details>
+        <details><summary>Is this a title or lien report?</summary><p>No. It does not establish legal ownership, clear title, deed history, or liens. Those require county-clerk or title-company research.</p></details>
+        <details><summary>Which locations are supported?</summary><p>Only Williamson County, Texas is currently available for purchase.</p></details>
+      </section>
+    </main>
 
-      <footer class="footer">
-        <p>© <span id="year"></span> TraceWorks™</p>
-        <nav>
-          <a href="/terms.html">Terms</a>
-          <a href="/privacy.html">Privacy</a>
-          <a href="/refund-policy.html">Refund Policy</a>
-          <a href="/packages.html">Packages</a>
-          <a href="/order-status.html">Track Order</a>
-        </nav>
-      <p class="footer-copy">
-        © TraceWorks™. Lawful investigative research services for licensed professionals only. Not a consumer reporting agency under FCRA. Reports are for informational purposes only and do not constitute legal opinions, title guarantees, or certified findings.
-      </p>
+    <footer class="tw-footer">
+      <a class="tw-logo" href="/">Trace<span>Works™</span></a>
+      <p>Williamson County public-record property snapshots.</p>
+      <nav><a href="/order-status.html">Track order</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/refund-policy.html">Service policy</a></nav>
+      <small>© <span id="year">2026</span> TraceWorks™. Not a consumer reporting agency. Reports are informational only.</small>
     </footer>
 
-    <script src="/pwa.js" type="module"></script>
-    <script src="/app.js" type="module"></script>
+    <script type="module" src="/app.js"></script>
+    <script src="/pwa.js" defer></script>
   </body>
 </html>
