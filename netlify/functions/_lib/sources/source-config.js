@@ -6,6 +6,7 @@ const TEXAS_FIRST_SOURCE_CONFIG = {
       id: 'tx_williamson_appraisal',
       name: 'Williamson Central Appraisal District',
       type: 'json',
+      discovery: { multipath: true },
       coverage: { states: ['TX'], counties: ['Williamson'] },
       request: { urlTemplate: 'https://search.wcad.org/ProxyT/Search/Properties/quick/?f={owner}&pn=1&st=4&so=desc&pt=RP%3BPP%3BMH%3BNR&ty=2027', method: 'GET' },
       extraction: {
