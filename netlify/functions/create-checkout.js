@@ -99,8 +99,8 @@ export async function handler(event) {
 
     const statusToken = createStatusToken({ caseRef, email: customerEmail });
 
-    const stripe = new Stripe(stripeConfig.key);
-    const base = process.env.URL || `https://${event.headers.host}`;
+    const stripe = new Stripe(stripeConfig.key, { apiVersion: '2026-07-29.dahlia' });
+    const base = process.env.URL || process.env.SITE_URL || `https://${event.headers.host}`;
     const session = await stripe.checkout.sessions.create(buildCheckoutSessionPayload({
       pkg,
       caseRef,

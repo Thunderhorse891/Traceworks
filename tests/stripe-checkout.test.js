@@ -27,4 +27,6 @@ test('buildCheckoutSessionPayload adds Stripe reconciliation and receipt fields'
   assert.equal(payload.payment_intent_data.receipt_email, 'client@example.com');
   assert.equal(payload.payment_intent_data.metadata.caseRef, 'TW-123');
   assert.ok(payload.success_url.includes('status_token=status-token'));
+  assert.match(payload.integration_identifier, /^traceworks_[a-z0-9]{8}$/);
+  assert.equal('payment_method_types' in payload, false);
 });
