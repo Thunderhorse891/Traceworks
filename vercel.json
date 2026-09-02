@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/process-queue-cron",
-      "schedule": "*/2 * * * *"
+      "schedule": "0 8 * * *"
     }
   ],
   "headers": [
