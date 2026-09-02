@@ -47,6 +47,7 @@ test('Vercel config preserves static output, API cron, and security headers', as
   assert.equal(config.framework, null);
   assert.equal(config.outputDirectory, 'public');
   assert.ok(config.crons.some((entry) => entry.path === '/api/process-queue-cron'));
+  assert.ok(config.crons.every((entry) => entry.schedule === '0 8 * * *'));
   assert.ok(config.headers[0].headers.some((entry) => entry.key === 'Content-Security-Policy'));
   assert.ok(dispatcher.includes("'stripe-webhook': stripeWebhook"));
   assert.ok(dispatcher.includes("'process-queue-cron': processQueueScheduled"));
