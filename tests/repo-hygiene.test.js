@@ -51,6 +51,7 @@ test('Vercel config preserves static output, API cron, and security headers', as
   assert.ok(config.headers[0].headers.some((entry) => entry.key === 'Content-Security-Policy'));
   assert.ok(dispatcher.includes("'stripe-webhook': stripeWebhook"));
   assert.ok(dispatcher.includes("'process-queue-cron': processQueueScheduled"));
+  assert.ok(dispatcher.includes("new URL(request.url, 'https://traceworks.invalid')"));
   assert.ok(cron.includes('authorization === `Bearer ${secret}`'));
 });
 
