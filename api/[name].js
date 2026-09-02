@@ -43,7 +43,7 @@ const HANDLERS = Object.freeze({
 });
 
 function routeName(request) {
-  const url = new URL(request.url);
+  const url = new URL(request.url, 'https://traceworks.invalid');
   return decodeURIComponent(url.pathname.split('/').filter(Boolean).at(-1) || '');
 }
 
