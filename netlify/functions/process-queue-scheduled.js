@@ -3,11 +3,12 @@ import { runScheduledQueueWorker } from './_lib/process-queue-worker.js';
 import { createModernHandler } from './_lib/netlify-modern.js';
 
 function authorized(event) {
-  const secret = process.env.QUEUE_CRON_SECRET;
-  if (!secret) return { ok: false, statusCode: 500, error: 'QUEUE_CRON_SECRET is not configured.' };
+  const secret = process.env.CRON_SECRET || process.env.QUEUE_CRON_SECRET;
+  if (!secret) return { ok: false, statusCode: 500, error: 'CRON_SECRET or QUEUE_CRON_SECRET is not configured.' };
   const headers = event.headers || {};
   const header = headers['x-queue-cron-secret'] || headers['X-Queue-Cron-Secret'] || '';
-  return header === secret
+  const authorization = headers.authorization || headers.Authorization || '';
+  return header === secret || authorization === `Bearer ${secret}`
     ? { ok: true }
     : { ok: false, statusCode: 401, error: 'Unauthorized' };
 }

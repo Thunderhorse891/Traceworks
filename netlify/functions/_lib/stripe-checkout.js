@@ -29,6 +29,7 @@ export function buildCheckoutSessionPayload({
 
   return {
     mode: 'payment',
+    integration_identifier: `traceworks_${Math.random().toString(36).slice(2, 10).padEnd(8, 'x')}`,
     client_reference_id: caseRef,
     customer_creation: 'always',
     customer_email: customerEmail,

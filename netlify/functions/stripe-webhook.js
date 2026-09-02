@@ -14,6 +14,7 @@ import { createStatusToken } from './_lib/status-token.js';
 import { sendOrderConfirmationEmail } from './_lib/email.js';
 import { assessPackageLaunchGate } from './_lib/launch-audit.js';
 import { createModernHandler } from './_lib/netlify-modern.js';
+import { validatePaidCheckoutSession } from './_lib/stripe-fulfillment.js';
 
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
@@ -38,7 +39,7 @@ export async function handler(event) {
   const sig = event.headers['stripe-signature'];
   if (!sig) return jsonWithRequestId(event, 400, { error: 'Missing stripe-signature header.' });
 
-  const stripe = new Stripe(stripeConfig.key);
+  const stripe = new Stripe(stripeConfig.key, { apiVersion: '2026-07-29.dahlia' });
   let stripeEvent;
   try {
     stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookConfig.secret, 300);
@@ -70,7 +71,20 @@ export async function handler(event) {
     return jsonWithRequestId(event, 200, { ok: true, canceled: true });
   }
 
-  if (stripeEvent.type !== 'checkout.session.completed') {
+  if (stripeEvent.type === 'checkout.session.async_payment_failed') {
+    const failed = stripeEvent.data.object;
+    const failedCaseRef = failed.metadata?.caseRef || failed.client_reference_id || `TW-${failed.id}`;
+    await upsertOrder(failedCaseRef, {
+      status: ORDER_STATUS.CANCELED,
+      failure_reason: 'Stripe reported that the asynchronous payment failed.'
+    });
+    await markProcessedWebhookEvent(stripeEvent.id);
+    return jsonWithRequestId(event, 200, { ok: true, paymentFailed: true });
+  }
+
+  const isCheckoutPaymentEvent = stripeEvent.type === 'checkout.session.completed'
+    || stripeEvent.type === 'checkout.session.async_payment_succeeded';
+  if (!isCheckoutPaymentEvent) {
     await markProcessedWebhookEvent(stripeEvent.id);
     return jsonWithRequestId(event, 200, { ok: true, ignored: true });
   }
@@ -80,16 +94,42 @@ export async function handler(event) {
   const caseRef = metadata.caseRef || session.client_reference_id || `TW-${session.id}`;
   const existingOrder = await getOrder(caseRef);
 
-  let stripePriceId = null;
-  let stripeProductId = null;
-  let amountTotal = null;
+  let firstLineItem;
   try {
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-    const first = lineItems?.data?.[0];
-    stripePriceId = first?.price?.id || null;
-    stripeProductId = first?.price?.product || null;
-    amountTotal = first?.amount_total || first?.price?.unit_amount || null;
-  } catch {}
+    firstLineItem = lineItems?.data?.[0];
+  } catch (error) {
+    console.error('[stripe-webhook] line-item reconciliation failed', {
+      eventId: stripeEvent.id,
+      sessionId: session.id,
+      caseRef,
+      error: String(error?.message || error)
+    });
+    return jsonWithRequestId(event, 500, { error: 'Unable to reconcile Stripe line items.' });
+  }
+
+  const paymentValidation = validatePaidCheckoutSession({ session, lineItem: firstLineItem });
+  if (!paymentValidation.ok) {
+    console.error('[stripe-webhook] payment reconciliation blocked fulfillment', {
+      eventId: stripeEvent.id,
+      sessionId: session.id,
+      caseRef,
+      reason: paymentValidation.reason
+    });
+    if (paymentValidation.reason === 'payment_not_paid') {
+      return jsonWithRequestId(event, 200, { ok: true, paymentPending: true });
+    }
+    await upsertOrder(caseRef, {
+      status: ORDER_STATUS.MANUAL_REVIEW,
+      failure_reason: `Stripe payment reconciliation failed: ${paymentValidation.reason}.`
+    });
+    await markProcessedWebhookEvent(stripeEvent.id);
+    return jsonWithRequestId(event, 200, { ok: true, manualReview: true });
+  }
+
+  const stripePriceId = firstLineItem?.price?.id || null;
+  const stripeProductId = firstLineItem?.price?.product || null;
+  const amountTotal = paymentValidation.amountTotal;
 
   const purchasedTier = resolvePurchasedTier({
     packageId: metadata.packageId,
@@ -118,7 +158,7 @@ export async function handler(event) {
     tosConsent: true
   });
   const inputCriteria = buildInputCriteria(normalized);
-  const pkg = getPackage(metadata.packageId || existingOrder?.packageId || '');
+  const pkg = paymentValidation.pkg;
 
   await recordAuditEvent({ event: 'payment_verified', caseRef, stripeEventId: stripeEvent.id, stripeSessionId: session.id, purchasedTier });
 
@@ -132,7 +172,7 @@ export async function handler(event) {
     packageId: metadata.packageId,
     packageName: metadata.packageName,
     amountTotal,
-    currency: session.currency || null,
+    currency: paymentValidation.currency,
     purchased_tier: purchasedTier,
     customerName: metadata.customerName || existingOrder?.customerName,
     customerEmail: metadata.customerEmail || session.customer_details?.email || existingOrder?.customerEmail,

@@ -3,7 +3,8 @@
 TraceWorks is a Netlify-hosted investigative PWA. The authoritative runtime lives in:
 
 - `public/` for the customer and operator web app
-- `netlify/functions/` for the production API and fulfillment pipeline
+- `netlify/functions/` for the shared API and fulfillment pipeline
+- `api/[name].js` for the Vercel API dispatcher
 - `tests/` for the maintained test suite
 
 Everything outside those paths should be treated as support tooling or removable legacy unless this README says otherwise.
@@ -21,7 +22,8 @@ Everything outside those paths should be treated as support tooling or removable
 
 - Static site: `public/`
 - Functions: `netlify/functions/`
-- Deploy config: `netlify.toml`
+- Primary deploy config: `vercel.json`
+- Rollback deploy config: `netlify.toml`
 - Storage:
   - File mode for local/dev: `TRACEWORKS_STORAGE_DRIVER=file`
   - REST KV for production: `TRACEWORKS_STORAGE_DRIVER=kv` plus `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
@@ -48,14 +50,16 @@ The live paid workflows are driven by `netlify/functions/_lib/tier-handlers.js`,
 - Live smoke test: `node scripts/live-smoke.mjs --url https://your-deployed-site.example [--admin-key ...]`
 - Build Wix custom element bridge: `node scripts/build-wix-custom-element.mjs --app-url https://your-site.example`
 - Tests: `node --test --test-isolation=none --test-concurrency=1`
-- Local dev: `npx netlify dev`
+- Vercel local dev: `npx vercel dev`
+- Netlify rollback dev: `npx netlify dev`
 
 Production launch notes live in `docs/production-launch.md`.
 
 ## CI and Deployment
 
 - GitHub Actions CI lives at `.github/workflows/ci.yml` and runs the same repo verification command used locally: `npm run ci`.
-- Netlify is the only supported deployment target for the live app. `netlify.toml` is authoritative for publish, functions, schedule, redirects, and site security headers.
+- Vercel is the primary deployment target. `vercel.json` is authoritative for static output, cron scheduling, and site security headers; `api/[name].js` exposes the shared function core at `/api/*`.
+- Netlify remains a supported rollback target through `netlify.toml` while Vercel production is validated end to end.
 - Static security headers, including the site-wide Content Security Policy, are defined in `netlify.toml`.
 
 ## Repo Cleanup Policy

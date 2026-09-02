@@ -21,6 +21,7 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify/
+.vercel/
 .netlify-*.log
 .netlify-env-values.txt
 .next/

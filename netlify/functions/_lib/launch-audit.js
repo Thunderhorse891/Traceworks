@@ -355,7 +355,7 @@ function secretChecks(env, checks) {
   const requiredSecrets = [
     ['admin_api_key', 'ADMIN_API_KEY', 'Admin API authentication'],
     ['status_token_secret', 'STATUS_TOKEN_SECRET', 'Signed customer status links'],
-    ['queue_cron_secret', 'QUEUE_CRON_SECRET', 'Scheduled queue worker authentication']
+    ['queue_cron_secret', env.CRON_SECRET ? 'CRON_SECRET' : 'QUEUE_CRON_SECRET', 'Scheduled queue worker authentication']
   ];
 
   for (const [id, key, label] of requiredSecrets) {
