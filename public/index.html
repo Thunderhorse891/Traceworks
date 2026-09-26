@@ -51,9 +51,9 @@
             <span class="hero-eyebrow-line"></span>
             <span class="eyebrow">Investigative Reports &nbsp;·&nbsp; Texas Public Record</span>
           </div>
-          <h2>Evidence-grade property, probate, and ownership intelligence.</h2>
+          <h2>Every public record. <em>One</em> evidence-grade dossier.</h2>
           <p class="hero-sub">
-            TraceWorks turns a structured intake into an evidence-traceable investigative dossier. Customers choose a package, complete secure intake, pay through Stripe, and receive a report built only from the sources actually returned in that run.
+            TraceWorks turns a structured intake into a source-traceable investigative report — property, mineral rights, unclaimed funds, people, and probate. Built only from the sources actually returned in that run. Nothing invented, nothing omitted.
           </p>
           <div class="hero-actions hero-cta">
             <a href="#order" class="btn-primary">Start Secure Intake</a>
@@ -176,6 +176,127 @@
         </div>
       </div>
     </div>
+
+    <!-- ─ Interactive Trace Demo ──────────────────────────────────── -->
+    <section class="trace-demo-section">
+      <div class="section-block">
+        <div class="section-header reveal">
+          <span class="eyebrow">Sample Output</span>
+          <h3>One subject. Every record it touches.</h3>
+          <p>A redacted sample of how findings connect into a single chain. Every node is confidence-labeled and backed by its source — select any node to inspect its trace.</p>
+        </div>
+        <div class="trace-chain reveal" id="traceChain">
+          <article class="trace-node" data-node tabindex="0" aria-expanded="false">
+            <div class="trace-node-top"><span class="trace-node-type">Property</span><span class="conf-badge conf-confirmed">Confirmed</span></div>
+            <strong class="trace-node-title">4821 FM 1660, Hutto, TX</strong>
+            <span class="trace-node-src">WCAD · Parcel #R-48210 · 09:14:02</span>
+            <div class="trace-node-detail">
+              <dl>
+                <div><dt>Source query</dt><dd>WCAD property search — situs address</dd></div>
+                <div><dt>Record returned</dt><dd>Parcel R-48210 · 12.4 acres · Abstract 412</dd></div>
+                <div><dt>Appraised value</dt><dd>$486,200 (2026 certified)</dd></div>
+              </dl>
+            </div>
+          </article>
+          <span class="trace-link" aria-hidden="true"></span>
+          <article class="trace-node" data-node tabindex="0" aria-expanded="false">
+            <div class="trace-node-top"><span class="trace-node-type">Ownership</span><span class="conf-badge conf-confirmed">Confirmed</span></div>
+            <strong class="trace-node-title">Calloway Family Trust</strong>
+            <span class="trace-node-src">Williamson Co. Clerk · Deed 2023-184422 · 09:14:31</span>
+            <div class="trace-node-detail">
+              <dl>
+                <div><dt>Source query</dt><dd>County clerk deed index — grantee name</dd></div>
+                <div><dt>Record returned</dt><dd>Warranty deed recorded 11/02/2023</dd></div>
+                <div><dt>Vesting</dt><dd>Trust — 100% surface estate</dd></div>
+              </dl>
+            </div>
+          </article>
+          <span class="trace-link" aria-hidden="true"></span>
+          <article class="trace-node" data-node tabindex="0" aria-expanded="false">
+            <div class="trace-node-top"><span class="trace-node-type">Mineral Rights</span><span class="conf-badge conf-likely">Likely</span></div>
+            <strong class="trace-node-title">50% undivided mineral interest</strong>
+            <span class="trace-node-src">RRC + deed index · 09:15:04</span>
+            <div class="trace-node-detail">
+              <dl>
+                <div><dt>Source query</dt><dd>Mineral severance search — abstract 412</dd></div>
+                <div><dt>Record returned</dt><dd>1978 reservation deed — 50% reserved by grantor heirs</dd></div>
+                <div><dt>Flag</dt><dd>Severed interest — manual title review recommended</dd></div>
+              </dl>
+            </div>
+          </article>
+          <span class="trace-link" aria-hidden="true"></span>
+          <article class="trace-node" data-node tabindex="0" aria-expanded="false">
+            <div class="trace-node-top"><span class="trace-node-type">Unclaimed Property</span><span class="conf-badge conf-confirmed">Confirmed</span></div>
+            <strong class="trace-node-title">$1,240.18 held by TX Comptroller</strong>
+            <span class="trace-node-src">ClaimItTexas · 09:15:19</span>
+            <div class="trace-node-detail">
+              <dl>
+                <div><dt>Source query</dt><dd>TX unclaimed property — owner name variants</dd></div>
+                <div><dt>Record returned</dt><dd>2 properties — royalty payment + utility deposit</dd></div>
+                <div><dt>Claim path</dt><dd>Direct link included in full report</dd></div>
+              </dl>
+            </div>
+          </article>
+          <span class="trace-link" aria-hidden="true"></span>
+          <article class="trace-node" data-node tabindex="0" aria-expanded="false">
+            <div class="trace-node-top"><span class="trace-node-type">Heirs</span><span class="conf-badge conf-likely">Likely</span></div>
+            <strong class="trace-node-title">3 likely heirs identified</strong>
+            <span class="trace-node-src">Probate index + people sources · 09:15:47</span>
+            <div class="trace-node-detail">
+              <dl>
+                <div><dt>Source query</dt><dd>Probate filings + obituary cross-reference</dd></div>
+                <div><dt>Record returned</dt><dd>2019 probate — 3 distributees named</dd></div>
+                <div><dt>Flag</dt><dd>Addresses need manual verification</dd></div>
+              </dl>
+            </div>
+          </article>
+        </div>
+        <p class="trace-demo-note reveal">Sample data shown for illustration. Real reports render only from live source results — nothing is invented, and gaps are labeled, not filled.</p>
+      </div>
+    </section>
+
+    <!-- ─ Capabilities ────────────────────────────────────────────── -->
+    <section class="capabilities-section">
+      <div class="section-block">
+        <div class="section-header reveal">
+          <span class="eyebrow">What We Uncover</span>
+          <h3>Built for the questions that matter.</h3>
+          <p>Every report line targets a specific investigative need — from courthouse records to money sitting unclaimed.</p>
+        </div>
+        <div class="cap-grid">
+          <article class="cap-card reveal">
+            <span class="cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg></span>
+            <h4>Property &amp; Parcels</h4>
+            <p>Ownership, appraisals, parcel identifiers, and situs verification from county appraisal districts.</p>
+          </article>
+          <article class="cap-card reveal">
+            <span class="cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 00-1 1v16a1 1 0 001 1h12a1 1 0 001-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>
+            <h4>Deeds &amp; Ownership Chains</h4>
+            <p>Recorded instruments, vesting, and conveyance history from county clerk indexes.</p>
+          </article>
+          <article class="cap-card reveal">
+            <span class="cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20M4 6l16 12M20 6L4 18"/></svg></span>
+            <h4>Mineral Rights</h4>
+            <p>Severed interests, reservations, and royalty signals hiding beneath the surface estate.</p>
+          </article>
+          <article class="cap-card reveal">
+            <span class="cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+            <h4>Unclaimed Property</h4>
+            <p>Funds held by the state comptroller — royalties, deposits, and forgotten accounts with claim paths.</p>
+          </article>
+          <article class="cap-card reveal">
+            <span class="cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 010 7M21 20c0-2.8-1.9-5.1-4.5-5.8"/></svg></span>
+            <h4>People &amp; Addresses</h4>
+            <p>Identity resolution across public people sources — addresses, aliases, and associates.</p>
+          </article>
+          <article class="cap-card reveal">
+            <span class="cap-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></span>
+            <h4>Probate &amp; Heirs</h4>
+            <p>Filings, distributees, and estate signals for heirship and title-curative work.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
     <!-- ─ Reports ─────────────────────────────────────────────────── -->
     <section id="reports" class="section-block">
@@ -600,5 +721,27 @@
 
     <script src="/pwa.js" type="module"></script>
     <script src="/app.js" type="module"></script>
+    <script>
+    (function () {
+      // Trace-chain node expand/collapse
+      document.querySelectorAll('[data-node]').forEach(function (node) {
+        function toggle() {
+          var open = node.classList.toggle('open');
+          node.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        node.addEventListener('click', toggle);
+        node.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+        });
+      });
+      // Reveal-on-scroll
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+        });
+      }, { threshold: 0.12 });
+      document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+    })();
+    </script>
   </body>
 </html>
